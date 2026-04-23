@@ -1,0 +1,31 @@
+{
+  "name": "nexo-billing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma SaaS de facturación multi-tenant Verifactu-compliant para autónomos y pymes en España",
+  "author": "Elias / Nexo Digital",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:coverage": "turbo test -- --coverage",
+    "clean": "turbo clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "prisma:generate": "pnpm --filter @nexo/prisma prisma generate",
+    "prisma:migrate": "pnpm --filter @nexo/prisma prisma migrate dev",
+    "prisma:studio": "pnpm --filter @nexo/prisma prisma studio"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.2.3",
+    "typescript": "^5.6.3"
+  }
+}
