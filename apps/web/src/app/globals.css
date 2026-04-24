@@ -38,15 +38,6 @@
   animation: nexo-pulse 2s infinite;
 }
 
-/* ===== Global resets & base ===== */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 body {
   font-family: var(--font-sans, -apple-system, sans-serif);
   background: var(--bg);
