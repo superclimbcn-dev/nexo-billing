@@ -1,39 +1,47 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { prisma } from '@nexo/prisma'
+import { createAdminClient } from '@nexo/core-auth'
 
-// Dev-only endpoint: returns { db, supabase } status
-export async function GET() {
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+const HEALTH_TOKEN = process.env.HEALTH_CHECK_TOKEN
+
+export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    const token = req.nextUrl.searchParams.get('token')
+    if (!HEALTH_TOKEN || token !== HEALTH_TOKEN) {
+      return Response.json({ error: 'Not found' }, { status: 404 })
+    }
   }
 
-  const result = {
-    db: 'unknown' as string,
-    supabase: 'unknown' as string,
-    errors: [] as string[],
+  const result: { db: string; supabase: string; env: string; errors?: string[] } = {
+    db: 'unknown',
+    supabase: 'unknown',
+    env: process.env.NODE_ENV ?? 'unknown',
+    errors: [],
   }
 
-  // Prisma / Postgres check
   try {
-    const { prisma } = await import('@nexo/prisma')
     await prisma.$queryRaw`SELECT 1`
     result.db = 'ok'
-  } catch (err) {
+  } catch (e) {
     result.db = 'error'
-    result.errors.push(`db: ${err instanceof Error ? err.message : String(err)}`)
+    result.errors!.push(`db: ${e instanceof Error ? e.message : String(e)}`)
   }
 
-  // Supabase admin check
   try {
-    const { createAdminClient } = await import('@nexo/core-auth')
     const admin = createAdminClient()
-    const { error } = await admin.from('tenants').select('id').limit(1)
-    if (error) throw new Error(error.message)
+    const { error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 })
+    if (error) throw error
     result.supabase = 'ok'
-  } catch (err) {
+  } catch (e) {
     result.supabase = 'error'
-    result.errors.push(`supabase: ${err instanceof Error ? err.message : String(err)}`)
+    result.errors!.push(`supabase: ${e instanceof Error ? e.message : String(e)}`)
   }
 
-  const status = result.db === 'ok' && result.supabase === 'ok' ? 200 : 500
-  return NextResponse.json(result, { status })
+  if (result.errors!.length === 0) delete result.errors
+
+  const allOk = result.db === 'ok' && result.supabase === 'ok'
+  return Response.json(result, { status: allOk ? 200 : 500 })
 }
