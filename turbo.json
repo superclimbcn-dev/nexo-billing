@@ -4,6 +4,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "SUPABASE_ACCESS_TOKEN",
+        "SUPABASE_PROJECT_REF",
+        "HEALTH_CHECK_TOKEN",
+        "NODE_ENV",
+        "VERCEL_ENV"
+      ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
     "dev": {
