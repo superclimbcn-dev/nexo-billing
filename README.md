@@ -123,6 +123,20 @@ pnpm prisma:studio    # Abrir Prisma Studio
 
 ---
 
+## Git flow
+
+| Branch | Propósito | Deploy |
+|---|---|---|
+| `develop` | Branch de trabajo. Todo PR va aquí primero. | Staging → `nexo-billing-dev.vercel.app` |
+| `main` | Branch de producción. Solo se actualiza via PR `develop → main`. | Prod → `nexo-billing.vercel.app` |
+
+**Reglas:**
+- Nunca hacer commits directos a `main`.
+- Feature branches: `feature/<nombre>` → PR a `develop`.
+- Cuando staging está validado: PR `develop → main` para promover a producción.
+
+---
+
 ## Fases del roadmap
 
 - **Q2 2026**: Core-billing + Verifacti + motor de facturación + multi-tenant
