@@ -249,3 +249,65 @@ Elias tiene experiencia principalmente en Next.js, TypeScript, React, Tailwind, 
 - Documento de estrategia maestra: `/docs/verifactu-plataforma-estrategia.md`
 - FAQs oficiales AEAT: `https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/preguntas-frecuentes.html`
 - Documentación técnica fabricantes: `https://verifactu-aeat.github.io/`
+
+---
+
+## 11. Permisos de ejecución de comandos
+
+Esta sección define qué comandos puede ejecutar Claude Code sin pedir aprobación al usuario, qué comandos requieren confirmación caso por caso, y qué comandos están prohibidos. Ayuda a balancear velocidad de desarrollo con seguridad.
+
+### Comandos auto-aprobados (no pedir confirmación)
+
+Inspección y lectura:
+- ls, cat, head, tail, find, grep, wc, du
+- Get-ChildItem, Get-Content, Select-String, Test-Path (PowerShell)
+- git status, git log, git diff, git branch, git remote, git ls-files, git show
+- pwd, whoami, node -v, pnpm -v
+- which, where (locate ejecutables)
+
+Construcción y validación:
+- pnpm install (con cualquier flag)
+- pnpm typecheck, pnpm lint, pnpm test
+- pnpm build (con cualquier --filter)
+- pnpm --filter @nexo/prisma exec prisma generate / validate
+- npx turbo-ignore
+- tsx (cualquier script del proyecto)
+- node -e (one-liners de cómputo)
+
+Modificaciones dentro del proyecto:
+- git add, git commit, git checkout -b
+- Edición de cualquier archivo dentro del repo
+
+APIs autorizadas (con tokens del .env.local):
+- curl/fetch a api.supabase.com
+- curl/fetch a api.vercel.com
+- curl/fetch a las URLs de deploy del propio proyecto (smoke tests)
+
+### Comandos que requieren confirmación caso por caso
+
+- git push (cualquier branch, especialmente main)
+- git merge (especialmente a main)
+- prisma migrate deploy contra production
+- Conexiones psql directas a producción
+- POST / DELETE en /v9/projects o /v10/projects de Vercel API
+- Crear/borrar variables de entorno en Vercel
+- Crear/borrar API keys en Supabase Management API
+
+### Comandos PROHIBIDOS (jamás ejecutar)
+
+- git push --force / --force-with-lease
+- git reset --hard origin/X
+- rm -rf, Remove-Item -Recurse -Force
+- DROP TABLE, TRUNCATE, DELETE FROM sin WHERE
+- prisma migrate reset
+- vercel rm <project>
+- gh repo delete
+- Editar archivos fuera del repositorio (/etc/, ~/.ssh/, etc.)
+
+### Reportes obligatorios
+
+Tras CADA paso (cualquier paso de un plan), Claude Code debe imprimir una línea con el formato:
+
+Modified: <lista de archivos modificados o "ninguno">
+Commits: <SHAs si los hubo o "ninguno">
+External actions: <APIs llamadas con resumen, o "ninguna">
