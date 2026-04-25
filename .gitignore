@@ -31,6 +31,12 @@ yarn-debug.log*
 !.vscode/extensions.json
 .idea
 
+# Local Claude Code settings (per-developer permissions)
+.claude/settings.local.json
+
+# TypeScript incremental build info (auto-generated)
+*.tsbuildinfo
+
 # OS
 .DS_Store
 Thumbs.db
