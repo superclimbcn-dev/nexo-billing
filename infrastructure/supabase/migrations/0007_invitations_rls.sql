@@ -18,5 +18,5 @@ DROP POLICY IF EXISTS "invitations_delete" ON invitations;
 CREATE POLICY "invitations_delete" ON invitations
   FOR DELETE USING (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    AND (auth.jwt() ->> 'role') IN ('OWNER', 'ADMIN')
+    AND (auth.jwt() ->> 'user_role') IN ('OWNER', 'ADMIN')
   );

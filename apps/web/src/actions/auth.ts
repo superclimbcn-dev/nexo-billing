@@ -11,6 +11,22 @@ async function getOrigin(): Promise<string> {
   return `${proto}://${host}`
 }
 
+function translateAuthError(message: string): string {
+  if (message.includes('Signups not allowed')) {
+    return 'Este correo no tiene una cuenta. ¿Quieres crear una?'
+  }
+  if (message.includes('Email not confirmed')) {
+    return 'Correo no verificado. Revisa tu bandeja de entrada.'
+  }
+  if (message.includes('Invalid login credentials')) {
+    return 'Credenciales incorrectas.'
+  }
+  if (message.includes('Email rate limit exceeded')) {
+    return 'Demasiados intentos. Espera unos minutos antes de volver a intentarlo.'
+  }
+  return message
+}
+
 export async function signInAction(formData: FormData) {
   const email = (formData.get('email') as string | null)?.trim()
   if (!email) {
@@ -29,7 +45,7 @@ export async function signInAction(formData: FormData) {
   })
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+    redirect(`/login?error=${encodeURIComponent(translateAuthError(error.message))}`)
   }
 
   redirect(`/check-email?email=${encodeURIComponent(email)}`)
@@ -56,7 +72,7 @@ export async function signUpAction(formData: FormData) {
   })
 
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`)
+    redirect(`/signup?error=${encodeURIComponent(translateAuthError(error.message))}`)
   }
 
   redirect(`/check-email?email=${encodeURIComponent(email)}`)

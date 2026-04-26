@@ -23,16 +23,27 @@ STABLE
 SECURITY DEFINER
 AS $$
 DECLARE
-  claims jsonb;
-  v_tenant_id text;
-  v_role      text;
+  claims      jsonb;
+  user_record record;
 BEGIN
-  claims      := event -> 'claims';
-  v_tenant_id := event -> 'claims' -> 'app_metadata' ->> 'tenant_id';
-  v_role      := event -> 'claims' -> 'app_metadata' ->> 'role';
+  claims := event -> 'claims';
 
-  claims := jsonb_set(claims, '{tenant_id}', COALESCE(to_jsonb(v_tenant_id), 'null'::jsonb));
-  claims := jsonb_set(claims, '{role}',      COALESCE(to_jsonb(v_role),      'null'::jsonb));
+  -- Only inject custom claims if the user has completed onboarding
+  -- (i.e. a row exists in public.users with their tenant assignment).
+  -- If onboarding is not complete yet, return claims unchanged so Supabase
+  -- does not reject the JWT for a null/missing required claim.
+  SELECT tenant_id, role
+  INTO   user_record
+  FROM   public.users
+  WHERE  id = (event ->> 'user_id')::uuid;
+
+  IF FOUND THEN
+    -- Promote to top-level claims consumed by RLS policies.
+    -- Use "user_role" (not "role") to avoid collision with Supabase's
+    -- internal "role" claim (authenticated / anon / service_role).
+    claims := jsonb_set(claims, '{tenant_id}', to_jsonb(user_record.tenant_id::text));
+    claims := jsonb_set(claims, '{user_role}', to_jsonb(user_record.role::text));
+  END IF;
 
   RETURN jsonb_set(event, '{claims}', claims);
 END;
