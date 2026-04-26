@@ -9,22 +9,32 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+  ACCOUNTANT
+}
+
 // ─── Tenant ──────────────────────────────────────────────────────────────────
 
 model Tenant {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  nif       String   @unique
-  vertical  String   @default("generic") // limpieza | construccion | medicos | servicios_pro | retail | generic
-  plan      String   @default("free")    // free | starter | pro | enterprise
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  nif            String   @unique
+  vertical       String   @default("generic") // limpieza | construccion | medicos | servicios_pro | retail | generic
+  plan           String   @default("free")    // free | starter | pro | enterprise
+  sectorMetadata Json?    @map("sector_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   users              User[]
   clients            Client[]
   products           Product[]
   invoices           Invoice[]
   recurringContracts RecurringContract[]
+  invitations        Invitation[]
 
   @@map("tenants")
 }
@@ -36,7 +46,7 @@ model User {
   tenantId  String   @map("tenant_id") @db.Uuid
   email     String
   name      String?
-  role      String   @default("member") // owner | admin | member
+  role      UserRole @default(MEMBER)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -175,4 +185,21 @@ model RecurringContract {
   client Client @relation(fields: [clientId], references: [id])
 
   @@map("recurring_contracts")
+}
+
+// ─── Invitation ───────────────────────────────────────────────────────────────
+
+model Invitation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  email     String
+  role      UserRole @default(MEMBER)
+  token     String   @unique @default(dbgenerated("gen_random_uuid()::text"))
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@map("invitations")
 }
