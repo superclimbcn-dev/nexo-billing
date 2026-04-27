@@ -20,7 +20,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "prisma:generate": "pnpm --filter @nexo/prisma prisma generate",
     "prisma:migrate": "pnpm --filter @nexo/prisma prisma migrate dev",
-    "prisma:studio": "pnpm --filter @nexo/prisma prisma studio"
+    "prisma:studio": "pnpm --filter @nexo/prisma prisma studio",
+    "supabase:email-templates": "npx tsx infrastructure/supabase/scripts/apply-email-templates.ts"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

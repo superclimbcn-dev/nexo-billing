@@ -124,6 +124,47 @@ El script `apply-migrations.ts` mantiene una tabla `schema_migrations` para idem
 
 ---
 
+## Plantillas de email de Supabase Auth
+
+Las plantillas HTML para magic link, confirm signup e invite user están versionadas en el repositorio y se aplican a través de la Management API de Supabase.
+
+### Archivos
+
+```
+infrastructure/supabase/email-templates/
+├── magic-link.html       # Inicio de sesión (signInWithOtp)
+├── confirm-signup.html   # Confirmación de cuenta nueva
+└── invite-user.html      # Invitación a un equipo
+```
+
+Las plantillas usan la variable `{{ .ConfirmationURL }}` que Supabase sustituye automáticamente con la URL de acción.
+
+### Aplicar plantillas a un entorno
+
+Requiere `SUPABASE_PAT` (Personal Access Token de supabase.com) y `SUPABASE_PROJECT_REF` en `.env.local`:
+
+```bash
+# Staging (DEV)
+SUPABASE_PROJECT_REF=ooozdnqgiylqluktgpmc pnpm supabase:email-templates
+
+# Producción (cambiar REF en .env.local al ref de producción)
+SUPABASE_PROJECT_REF=<prod-ref> pnpm supabase:email-templates
+```
+
+El script es idempotente: re-ejecutarlo sobreescribe con las mismas plantillas sin efectos secundarios.
+
+### Variables configuradas por el script
+
+| Campo API | Asunto |
+|---|---|
+| `mailer_subjects_magic_link` | "Inicia sesión en Nexo Billing" |
+| `mailer_subjects_confirmation` | "Confirma tu cuenta de Nexo Billing" |
+| `mailer_subjects_invite` | "Te han invitado a unirte a Nexo Billing" |
+
+> `SUPABASE_PAT` es un token personal del operador (sbp_...). Se custodia en el gestor de contraseñas. **Nunca** se sube al repositorio ni se añade a Vercel.
+
+---
+
 ## Rollback de emergencia
 
 Si un deploy de producción rompe la aplicación:
