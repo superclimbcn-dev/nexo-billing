@@ -1,5 +1,6 @@
 'use server'
 
+import { randomUUID } from 'crypto'
 import { redirect } from 'next/navigation'
 import { createServerClient, createAdminClient } from '@nexo/core-auth'
 import { prisma, UserRole } from '@nexo/prisma'
@@ -54,46 +55,54 @@ export async function completeOnboarding(formData: FormData) {
     redirect('/onboarding/empresa?error=Faltan+datos+obligatorios')
   }
 
-  const adminClient = createAdminClient()
+  // Pre-generate tenant ID so we can use the batch form of $transaction.
+  // The batch form (array of operations) does not require advisory locks and is
+  // fully compatible with pgbouncer in transaction mode on Vercel serverless.
+  const tenantId = randomUUID()
 
-  const tenant = await prisma.$transaction(async (tx) => {
-    const newTenant = await tx.tenant.create({
-      data: {
-        name: razonSocial,
-        nif,
-        vertical,
-        plan: 'free',
-        sectorMetadata: {
-          tipo: (state.tipo as string) ?? null,
-          direccion: (state.direccion as string) ?? null,
-          ciudad: (state.ciudad as string) ?? null,
-          cp: (state.cp as string) ?? null,
-          provincia: (state.provincia as string) ?? null,
-          pais: (state.pais as string) ?? 'ES',
-          regimenIva: data.regimenIva,
-          ivaDefault: data.ivaDefault,
-          anioFiscal: data.anioFiscal,
-          emailNotificaciones: data.emailNotificaciones,
+  try {
+    await prisma.$transaction([
+      prisma.tenant.create({
+        data: {
+          id: tenantId,
+          name: razonSocial,
+          nif,
+          vertical,
+          plan: 'free',
+          sectorMetadata: {
+            tipo: (state.tipo as string) ?? null,
+            direccion: (state.direccion as string) ?? null,
+            ciudad: (state.ciudad as string) ?? null,
+            cp: (state.cp as string) ?? null,
+            provincia: (state.provincia as string) ?? null,
+            pais: (state.pais as string) ?? 'ES',
+            regimenIva: data.regimenIva,
+            ivaDefault: data.ivaDefault,
+            anioFiscal: data.anioFiscal,
+            emailNotificaciones: data.emailNotificaciones,
+          },
         },
-      },
-    })
+      }),
+      prisma.user.create({
+        data: {
+          id: user.id,
+          tenantId,
+          email: user.email ?? '',
+          name: nombre,
+          role: UserRole.OWNER,
+        },
+      }),
+    ])
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    redirect(`/onboarding/configuracion?error=${encodeURIComponent(`Error al crear la cuenta: ${msg}`)}`)
+  }
 
-    await tx.user.create({
-      data: {
-        id: user.id,
-        tenantId: newTenant.id,
-        email: user.email ?? '',
-        name: nombre,
-        role: UserRole.OWNER,
-      },
-    })
-
-    return newTenant
-  })
+  const adminClient = createAdminClient()
 
   await adminClient.auth.admin.updateUserById(user.id, {
     app_metadata: {
-      tenant_id: tenant.id,
+      tenant_id: tenantId,
       role: UserRole.OWNER,
     },
   })
