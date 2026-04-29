@@ -1,80 +1,110 @@
--- ============================================================
--- Migration: 0009_session_5_5_seed_verticals.sql
--- Session 5.5 Phase 2 — Seed the 6 initial Vertical catalog rows
--- Apply via Supabase SQL Editor (project: ooozdnqgiylqluktgpmc)
--- ============================================================
--- These are global catalog rows (no tenant_id). RLS on verticals
--- allows SELECT for all authenticated users and ALL for service_role.
--- Use INSERT ... ON CONFLICT DO NOTHING for idempotency.
--- Slugs are in English (ADR-0003). Names (user-facing) are in Spanish.
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+-- 0009 — Seed inicial de Verticales (CORREGIDO)
+-- ════════════════════════════════════════════════════════════════════════════
+-- 6 verticales seed según ADR-002.
+-- Idempotente vía ON CONFLICT (slug) DO UPDATE.
+--
+-- IMPORTANTE: nombres de columna deben coincidir EXACTAMENTE con schema.prisma
+-- Verticals usa: slug, name, description, status, modules_enabled, cnae_mapping,
+--                icon_name, color, sort_order, created_at, updated_at
+-- ════════════════════════════════════════════════════════════════════════════
 
-INSERT INTO public.verticals (id, slug, name, description, icon, features, status, "createdAt", "updatedAt")
-VALUES
+INSERT INTO public.verticals (
+  slug,
+  name,
+  description,
+  status,
+  modules_enabled,
+  cnae_mapping,
+  icon_name,
+  color,
+  sort_order
+) VALUES
+  -- GENÉRICO — escape hatch
   (
-    gen_random_uuid(),
     'generic',
     'Genérico',
-    'Vertical base para cualquier tipo de negocio. Incluye facturación estándar Verifactu sin módulos sectoriales.',
-    'briefcase',
-    '["invoicing","clients","items","quotes","expenses","payments"]'::jsonb,
-    'ACTIVE',
-    now(),
-    now()
+    'Configuración estándar para cualquier negocio. Núcleo de facturación completo.',
+    'active'::"VerticalStatus",
+    ARRAY[]::text[],
+    ARRAY[]::text[],
+    '📦',
+    '#71717a',
+    99
   ),
+
+  -- LIMPIEZA
   (
-    gen_random_uuid(),
     'cleaning',
     'Limpieza y mantenimiento',
-    'Especializado para empresas y autónomos de servicios de limpieza. Incluye contratos recurrentes, planificación de servicios y gestión de equipos.',
-    'sparkles',
-    '["invoicing","clients","items","quotes","expenses","payments","recurring_contracts","service_scheduling","team_management"]'::jsonb,
-    'ACTIVE',
-    now(),
-    now()
+    'Contratos recurrentes, partes de operario, planificación de turnos, rutas.',
+    'active'::"VerticalStatus",
+    ARRAY['recurring_contracts', 'service_sheets', 'route_planning']::text[],
+    ARRAY['8121', '8122', '8129', '8130']::text[],
+    '🧽',
+    '#4ade80',
+    1
   ),
+
+  -- SERVICIOS PROFESIONALES
   (
-    gen_random_uuid(),
     'services_pro',
     'Servicios profesionales',
-    'Para consultores, abogados, arquitectos y otros profesionales independientes. Incluye gestión por proyectos y seguimiento de horas.',
-    'user-tie',
-    '["invoicing","clients","items","quotes","expenses","payments","project_tracking","time_tracking"]'::jsonb,
-    'ACTIVE',
-    now(),
-    now()
+    'Consultoría, asesoría, agencias, autónomos. Horas facturables, minutas.',
+    'active'::"VerticalStatus",
+    ARRAY['hourly_billing', 'project_tracking']::text[],
+    ARRAY['6920', '7022', '7311', '7312', '7320', '7410', '7420']::text[],
+    '⚖',
+    '#3b82f6',
+    2
   ),
+
+  -- CONSTRUCCIÓN — beta
   (
-    gen_random_uuid(),
     'construction',
     'Construcción y reformas',
-    'Para constructoras, reformistas y empresas del sector CNAE 41-43. Incluye gestión de obra, certificaciones y control de materiales.',
-    'hard-hat',
-    '["invoicing","clients","items","quotes","expenses","payments","project_tracking","certifications","material_tracking"]'::jsonb,
-    'COMING_SOON',
-    now(),
-    now()
+    'Certificaciones de obra, partidas, subcontratas, retención de garantía.',
+    'beta'::"VerticalStatus",
+    ARRAY['certifications', 'bill_of_quantities', 'subcontractors']::text[],
+    ARRAY['4110', '4120', '4211', '4212', '4213', '4221', '4222', '4291', '4299', '4311', '4312', '4313', '4321', '4322', '4329', '4331', '4332', '4333', '4334', '4339', '4391', '4399']::text[],
+    '🔨',
+    '#f59e0b',
+    3
   ),
+
+  -- MÉDICOS — coming soon
   (
-    gen_random_uuid(),
     'medical',
     'Salud y bienestar',
-    'Para profesionales sanitarios y clínicas privadas. Incluye gestión de pacientes, actos médicos y facturación a aseguradoras.',
-    'stethoscope',
-    '["invoicing","clients","items","quotes","expenses","payments","patient_management","insurance_billing"]'::jsonb,
-    'COMING_SOON',
-    now(),
-    now()
+    'Exención IVA art. 20, RGPD reforzado, gestión de pacientes y citas.',
+    'coming_soon'::"VerticalStatus",
+    ARRAY['vat_exemption', 'patient_records', 'appointments']::text[],
+    ARRAY['8610', '8621', '8622', '8623', '8690']::text[],
+    '⚕',
+    '#ec4899',
+    4
   ),
+
+  -- RETAIL — coming soon
   (
-    gen_random_uuid(),
     'retail',
     'Comercio y retail',
-    'Para comercios minoristas y tiendas. Incluye gestión de inventario, punto de venta y facturación simplificada (tickets).',
-    'shopping-bag',
-    '["invoicing","clients","items","expenses","payments","inventory","pos","simplified_invoicing"]'::jsonb,
-    'COMING_SOON',
-    now(),
-    now()
+    'TPV, tickets, facturas simplificadas, control de inventario.',
+    'coming_soon'::"VerticalStatus",
+    ARRAY['pos', 'simplified_invoices', 'inventory']::text[],
+    ARRAY['4711', '4719', '4721', '4722', '4729', '4730', '4741', '4742', '4743', '4751', '4752', '4753', '4754', '4759', '4761', '4762', '4763', '4764', '4765', '4771', '4772', '4773', '4774', '4775', '4776', '4777', '4778', '4779']::text[],
+    '🛍',
+    '#a855f7',
+    5
   )
-ON CONFLICT (slug) DO NOTHING;
+
+ON CONFLICT (slug) DO UPDATE SET
+  name             = EXCLUDED.name,
+  description      = EXCLUDED.description,
+  status           = EXCLUDED.status,
+  modules_enabled  = EXCLUDED.modules_enabled,
+  cnae_mapping     = EXCLUDED.cnae_mapping,
+  icon_name        = EXCLUDED.icon_name,
+  color            = EXCLUDED.color,
+  sort_order       = EXCLUDED.sort_order,
+  updated_at       = NOW();
