@@ -15,7 +15,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
-  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } })
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: { vertical: true, branding: true },
+  })
   if (!tenant) redirect('/onboarding/cuenta')
 
   const dbUser = await prisma.user.findFirst({
@@ -39,7 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <AppSidebar
             tenantName={tenant.name}
             tenantNif={tenant.nif}
-            tenantVertical={tenant.vertical}
+            tenantVertical={tenant.vertical?.name ?? tenant.businessType ?? 'Sector personalizado'}
             userName={userName}
             userEmail={user.email ?? ''}
           />

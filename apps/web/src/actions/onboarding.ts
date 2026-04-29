@@ -3,7 +3,7 @@
 import { randomUUID } from 'crypto'
 import { redirect } from 'next/navigation'
 import { createServerClient, createAdminClient } from '@nexo/core-auth'
-import { prisma, UserRole } from '@nexo/prisma'
+import { prisma, UserRole, AuditAction } from '@nexo/prisma'
 
 export async function setOnboardingState(partialState: Record<string, unknown>) {
   const supabase = await createServerClient()
@@ -48,8 +48,11 @@ export async function completeOnboarding(formData: FormData) {
 
   const nif = (state.nif as string) ?? ''
   const razonSocial = (state.razonSocial as string) ?? ''
-  const vertical = (state.vertical as string) ?? 'generic'
   const nombre = (state.nombre as string) ?? (user.user_metadata?.name as string) ?? ''
+  const verticalSlug = (state.vertical as string | null) || null
+  const businessType = (state.businessType as string | null) || null
+  const cnae = (state.cnae as string | null) || null
+  const isOtherSector = !verticalSlug || verticalSlug === 'other'
 
   if (!nif || !razonSocial) {
     redirect('/onboarding/empresa?error=Faltan+datos+obligatorios')
@@ -59,16 +62,22 @@ export async function completeOnboarding(formData: FormData) {
   // The batch form (array of operations) does not require advisory locks and is
   // fully compatible with pgbouncer in transaction mode on Vercel serverless.
   const tenantId = randomUUID()
+  const currentYear = new Date().getFullYear()
 
   try {
     await prisma.$transaction([
+      // 1. Tenant — vertical via FK connect, or omitted for "Otro sector"
       prisma.tenant.create({
         data: {
           id: tenantId,
           name: razonSocial,
           nif,
-          vertical,
+          businessType: businessType || null,
+          cnae: cnae || null,
           plan: 'free',
+          country: 'ES',
+          currency: 'EUR',
+          ...(isOtherSector ? {} : { vertical: { connect: { slug: verticalSlug! } } }),
           sectorMetadata: {
             tipo: (state.tipo as string) ?? null,
             direccion: (state.direccion as string) ?? null,
@@ -83,6 +92,8 @@ export async function completeOnboarding(formData: FormData) {
           },
         },
       }),
+
+      // 2. User OWNER
       prisma.user.create({
         data: {
           id: user.id,
@@ -92,6 +103,71 @@ export async function completeOnboarding(formData: FormData) {
           role: UserRole.OWNER,
         },
       }),
+
+      // 3. BrandingConfig default (ADR-003) — all fields take schema defaults
+      prisma.brandingConfig.create({
+        data: { tenantId },
+      }),
+
+      // 4. Default invoice series: A (standard) + R (rectificativas) — ADR-004
+      prisma.invoiceSeries.createMany({
+        data: [
+          {
+            tenantId,
+            code: 'A',
+            name: 'Facturas estándar',
+            prefix: 'A-',
+            suffix: `/${currentYear}`,
+            numberFormat: '0000',
+            nextNumber: 1,
+            isDefault: true,
+            resetYearly: true,
+            yearOfNumbering: currentYear,
+          },
+          {
+            tenantId,
+            code: 'R',
+            name: 'Rectificativas',
+            prefix: 'R-',
+            suffix: `/${currentYear}`,
+            numberFormat: '0000',
+            nextNumber: 1,
+            isDefault: false,
+            resetYearly: true,
+            yearOfNumbering: currentYear,
+          },
+        ],
+      }),
+
+      // 5. AuditLog entry for tenant creation (ADR-005)
+      prisma.auditLog.create({
+        data: {
+          tenantId,
+          userId: user.id,
+          action: AuditAction.TENANT_CREATED,
+          entityType: 'Tenant',
+          entityId: tenantId,
+          after: {
+            name: razonSocial,
+            nif,
+            verticalSlug: isOtherSector ? null : verticalSlug,
+          },
+        },
+      }),
+
+      // 6. VerticalRequest if "Otro sector" chosen — ADR-002
+      ...(isOtherSector && businessType
+        ? [
+            prisma.verticalRequest.create({
+              data: {
+                tenantId,
+                businessTypeRequested: businessType,
+                cnae: cnae || null,
+                notifyOnLaunch: true,
+              },
+            }),
+          ]
+        : []),
     ])
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

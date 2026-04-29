@@ -135,7 +135,7 @@ export default async function DashboardPage() {
               >
                 <div className="flex flex-col">
                   <span className="text-sm text-[var(--text)]">
-                    {inv.series}-{String(inv.number).padStart(4, '0')}
+                    {inv.fullNumber ?? String(inv.number).padStart(4, '0')}
                   </span>
                   <span className="text-xs text-[var(--text-subtle)]">{inv.client.name}</span>
                 </div>
