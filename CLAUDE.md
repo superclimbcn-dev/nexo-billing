@@ -84,7 +84,7 @@ marketing/        # whatsapp-promo-card
 
 ### 3.3 Feature flags por vertical
 
-Cada tenant tiene `vertical: 'limpieza' | 'construccion' | 'medicos' | 'servicios_pro' | 'retail' | 'generic'`. El frontend renderiza módulos condicionalmente según este valor. Nunca hacer `if (user.email.includes('superclim'))` u otros hacks de identificación.
+Cada tenant tiene `vertical: 'cleaning' | 'construction' | 'medical' | 'services_pro' | 'retail' | 'generic'`. El frontend renderiza módulos condicionalmente según este valor. Nunca hacer `if (user.email.includes('superclim'))` u otros hacks de identificación.
 
 ### 3.4 Server-first
 
