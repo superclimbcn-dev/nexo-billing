@@ -51,3 +51,8 @@ infrastructure/prisma/*.db
 # Supabase
 supabase/.temp
 supabase/.branches
+
+# Browser-downloaded duplicates (Chrome / Edge add "(N)" suffix on duplicate downloads)
+*\ \(1\).md
+*\ \(2\).md
+*\ \(3\).md

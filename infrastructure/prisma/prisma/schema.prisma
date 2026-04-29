@@ -9,6 +9,10 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+//                                  ENUMS
+// ════════════════════════════════════════════════════════════════════════════
+
 enum UserRole {
   OWNER
   ADMIN
@@ -17,145 +21,540 @@ enum UserRole {
   ACCOUNTANT
 }
 
-// ─── Tenant ──────────────────────────────────────────────────────────────────
+enum VerticalStatus {
+  active
+  beta
+  coming_soon
+  deprecated
+}
+
+enum ItemType {
+  product
+  service
+  subscription
+  kit
+  digital
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  partially_paid
+  overdue
+  cancelled
+  rectified
+}
+
+enum InvoiceType {
+  F1 // Factura completa estándar
+  F2 // Factura simplificada (ticket)
+  R1 // Rectificativa por error fundado en derecho
+  R2 // Rectificativa por concurso
+  R3 // Rectificativa por deudas
+  R4 // Rectificativa otros
+  R5 // Rectificativa simplificada
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+  expired
+  converted
+}
+
+enum ExpenseStatus {
+  pending
+  paid
+  partially_paid
+  overdue
+  cancelled
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  card
+  bizum
+  direct_debit
+  cheque
+  other
+}
+
+enum PaymentDirection {
+  inbound // cobro de cliente
+  outbound // pago a proveedor
+}
+
+enum AuditAction {
+  // Tenant
+  TENANT_CREATED
+  TENANT_UPDATED
+  TENANT_BRANDING_UPDATED
+  TENANT_VERTICAL_CHANGED
+
+  // Users & team
+  USER_INVITED
+  USER_JOINED
+  USER_REMOVED
+  USER_ROLE_CHANGED
+
+  // Invoices
+  INVOICE_CREATED
+  INVOICE_UPDATED
+  INVOICE_SENT
+  INVOICE_VERIFACTU_SUBMITTED
+  INVOICE_CANCELLED
+  INVOICE_RECTIFIED
+  INVOICE_PAID
+
+  // Quotes
+  QUOTE_CREATED
+  QUOTE_SENT
+  QUOTE_ACCEPTED
+  QUOTE_CONVERTED
+
+  // Expenses
+  EXPENSE_CREATED
+  EXPENSE_PAID
+
+  // Auth
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+}
+
+enum ClientType {
+  individual // Particular
+  business // Empresa
+  freelancer // Autónomo
+  public_entity // Administración pública
+}
+
+enum VatRegime {
+  general // Régimen general
+  simplified // Simplificado
+  recargo_equivalencia
+  exempt // Exento
+  reverse_charge // Inversión sujeto pasivo
+  intra_eu // Intracomunitario
+  export // Exportación
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              CORE — TENANT
+// ════════════════════════════════════════════════════════════════════════════
 
 model Tenant {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
-  nif            String   @unique
-  vertical       String   @default("generic") // limpieza | construccion | medicos | servicios_pro | retail | generic
-  plan           String   @default("free")    // free | starter | pro | enterprise
-  sectorMetadata Json?    @map("sector_metadata")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  legalName       String?   @map("legal_name") // Razón social
+  nif             String    @unique
+  cnae            String? // Código CNAE (ej: "8121")
+  businessType    String?   @map("business_type") // Lo que escribe el usuario ("Fontanería")
+  verticalId      String?   @map("vertical_id") @db.Uuid // FK a Vertical (nullable = genérico)
+  plan            String    @default("free") // free | starter | pro | enterprise
+  country         String    @default("ES") // ISO 3166-1 alpha-2
+  currency        String    @default("EUR") // ISO 4217
+  vatRegime       VatRegime @default(general) @map("vat_regime")
+  fiscalYearStart Int       @default(1) @map("fiscal_year_start") // mes (1-12)
+  sectorMetadata  Json?     @map("sector_metadata") // metadata custom por vertical
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
+  // Relations
+  vertical           Vertical?           @relation(fields: [verticalId], references: [id])
+  branding           BrandingConfig?
   users              User[]
-  clients            Client[]
-  products           Product[]
-  invoices           Invoice[]
-  recurringContracts RecurringContract[]
   invitations        Invitation[]
+  clients            Client[]
+  suppliers          Supplier[]
+  items              Item[]
+  invoiceSeries      InvoiceSeries[]
+  invoices           Invoice[]
+  quotes             Quote[]
+  expenses           Expense[]
+  payments           Payment[]
+  recurringContracts RecurringContract[]
+  auditLogs          AuditLog[]
+  verticalRequests   VerticalRequest[]
 
   @@map("tenants")
 }
 
-// ─── User ─────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+//                          BRANDING (1:1 con Tenant)
+// ════════════════════════════════════════════════════════════════════════════
+
+model BrandingConfig {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @unique @map("tenant_id") @db.Uuid
+
+  // Logos
+  logoUrl     String? @map("logo_url") // Logo principal (light bg)
+  logoUrlDark String? @map("logo_url_dark") // Logo para fondo oscuro
+  faviconUrl  String? @map("favicon_url")
+  logoIconUrl String? @map("logo_icon_url") // Solo isotipo para sidebar
+
+  // Colores (hex)
+  primaryColor   String @default("#d4ff3f") @map("primary_color")
+  secondaryColor String @default("#0a0a0b") @map("secondary_color")
+  accentColor    String @default("#a3cc2c") @map("accent_color")
+  textOnPrimary  String @default("#0a0a0b") @map("text_on_primary")
+
+  // Tipografía
+  fontFamily        String  @default("Inter") @map("font_family")
+  fontFamilyHeading String? @map("font_family_heading")
+
+  // Plantilla de factura
+  invoiceTemplate   String  @default("minimal") @map("invoice_template") // minimal | corporate | modern | classic
+  invoiceFooterText String? @map("invoice_footer_text")
+  invoiceShowLogo   Boolean @default(true) @map("invoice_show_logo")
+  invoiceShowQr     Boolean @default(true) @map("invoice_show_qr") // QR Verifactu
+
+  // White-label (Enterprise)
+  customDomain       String? @map("custom_domain")
+  hideNexoBranding   Boolean @default(false) @map("hide_nexo_branding")
+  emailSenderName    String? @map("email_sender_name")
+  emailSenderAddress String? @map("email_sender_address")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("branding_configs")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              VERTICALES
+// ════════════════════════════════════════════════════════════════════════════
+
+model Vertical {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String         @unique // generic, cleaning, construction, medical
+  name           String // "Limpieza y mantenimiento"
+  description    String?
+  status         VerticalStatus @default(coming_soon)
+  modulesEnabled String[]       @map("modules_enabled") // ["recurring_contracts", "service_sheets"]
+  cnaeMapping    String[]       @map("cnae_mapping") // ["8121", "8122"]
+  iconName       String?        @map("icon_name") // emoji o nombre de icono
+  color          String? // color principal del vertical (UI)
+  sortOrder      Int            @default(0) @map("sort_order")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenants Tenant[]
+
+  @@map("verticals")
+}
+
+model VerticalRequest {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  businessTypeRequested String   @map("business_type_requested") // "Fontanería"
+  cnae                  String?
+  description           String? // Descripción libre del negocio
+  email                 String? // Para notificar cuando se lance
+  notifyOnLaunch        Boolean  @default(true) @map("notify_on_launch")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("vertical_requests")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              USERS & TEAM
+// ════════════════════════════════════════════════════════════════════════════
 
 model User {
   id        String   @id @db.Uuid // matches Supabase auth.users.id
   tenantId  String   @map("tenant_id") @db.Uuid
   email     String
   name      String?
+  avatarUrl String?  @map("avatar_url")
   role      UserRole @default(MEMBER)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  auditLogs AuditLog[]
 
   @@unique([tenantId, email])
   @@map("users")
 }
 
-// ─── Client ───────────────────────────────────────────────────────────────────
+model Invitation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  email     String
+  role      UserRole @default(MEMBER)
+  token     String   @unique @default(dbgenerated("gen_random_uuid()::text"))
+  invitedBy String?  @map("invited_by") @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@map("invitations")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                          CLIENTS & SUPPLIERS
+// ════════════════════════════════════════════════════════════════════════════
 
 model Client {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  name           String
-  nif            String
-  address        String?
-  email          String?
-  phone          String?
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  // Identificación
+  name       String // Nombre comercial
+  legalName  String?    @map("legal_name") // Razón social
+  nif        String // NIF/CIF/NIE
+  clientType ClientType @default(business) @map("client_type")
+  vatRegime  VatRegime  @default(general) @map("vat_regime")
+
+  // Contacto
+  email         String?
+  phone         String?
+  contactPerson String? @map("contact_person")
+
+  // Dirección fiscal
+  address    String?
+  city       String?
+  postalCode String? @map("postal_code")
+  province   String?
+  country    String  @default("ES") // ISO 3166-1
+
+  // Configuración comercial
+  paymentTerms   Int      @default(30) @map("payment_terms") // días
+  defaultVatRate Decimal? @map("default_vat_rate") @db.Decimal(5, 2)
+  notes          String?
+  isActive       Boolean  @default(true) @map("is_active")
+
   sectorMetadata Json?    @map("sector_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices           Invoice[]
+  quotes             Quote[]
   recurringContracts RecurringContract[]
 
   @@unique([tenantId, nif])
   @@map("clients")
 }
 
-// ─── Product ──────────────────────────────────────────────────────────────────
+model Supplier {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
 
-model Product {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  name           String
-  description    String?
-  unitPrice      Decimal  @map("unit_price") @db.Decimal(12, 2)
-  vatRate        Decimal  @map("vat_rate") @db.Decimal(5, 2)
-  unit           String   @default("ud")
+  name       String
+  legalName  String?    @map("legal_name")
+  nif        String
+  clientType ClientType @default(business) @map("client_type")
+
+  email         String?
+  phone         String?
+  contactPerson String? @map("contact_person")
+
+  address    String?
+  city       String?
+  postalCode String? @map("postal_code")
+  province   String?
+  country    String  @default("ES")
+
+  paymentTerms Int     @default(30) @map("payment_terms")
+  notes        String?
+  isActive     Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@unique([tenantId, nif])
+  @@map("suppliers")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              CATALOG (ITEMS)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Item {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  // Tipo (DISCRIMINATOR)
+  type ItemType @default(product)
+
+  // Comunes
+  name        String
+  description String?
+  sku         String? // Code/referencia (común a productos y servicios)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
+  vatRate     Decimal @map("vat_rate") @db.Decimal(5, 2)
+  unit        String  @default("ud") // ud, hora, día, m², kg
+  category    String?
+  isActive    Boolean @default(true) @map("is_active")
+
+  // Solo PRODUCT (nullable)
+  barcode       String?
+  stockEnabled  Boolean  @default(false) @map("stock_enabled")
+  currentStock  Decimal? @map("current_stock") @db.Decimal(12, 3)
+  minStock      Decimal? @map("min_stock") @db.Decimal(12, 3)
+  purchasePrice Decimal? @map("purchase_price") @db.Decimal(12, 2)
+  weightKg      Decimal? @map("weight_kg") @db.Decimal(8, 3)
+
+  // Solo SERVICE (nullable)
+  durationMin    Int?    @map("duration_min")
+  isRecurring    Boolean @default(false) @map("is_recurring")
+  recurringCycle String? @map("recurring_cycle") // monthly | yearly | etc
+
+  // Custom por vertical
+  sectorMetadata Json?    @map("sector_metadata")
+  imageUrls      String[] @default([]) @map("image_urls")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceLines InvoiceLine[]
+  quoteLines   QuoteLine[]
+  expenseLines ExpenseLine[]
+
+  @@unique([tenantId, sku])
+  @@map("items")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              INVOICE SERIES
+// ════════════════════════════════════════════════════════════════════════════
+
+model InvoiceSeries {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  code            String // "A", "R", "S"
+  name            String // "Facturas estándar"
+  prefix          String? // ej "FAC-"
+  suffix          String? // ej "/2026"
+  numberFormat    String  @default("0000") @map("number_format") // padding
+  nextNumber      Int     @default(1) @map("next_number")
+  isDefault       Boolean @default(false) @map("is_default")
+  isActive        Boolean @default(true) @map("is_active")
+  resetYearly     Boolean @default(true) @map("reset_yearly")
+  yearOfNumbering Int?    @map("year_of_numbering")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@unique([tenantId, code])
+  @@map("invoice_series")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              INVOICES
+// ════════════════════════════════════════════════════════════════════════════
+
+model Invoice {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  clientId String @map("client_id") @db.Uuid
+  seriesId String @map("series_id") @db.Uuid
+
+  number     Int // numérico del contador
+  fullNumber String @map("full_number") // "A-2026-0001" formateado
+
+  type   InvoiceType   @default(F1)
+  status InvoiceStatus @default(draft)
+
+  issuedAt DateTime  @map("issued_at")
+  dueAt    DateTime? @map("due_at")
+
+  // Importes (calculados, materializados para queries rápidas)
+  subtotal      Decimal @default(0) @db.Decimal(12, 2) // suma sin IVA
+  vatAmount     Decimal @default(0) @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount   Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
+  paidAmount    Decimal @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  pendingAmount Decimal @default(0) @map("pending_amount") @db.Decimal(12, 2)
+
+  currency String @default("EUR")
+
+  // Rectificación
+  rectifiedId         String? @map("rectified_id") @db.Uuid
+  rectificationReason String? @map("rectification_reason")
+
+  // Comercial
+  notes         String?
+  internalNotes String?        @map("internal_notes") // visible solo equipo
+  paymentTerms  Int?           @map("payment_terms") // días
+  paymentMethod PaymentMethod? @map("payment_method")
+
+  // Origen
+  fromQuoteId String? @map("from_quote_id") @db.Uuid
+
   sectorMetadata Json?    @map("sector_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id])
-  invoiceLines InvoiceLine[]
-
-  @@map("products")
-}
-
-// ─── Invoice ──────────────────────────────────────────────────────────────────
-
-model Invoice {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String    @map("tenant_id") @db.Uuid
-  clientId       String    @map("client_id") @db.Uuid
-  series         String
-  number         Int
-  issuedAt       DateTime  @map("issued_at")
-  dueAt          DateTime? @map("due_at")
-  status         String    @default("draft")    // draft | sent | paid | overdue | cancelled | rectified
-  type           String    @default("F1")       // F1 | R1 | R2 | R3 | R4 | R5
-  rectifiedId    String?   @map("rectified_id") @db.Uuid
-  notes          String?
-  sectorMetadata Json?     @map("sector_metadata")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-
-  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client         Client          @relation(fields: [clientId], references: [id])
+  series         InvoiceSeries   @relation(fields: [seriesId], references: [id])
   lines          InvoiceLine[]
   records        InvoiceRecord[]
+  payments       Payment[]
   rectifiedBy    Invoice?        @relation("Rectification", fields: [rectifiedId], references: [id])
   rectifications Invoice[]       @relation("Rectification")
+  fromQuote      Quote?          @relation(fields: [fromQuoteId], references: [id])
 
-  @@unique([tenantId, series, number])
+  @@unique([tenantId, seriesId, number])
   @@map("invoices")
 }
 
-// ─── InvoiceLine ──────────────────────────────────────────────────────────────
-
 model InvoiceLine {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  invoiceId   String  @map("invoice_id") @db.Uuid
-  productId   String? @map("product_id") @db.Uuid
-  description String
-  quantity    Decimal @db.Decimal(10, 3)
-  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
-  vatRate     Decimal @map("vat_rate") @db.Decimal(5, 2)
-  sortOrder   Int     @default(0) @map("sort_order")
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId String  @map("invoice_id") @db.Uuid
+  itemId    String? @map("item_id") @db.Uuid // nullable: línea libre permitida
 
-  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
+  description     String
+  quantity        Decimal @db.Decimal(10, 3)
+  unitPrice       Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountPercent Decimal @default(0) @map("discount_percent") @db.Decimal(5, 2)
+
+  vatRate        Decimal @map("vat_rate") @db.Decimal(5, 2)
+  claveOperacion String  @default("01") @map("clave_operacion") // requisito Verifactu
+
+  // Materializados (calculados al guardar)
+  subtotal    Decimal @db.Decimal(12, 2) // (qty * price) - discount
+  vatAmount   Decimal @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(12, 2)
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item    Item?   @relation(fields: [itemId], references: [id])
 
   @@map("invoice_lines")
 }
 
-// ─── InvoiceRecord ────────────────────────────────────────────────────────────
-// Verifactu submission log — immutable after creation
-
 model InvoiceRecord {
+  // Verifactu submission log — immutable after creation
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId     String    @map("tenant_id") @db.Uuid
   invoiceId    String    @map("invoice_id") @db.Uuid
-  type         String    @default("Alta") // Alta | Anulacion
+  type         String    @default("Alta") // Alta | Anulacion | Rectificacion
   hash         String
   previousHash String?   @map("previous_hash")
   canonicalXml String    @map("canonical_xml") @db.Text
+  qrUrl        String?   @map("qr_url")
   sentAt       DateTime? @map("sent_at")
   aeatResponse Json?     @map("aeat_response")
   status       String    @default("pending") // pending | accepted | rejected | error
@@ -166,40 +565,208 @@ model InvoiceRecord {
   @@map("invoice_records")
 }
 
-// ─── RecurringContract ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+//                              QUOTES (PRESUPUESTOS)
+// ════════════════════════════════════════════════════════════════════════════
 
-model RecurringContract {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  clientId       String   @map("client_id") @db.Uuid
-  name           String
-  frequency      String   @default("monthly") // weekly | biweekly | monthly | quarterly | yearly
-  nextBillingAt  DateTime @map("next_billing_at")
-  amount         Decimal  @db.Decimal(12, 2)
-  active         Boolean  @default(true)
+model Quote {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  clientId String @map("client_id") @db.Uuid
+
+  number String // libre, no fiscal: "PRE-2026-0001"
+  status QuoteStatus @default(draft)
+
+  issuedAt   DateTime @map("issued_at")
+  validUntil DateTime @map("valid_until")
+
+  subtotal    Decimal @default(0) @db.Decimal(12, 2)
+  vatAmount   Decimal @default(0) @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
+  currency    String  @default("EUR")
+
+  notes           String?
+  termsConditions String?   @map("terms_conditions")
+  acceptedAt      DateTime? @map("accepted_at")
+  rejectedAt      DateTime? @map("rejected_at")
+  convertedAt     DateTime? @map("converted_at")
+
   sectorMetadata Json?    @map("sector_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client   Client      @relation(fields: [clientId], references: [id])
+  lines    QuoteLine[]
+  invoices Invoice[] // si convertida
+
+  @@unique([tenantId, number])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId String  @map("quote_id") @db.Uuid
+  itemId  String? @map("item_id") @db.Uuid
+
+  description     String
+  quantity        Decimal @db.Decimal(10, 3)
+  unitPrice       Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountPercent Decimal @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  vatRate         Decimal @map("vat_rate") @db.Decimal(5, 2)
+
+  subtotal    Decimal @db.Decimal(12, 2)
+  vatAmount   Decimal @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(12, 2)
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  item  Item? @relation(fields: [itemId], references: [id])
+
+  @@map("quote_lines")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              EXPENSES (FACTURAS RECIBIDAS)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Expense {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  supplierId String @map("supplier_id") @db.Uuid
+
+  externalNumber String        @map("external_number") // número que viene en la factura del proveedor
+  status         ExpenseStatus @default(pending)
+  category       String? // alquiler, suministros, profesionales, etc.
+
+  issuedAt DateTime  @map("issued_at")
+  dueAt    DateTime? @map("due_at")
+
+  subtotal      Decimal @default(0) @db.Decimal(12, 2)
+  vatAmount     Decimal @default(0) @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount   Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
+  paidAmount    Decimal @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  pendingAmount Decimal @default(0) @map("pending_amount") @db.Decimal(12, 2)
+  currency      String  @default("EUR")
+
+  notes         String?
+  attachmentUrl String? @map("attachment_url") // PDF de la factura del proveedor
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier      @relation(fields: [supplierId], references: [id])
+  lines    ExpenseLine[]
+  payments Payment[]
+
+  @@unique([tenantId, supplierId, externalNumber])
+  @@map("expenses")
+}
+
+model ExpenseLine {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expenseId String  @map("expense_id") @db.Uuid
+  itemId    String? @map("item_id") @db.Uuid
+
+  description String
+  quantity    Decimal @db.Decimal(10, 3)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
+  vatRate     Decimal @map("vat_rate") @db.Decimal(5, 2)
+
+  subtotal    Decimal @db.Decimal(12, 2)
+  vatAmount   Decimal @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(12, 2)
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  item    Item?   @relation(fields: [itemId], references: [id])
+
+  @@map("expense_lines")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              PAYMENTS (COBROS Y PAGOS)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Payment {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  direction PaymentDirection // inbound | outbound
+  amount    Decimal          @db.Decimal(12, 2)
+  currency  String           @default("EUR")
+  method    PaymentMethod    @default(bank_transfer)
+  paidAt    DateTime         @map("paid_at")
+
+  // Polimórfico: una de las dos
+  invoiceId String? @map("invoice_id") @db.Uuid // si es cobro
+  expenseId String? @map("expense_id") @db.Uuid // si es pago
+
+  reference String?
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  expense Expense? @relation(fields: [expenseId], references: [id])
+
+  @@map("payments")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                          RECURRING CONTRACTS
+// ════════════════════════════════════════════════════════════════════════════
+
+model RecurringContract {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  clientId String @map("client_id") @db.Uuid
+
+  name          String
+  frequency     String   @default("monthly") // weekly | biweekly | monthly | quarterly | yearly
+  nextBillingAt DateTime @map("next_billing_at")
+  amount        Decimal  @db.Decimal(12, 2)
+  vatRate       Decimal  @default(21) @map("vat_rate") @db.Decimal(5, 2)
+  active        Boolean  @default(true)
+
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+
+  sectorMetadata Json?    @map("sector_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client Client @relation(fields: [clientId], references: [id])
 
   @@map("recurring_contracts")
 }
 
-// ─── Invitation ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+//                              AUDIT LOG
+// ════════════════════════════════════════════════════════════════════════════
 
-model Invitation {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  email     String
-  role      UserRole @default(MEMBER)
-  token     String   @unique @default(dbgenerated("gen_random_uuid()::text"))
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+model AuditLog {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String      @map("tenant_id") @db.Uuid
+  userId     String?     @map("user_id") @db.Uuid
+  action     AuditAction
+  entityType String      @map("entity_type") // "Invoice", "User", etc.
+  entityId   String?     @map("entity_id")
+  before     Json?
+  after      Json?
+  ipAddress  String?     @map("ip_address")
+  userAgent  String?     @map("user_agent")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
 
-  @@unique([tenantId, email])
-  @@map("invitations")
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }
