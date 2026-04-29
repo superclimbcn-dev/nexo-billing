@@ -501,6 +501,13 @@ model Invoice {
   // Origen
   fromQuoteId String? @map("from_quote_id") @db.Uuid
 
+  // Import histórico (ADR-0010)
+  // Para facturas migradas desde sistemas anteriores (Holded, Quipu, Excel, etc.)
+  // No se envían a Verifactu pero sí aparecen en libro registro.
+  imported           Boolean   @default(false)
+  importedFromSystem String?   @map("imported_from_system")
+  importedAt         DateTime? @map("imported_at")
+
   sectorMetadata Json?    @map("sector_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
