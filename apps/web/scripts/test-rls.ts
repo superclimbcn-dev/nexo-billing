@@ -12,7 +12,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { PostgrestClient } from '@supabase/postgrest-js'
 import { sign } from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 
@@ -21,21 +21,29 @@ import { randomUUID } from 'crypto'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-try {
-  const envPath = resolve(process.cwd(), '.env.local')
-  const lines = readFileSync(envPath, 'utf-8').split('\n')
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const eq = trimmed.indexOf('=')
-    if (eq === -1) continue
-    const key = trimmed.slice(0, eq).trim()
-    const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
-    if (key && !process.env[key]) process.env[key] = val
+function loadEnvFile(path: string): boolean {
+  try {
+    const lines = readFileSync(path, 'utf-8').split('\n')
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eq = trimmed.indexOf('=')
+      if (eq === -1) continue
+      const key = trimmed.slice(0, eq).trim()
+      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
+      if (key && !process.env[key]) process.env[key] = val
+    }
+    return true
+  } catch {
+    return false
   }
-} catch {
-  // .env.local not found — rely on process.env already set
 }
+
+// Try: apps/web/.env.local → monorepo root .env.local
+// (pnpm --filter sets cwd to apps/web/)
+const cwd = process.cwd()
+loadEnvFile(resolve(cwd, '.env.local'))
+loadEnvFile(resolve(cwd, '..', '..', '.env.local'))
 
 // ─── ANSI colors ──────────────────────────────────────────────
 const c = {
@@ -67,8 +75,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_JWT_SECRET) {
 // Cliente admin (DIRECT_URL) — bypass RLS para setup/teardown
 const prisma = new PrismaClient()
 
-// ─── Helper: cliente Supabase autenticado con JWT firmado ─────
-function buildAuthClient(userId: string, tenantId: string): SupabaseClient {
+// ─── Helper: cliente PostgREST autenticado con JWT firmado ───
+function buildAuthClient(userId: string, tenantId: string): PostgrestClient {
   const now = Math.floor(Date.now() / 1000)
   const token = sign(
     {
@@ -85,9 +93,13 @@ function buildAuthClient(userId: string, tenantId: string): SupabaseClient {
     SUPABASE_JWT_SECRET!
   )
 
-  return createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth:   { persistSession: false, autoRefreshToken: false },
+  // Use PostgrestClient directly — bypasses the Supabase JS auth layer
+  // which would overwrite our Authorization header with the anon key.
+  return new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
+    headers: {
+      apikey:        SUPABASE_ANON_KEY!,
+      Authorization: `Bearer ${token}`,
+    },
   })
 }
 
@@ -124,14 +136,33 @@ async function main() {
     )
   }
 
+  // Pre-cleanup: remove stale tenants from previous failed runs
+  const stale = await prisma.tenant.findMany({
+    where: { name: { startsWith: 'RLS-TEST-' } },
+    select: { id: true },
+  })
+  if (stale.length > 0) {
+    const ids = stale.map((t) => t.id)
+    await prisma.invoice.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.invoiceSeries.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.item.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.client.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.user.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.brandingConfig.deleteMany({ where: { tenantId: { in: ids } } })
+    await prisma.tenant.deleteMany({ where: { id: { in: ids } } })
+    console.log(c.dim(`  Pre-cleanup: ${ids.length} tenant(s) huérfano(s) eliminado(s).`))
+  }
+
+  // NIFs: 'BA' + últimos 7 dígitos del timestamp = 9 chars únicos por run
   const ts = Date.now()
+  const short = String(ts).slice(-7)
 
   // ── Tenant A ─────────────────────────────────────────────────
   const tenantA = await prisma.tenant.create({
     data: {
       name:       `RLS-TEST-A-${ts}`,
       legalName:  'RLS Test A SL',
-      nif:        `B${ts}A`.slice(0, 9),
+      nif:        `BA${short}`,
       verticalId: verticalCleaning.id,
       branding:   { create: {} },
     },
@@ -149,7 +180,7 @@ async function main() {
     data: {
       tenantId: tenantA.id,
       name:     'Cliente A1',
-      nif:      `X${ts}A`.slice(0, 9),
+      nif:      `XA${short}`,
     },
   })
   const itemA = await prisma.item.create({
@@ -189,7 +220,7 @@ async function main() {
     data: {
       name:       `RLS-TEST-B-${ts}`,
       legalName:  'RLS Test B SL',
-      nif:        `B${ts}B`.slice(0, 9),
+      nif:        `BB${short}`,
       verticalId: verticalCleaning.id,
       branding:   { create: {} },
     },
@@ -207,7 +238,7 @@ async function main() {
     data: {
       tenantId: tenantB.id,
       name:     'Cliente B1',
-      nif:      `X${ts}B`.slice(0, 9),
+      nif:      `XB${short}`,
     },
   })
   const itemB = await prisma.item.create({
