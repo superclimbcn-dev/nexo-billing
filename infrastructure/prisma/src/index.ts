@@ -15,5 +15,5 @@ if (process.env.NODE_ENV !== 'production') {
   global.__prisma = prisma
 }
 
-export { Prisma, UserRole, AuditAction } from '@prisma/client'
-export type { PrismaClient, Client } from '@prisma/client'
+export { Prisma, UserRole, AuditAction, ItemType } from '@prisma/client'
+export type { PrismaClient, Client, Item } from '@prisma/client'
