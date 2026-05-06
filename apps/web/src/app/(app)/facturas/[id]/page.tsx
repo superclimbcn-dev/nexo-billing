@@ -42,7 +42,12 @@ export default async function InvoiceDetailPage({ params }: Props) {
               <h2 className="text-xs font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
                 Acciones
               </h2>
-              <InvoicePdfActions invoiceId={invoice.id} fullNumber={invoice.fullNumber} />
+              <InvoicePdfActions
+                invoiceId={invoice.id}
+                fullNumber={invoice.fullNumber}
+                totalAmount={Number(invoice.totalAmount)}
+                clientEmail={invoice.client.email}
+              />
             </section>
           </div>
         </div>
