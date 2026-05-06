@@ -160,6 +160,17 @@ model Tenant {
   vatRegime       VatRegime @default(general) @map("vat_regime")
   fiscalYearStart Int       @default(1) @map("fiscal_year_start") // mes (1-12)
   sectorMetadata  Json?     @map("sector_metadata") // metadata custom por vertical
+
+  // Contact & fiscal data (used in invoices / PDF)
+  fiscalAddress   String?   @map("fiscal_address")
+  fiscalCity      String?   @map("fiscal_city")
+  fiscalPostal    String?   @map("fiscal_postal")
+  fiscalProvince  String?   @map("fiscal_province")
+  iban            String?
+  email           String?
+  phone           String?
+  websiteUrl      String?   @map("website_url")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
