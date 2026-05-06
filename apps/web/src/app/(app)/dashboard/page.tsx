@@ -1,14 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
-import { prisma } from '@nexo/prisma'
-import { KpiCard, Panel } from '@nexo/core-ui'
-
-function formatEur(amount: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+import { getDashboardStats } from './_lib/dashboard-queries'
+import { StatCard, CurrencyStatCard } from './_components/stat-card'
+import { RecentInvoices } from './_components/recent-invoices'
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()
@@ -20,153 +14,59 @@ export default async function DashboardPage() {
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
+  const stats = await getDashboardStats(tenantId)
+
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+  const dateLabel = now.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
-  const [
-    clientCount,
-    invoiceCount,
-    invoicesThisMonth,
-    invoicesLastMonth,
-    pendingInvoices,
-    recentInvoices,
-  ] = await Promise.all([
-    prisma.client.count({ where: { tenantId } }),
-    prisma.invoice.count({ where: { tenantId } }),
-    prisma.invoice.findMany({
-      where: { tenantId, issuedAt: { gte: startOfMonth } },
-      include: { lines: true },
-    }),
-    prisma.invoice.findMany({
-      where: { tenantId, issuedAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
-      include: { lines: true },
-    }),
-    prisma.invoice.count({
-      where: { tenantId, status: { in: ['sent', 'overdue'] } },
-    }),
-    prisma.invoice.findMany({
-      where: { tenantId },
-      orderBy: { issuedAt: 'desc' },
-      take: 5,
-      include: { client: { select: { name: true } } },
-    }),
-  ])
-
-  function invoiceTotal(invoices: typeof invoicesThisMonth): number {
-    return invoices.reduce((sum, inv) => {
-      const lineTotal = inv.lines.reduce((ls, l) => {
-        const base = Number(l.quantity) * Number(l.unitPrice)
-        const vat = base * (Number(l.vatRate) / 100)
-        return ls + base + vat
-      }, 0)
-      return sum + lineTotal
-    }, 0)
-  }
-
-  const revenueThisMonth = invoiceTotal(invoicesThisMonth)
-  const revenueLastMonth = invoiceTotal(invoicesLastMonth)
-  const revenueDelta =
-    revenueLastMonth > 0
-      ? (((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100).toFixed(1)
-      : null
+  const prevAmount = stats.invoicedLastMonth.amount
+  const deltaText =
+    prevAmount > 0
+      ? (() => {
+          const pct = (
+            ((stats.invoicedThisMonth.amount - prevAmount) / prevAmount) *
+            100
+          ).toFixed(1)
+          const sign = Number(pct) >= 0 ? '↑' : '↓'
+          return `${stats.invoicedThisMonth.count} ${stats.invoicedThisMonth.count === 1 ? 'factura' : 'facturas'} · ${sign}${Math.abs(Number(pct))}% vs mes ant.`
+        })()
+      : `${stats.invoicedThisMonth.count} ${stats.invoicedThisMonth.count === 1 ? 'factura' : 'facturas'}`
 
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="[font-family:var(--font-serif)] text-3xl text-[var(--text)]">Dashboard</h1>
-        <p className="text-sm text-[var(--text-dim)] mt-1">
-          {now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+        <p className="text-sm text-[var(--text-dim)] mt-1">{dateLabel}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <KpiCard
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <CurrencyStatCard
           label="Facturado este mes"
-          value={formatEur(revenueThisMonth)}
-          unit="€"
-          featured
-          delta={
-            revenueDelta !== null
-              ? `${Number(revenueDelta) >= 0 ? '↑' : '↓'} ${Math.abs(Number(revenueDelta))}% vs mes anterior`
-              : 'Sin datos del mes anterior'
-          }
-          deltaVariant={
-            revenueDelta === null ? 'neutral' : Number(revenueDelta) >= 0 ? 'up' : 'down'
-          }
+          amount={stats.invoicedThisMonth.amount}
+          sublabel={deltaText}
+          variant="accent"
         />
-        <KpiCard
-          label="Facturas este mes"
-          value={String(invoicesThisMonth.length)}
-          delta={`${invoiceCount} en total`}
-          deltaVariant="neutral"
+        <CurrencyStatCard
+          label="Pendiente de cobro"
+          amount={stats.pendingCollection.amount}
+          count={stats.pendingCollection.count}
         />
-        <KpiCard
-          label="Pendientes de cobro"
-          value={String(pendingInvoices)}
-          delta={pendingInvoices > 0 ? 'Requieren seguimiento' : 'Todo al día'}
-          deltaVariant={pendingInvoices > 0 ? 'down' : 'up'}
+        <CurrencyStatCard
+          label="Vencidas"
+          amount={stats.overdue.amount}
+          count={stats.overdue.count}
+          variant={stats.overdue.count > 0 ? 'danger' : 'default'}
         />
-        <KpiCard
-          label="Clientes"
-          value={String(clientCount)}
-          delta="Activos en la plataforma"
-          deltaVariant="neutral"
-        />
+        <StatCard label="Clientes activos" value={stats.activeClients} />
+        <StatCard label="Productos en catálogo" value={stats.catalogItems} />
       </div>
 
-      <Panel title="Últimas facturas">
-        <div className="px-6">
-        {recentInvoices.length === 0 ? (
-          <p className="text-sm text-[var(--text-subtle)] py-6 text-center">
-            Aún no hay facturas. Crea la primera desde{' '}
-            <a href="/facturas/nueva" className="text-[var(--accent)] hover:underline">
-              Facturas → Nueva
-            </a>
-            .
-          </p>
-        ) : (
-          <div className="flex flex-col">
-            {recentInvoices.map((inv) => (
-              <div
-                key={inv.id}
-                className="flex items-center justify-between py-3 border-b border-[var(--border)] last:border-0"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm text-[var(--text)]">
-                    {inv.fullNumber ?? String(inv.number).padStart(4, '0')}
-                  </span>
-                  <span className="text-xs text-[var(--text-subtle)]">{inv.client.name}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-[var(--text-dim)]">
-                    {new Date(inv.issuedAt).toLocaleDateString('es-ES')}
-                  </span>
-                  <span
-                    className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                      inv.status === 'paid'
-                        ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                        : inv.status === 'overdue'
-                          ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
-                          : 'bg-[var(--border)] text-[var(--text-dim)]'
-                    }`}
-                  >
-                    {inv.status === 'paid'
-                      ? 'Pagada'
-                      : inv.status === 'overdue'
-                        ? 'Vencida'
-                        : inv.status === 'sent'
-                          ? 'Enviada'
-                          : 'Borrador'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        </div>
-      </Panel>
+      <RecentInvoices invoices={stats.recentInvoices} />
     </div>
   )
 }
