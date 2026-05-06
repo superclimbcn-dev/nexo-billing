@@ -5,6 +5,7 @@ import { InvoiceDetailHeader } from './_components/invoice-detail-header'
 import { InvoiceDetailClient } from './_components/invoice-detail-client'
 import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
+import { InvoicePdfActions } from './_components/invoice-pdf-actions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -35,8 +36,14 @@ export default async function InvoiceDetailPage({ params }: Props) {
           <InvoiceDetailLines lines={invoice.lines} />
         </div>
         <div className="lg:col-span-1">
-          <div className="lg:sticky lg:top-6">
+          <div className="lg:sticky lg:top-6 space-y-4">
             <InvoiceDetailTotals invoice={invoice} />
+            <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
+              <h2 className="text-xs font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
+                Acciones
+              </h2>
+              <InvoicePdfActions invoiceId={invoice.id} fullNumber={invoice.fullNumber} />
+            </section>
           </div>
         </div>
       </div>
