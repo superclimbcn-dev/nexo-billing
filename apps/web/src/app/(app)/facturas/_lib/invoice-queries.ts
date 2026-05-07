@@ -7,6 +7,7 @@ export interface ListInvoicesParams {
   search?: string
   status?: string
   page?: number
+  clientId?: string
 }
 
 export async function listInvoices({
@@ -14,6 +15,7 @@ export async function listInvoices({
   search,
   status,
   page = 1,
+  clientId,
 }: ListInvoicesParams) {
   const validStatus = status
     ? (Object.values(InvoiceStatus).includes(status as InvoiceStatus)
@@ -24,6 +26,7 @@ export async function listInvoices({
   const where: Prisma.InvoiceWhereInput = {
     tenantId,
     ...(validStatus ? { status: validStatus } : {}),
+    ...(clientId ? { clientId } : {}),
     ...(search?.trim()
       ? {
           OR: [

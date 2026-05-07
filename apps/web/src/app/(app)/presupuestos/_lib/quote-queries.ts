@@ -18,9 +18,10 @@ export interface ListQuotesParams {
   search?: string
   status?: string
   page?: number
+  clientId?: string
 }
 
-export async function listQuotes({ tenantId, search, status, page = 1 }: ListQuotesParams) {
+export async function listQuotes({ tenantId, search, status, page = 1, clientId }: ListQuotesParams) {
   const validStatus = status && (VALID_STATUSES as readonly string[]).includes(status)
     ? (status as QuoteStatusValue)
     : undefined
@@ -28,6 +29,7 @@ export async function listQuotes({ tenantId, search, status, page = 1 }: ListQuo
   const where: Prisma.QuoteWhereInput = {
     tenantId,
     ...(validStatus ? { status: validStatus } : {}),
+    ...(clientId ? { clientId } : {}),
     ...(search?.trim()
       ? {
           OR: [

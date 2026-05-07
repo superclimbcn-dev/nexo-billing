@@ -19,12 +19,13 @@ interface QuoteListProps {
   totalPages: number
   search: string
   status: string
+  clientId?: string
 }
 
-export function QuoteList({ items, page, totalPages, search, status }: QuoteListProps) {
+export function QuoteList({ items, page, totalPages, search, status, clientId }: QuoteListProps) {
   return (
     <div className="space-y-4">
-      <QuoteSearch initialSearch={search} initialStatus={status} />
+      <QuoteSearch initialSearch={search} initialStatus={status} clientId={clientId} />
 
       <div className="rounded-lg border border-[var(--border)] overflow-hidden">
         <table className="w-full">
@@ -107,7 +108,7 @@ export function QuoteList({ items, page, totalPages, search, status }: QuoteList
       </div>
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} search={search} status={status} />
+        <Pagination page={page} totalPages={totalPages} search={search} status={status} clientId={clientId} />
       )}
     </div>
   )
@@ -118,16 +119,19 @@ function Pagination({
   totalPages,
   search,
   status,
+  clientId,
 }: {
   page: number
   totalPages: number
   search: string
   status: string
+  clientId?: string
 }) {
   function buildHref(p: number) {
     const params = new URLSearchParams()
     if (search) params.set('q', search)
     if (status) params.set('estado', status)
+    if (clientId) params.set('clientId', clientId)
     if (p > 1) params.set('page', p.toString())
     const query = params.toString()
     return `/presupuestos${query ? `?${query}` : ''}`

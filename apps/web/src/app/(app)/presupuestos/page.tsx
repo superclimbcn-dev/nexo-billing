@@ -5,7 +5,7 @@ import { listQuotes } from './_lib/quote-queries'
 import { QuoteList } from './_components/quote-list'
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; page?: string; estado?: string }>
+  searchParams: Promise<{ q?: string; page?: string; estado?: string; clientId?: string }>
 }
 
 export default async function PresupuestosPage({ searchParams }: PageProps) {
@@ -18,7 +18,7 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
-  const { q, page, estado } = await searchParams
+  const { q, page, estado, clientId } = await searchParams
   const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1
 
   const result = await listQuotes({
@@ -26,6 +26,7 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
     search: q,
     status: estado,
     page: pageNum,
+    clientId,
   })
 
   return (
@@ -70,6 +71,7 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
           totalPages={result.totalPages}
           search={q ?? ''}
           status={estado ?? ''}
+          clientId={clientId}
         />
       )}
     </div>

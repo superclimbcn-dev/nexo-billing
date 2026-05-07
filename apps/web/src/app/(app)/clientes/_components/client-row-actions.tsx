@@ -36,6 +36,12 @@ export function ClientRowActions({ clientId, clientName }: ClientRowActionsProps
         onClick={() => router.push(`/clientes/${clientId}`)}
         className="text-sm text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
       >
+        Ver
+      </button>
+      <button
+        onClick={() => router.push(`/clientes/${clientId}/editar`)}
+        className="text-sm text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
+      >
         Editar
       </button>
       <button

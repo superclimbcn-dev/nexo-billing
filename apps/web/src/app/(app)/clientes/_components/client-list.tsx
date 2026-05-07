@@ -1,17 +1,23 @@
 import Link from 'next/link'
-import { formatNif, formatPhone } from '@nexo/core-utils'
+import { formatCurrency, formatNif, formatPhone } from '@nexo/core-utils'
 import type { Client } from '@nexo/prisma'
 import { ClientSearch } from './client-search'
 import { ClientRowActions } from './client-row-actions'
 
+type ClientListItem = Client & {
+  invoiceCount: number
+  totalInvoiced: number
+}
+
 interface ClientListProps {
-  items: Client[]
+  items: ClientListItem[]
   page: number
   totalPages: number
   search: string
+  isPaginated: boolean
 }
 
-export function ClientList({ items, page, totalPages, search }: ClientListProps) {
+export function ClientList({ items, page, totalPages, search, isPaginated }: ClientListProps) {
   return (
     <div className="space-y-4">
       <ClientSearch initialValue={search} />
@@ -32,8 +38,11 @@ export function ClientList({ items, page, totalPages, search }: ClientListProps)
               <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
                 Teléfono
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
-                Ciudad
+              <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
+                Nº Facturas
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
+                Total facturado
               </th>
               <th className="px-4 py-3" />
             </tr>
@@ -41,7 +50,7 @@ export function ClientList({ items, page, totalPages, search }: ClientListProps)
           <tbody className="divide-y divide-[var(--border)]">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-dim)]">
+                <td colSpan={7} className="px-4 py-8 text-center text-[var(--text-dim)]">
                   No se encontraron clientes con esa búsqueda.
                 </td>
               </tr>
@@ -51,10 +60,13 @@ export function ClientList({ items, page, totalPages, search }: ClientListProps)
                   <td className="px-4 py-3">
                     <Link
                       href={`/clientes/${c.id}`}
-                      className="text-[var(--text)] hover:text-[var(--accent)] transition-colors"
+                      className="text-[var(--text)] hover:text-[var(--accent)] transition-colors font-medium"
                     >
-                      {c.name}
+                      {c.legalName ?? c.name}
                     </Link>
+                    {c.legalName && c.legalName !== c.name && (
+                      <p className="text-xs text-[var(--text-subtle)]">{c.name}</p>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-[var(--text-dim)] font-mono text-sm">
                     {formatNif(c.nif)}
@@ -65,8 +77,11 @@ export function ClientList({ items, page, totalPages, search }: ClientListProps)
                   <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
                     {c.phone ? formatPhone(c.phone) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
-                    {c.city ?? '—'}
+                  <td className="px-4 py-3 text-right text-sm text-[var(--text-dim)]">
+                    {c.invoiceCount > 0 ? c.invoiceCount : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-mono text-[var(--text)]">
+                    {c.totalInvoiced > 0 ? formatCurrency(c.totalInvoiced) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <ClientRowActions clientId={c.id} clientName={c.name} />
@@ -78,7 +93,7 @@ export function ClientList({ items, page, totalPages, search }: ClientListProps)
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {isPaginated && totalPages > 1 && (
         <Pagination page={page} totalPages={totalPages} search={search} />
       )}
     </div>

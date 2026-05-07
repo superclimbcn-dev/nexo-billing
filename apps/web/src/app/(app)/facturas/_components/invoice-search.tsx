@@ -7,9 +7,10 @@ import { INVOICE_STATUS_LABELS } from '../_lib/invoice-status'
 interface InvoiceSearchProps {
   initialSearch: string
   initialStatus: string
+  clientId?: string
 }
 
-export function InvoiceSearch({ initialSearch, initialStatus }: InvoiceSearchProps) {
+export function InvoiceSearch({ initialSearch, initialStatus, clientId }: InvoiceSearchProps) {
   const router = useRouter()
   const [search, setSearch] = useState(initialSearch)
   const [status, setStatus] = useState(initialStatus)
@@ -21,6 +22,7 @@ export function InvoiceSearch({ initialSearch, initialStatus }: InvoiceSearchPro
       const params = new URLSearchParams()
       if (search.trim()) params.set('q', search.trim())
       if (status) params.set('estado', status)
+      if (clientId) params.set('clientId', clientId)
       const query = params.toString()
       router.push(`/facturas${query ? `?${query}` : ''}`)
     })

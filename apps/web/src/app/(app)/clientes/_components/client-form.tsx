@@ -37,7 +37,7 @@ export function ClientForm({ mode, clientId, initialData }: ClientFormProps) {
       } else {
         const res = await updateClient(clientId!, raw)
         if (res.ok) {
-          router.push('/clientes')
+          router.push(`/clientes/${clientId}`)
           router.refresh()
         } else {
           setGeneralError(res.error)
@@ -144,7 +144,7 @@ export function ClientForm({ mode, clientId, initialData }: ClientFormProps) {
         </button>
         <button
           type="button"
-          onClick={() => router.push('/clientes')}
+          onClick={() => router.push(clientId ? `/clientes/${clientId}` : '/clientes')}
           className="px-4 py-2 border border-[var(--border)] rounded-md text-[var(--text-dim)] hover:bg-[var(--surface-hover)] transition-colors"
         >
           Cancelar
