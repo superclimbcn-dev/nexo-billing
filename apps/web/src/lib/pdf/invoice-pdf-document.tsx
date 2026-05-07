@@ -72,9 +72,9 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
 
         {/* PARTIES: Issuer + Client */}
         <View style={styles.partiesRow}>
-          <View style={styles.party}>
+          <View style={[styles.party, styles.partyLeft]}>
             <Text style={styles.partyLabel}>Emitido por</Text>
-            <Text style={styles.partyName}>{tenant.legalName ?? tenant.name}</Text>
+            <Text style={styles.partyName}>{tenant.legalName || tenant.name}</Text>
             <Text style={styles.partyDetail}>CIF: {tenant.nif}</Text>
             {tenant.fiscalAddress && (
               <Text style={styles.partyDetail}>{tenant.fiscalAddress}</Text>
@@ -96,7 +96,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
 
           <View style={styles.party}>
             <Text style={styles.partyLabel}>Facturar a</Text>
-            <Text style={styles.partyName}>{client.legalName ?? client.name}</Text>
+            <Text style={styles.partyName}>{client.legalName || client.name}</Text>
             <Text style={styles.partyDetail}>CIF: {client.nif}</Text>
             {client.address && (
               <Text style={styles.partyDetail}>{client.address}</Text>

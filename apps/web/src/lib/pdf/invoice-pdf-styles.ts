@@ -76,8 +76,12 @@ export const styles = StyleSheet.create({
 
   partiesRow: {
     flexDirection: 'row',
-    gap: 30,
+    alignItems: 'flex-start',
     marginBottom: 30,
+  },
+  partyLeft: {
+    flex: 1,
+    marginRight: 30,
   },
   party: {
     flex: 1,
