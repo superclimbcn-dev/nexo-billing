@@ -77,6 +77,12 @@ export function AppSidebar({
           active={pathname.startsWith('/facturas')}
         />
         <NavItem
+          href="/presupuestos"
+          icon="◫"
+          label="Presupuestos"
+          active={pathname.startsWith('/presupuestos')}
+        />
+        <NavItem
           href="/clientes"
           icon="◎"
           label="Clientes"
