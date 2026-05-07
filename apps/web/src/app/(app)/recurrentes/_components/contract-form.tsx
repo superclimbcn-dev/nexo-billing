@@ -53,6 +53,15 @@ function toNum(v: number | string): number {
   return parseFloat(String(v).replace(',', '.')) || 0
 }
 
+function normalizeDateInput(value: string): string {
+  const trimmed = value.trim()
+  const spanishDate = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed)
+  if (!spanishDate) return trimmed
+
+  const [, day, month, year] = spanishDate
+  return `${year}-${month}-${day}`
+}
+
 export function ContractForm({ mode, contractId, seriesOptions, initialData }: ContractFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -111,11 +120,16 @@ export function ContractForm({ mode, contractId, seriesOptions, initialData }: C
       clientId,
       name,
       frequency,
-      startDate,
-      endDate: endDate || null,
+      startDate: normalizeDateInput(startDate),
+      endDate: endDate ? normalizeDateInput(endDate) : null,
       seriesCode,
       notes,
-      lines: lines.map(({ tempId: _t, unit: _u, ...rest }) => rest),
+      lines: lines.map(({ description, quantity, unitPrice, vatRate }) => ({
+        description,
+        quantity,
+        unitPrice,
+        taxRate: vatRate,
+      })),
     }
 
     startTransition(async () => {
@@ -156,6 +170,9 @@ export function ContractForm({ mode, contractId, seriesOptions, initialData }: C
               setClientLabel(lbl)
             }}
           />
+          {errors.clientId && (
+            <p className="text-sm text-[var(--danger)]">{errors.clientId[0]}</p>
+          )}
           <div>
             <label className="block text-sm font-medium text-[var(--text)] mb-1">
               Nombre del contrato *
@@ -244,6 +261,7 @@ export function ContractForm({ mode, contractId, seriesOptions, initialData }: C
           onUpdate={updateLine}
           onRemove={removeLine}
         />
+        {errors.lines && <p className="text-sm text-[var(--danger)]">{errors.lines[0]}</p>}
 
         <div>
           <label className="block text-sm font-medium text-[var(--text)] mb-1">
