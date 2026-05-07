@@ -4,6 +4,8 @@ import { getDashboardStats } from './_lib/dashboard-queries'
 import { StatCard, CurrencyStatCard } from './_components/stat-card'
 import { RecentInvoices } from './_components/recent-invoices'
 import { syncOverdueInvoices } from '../facturas/[id]/_lib/invoice-status-actions'
+import { emitDueInvoices } from '@/lib/recurring/emit-due-invoices'
+import { countActiveContracts } from '../recurrentes/_lib/recurring-queries'
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()
@@ -15,8 +17,9 @@ export default async function DashboardPage() {
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
-  await syncOverdueInvoices(tenantId)
+  await Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)])
   const stats = await getDashboardStats(tenantId)
+  const activeContracts = await countActiveContracts(tenantId)
 
   const now = new Date()
   const dateLabel = now.toLocaleDateString('es-ES', {
@@ -65,6 +68,7 @@ export default async function DashboardPage() {
           variant={stats.overdue.count > 0 ? 'danger' : 'default'}
         />
         <StatCard label="Clientes activos" value={stats.activeClients} />
+        <StatCard label="Contratos activos" value={activeContracts} />
         <StatCard label="Productos en catálogo" value={stats.catalogItems} />
       </div>
 

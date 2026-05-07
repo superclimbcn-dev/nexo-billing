@@ -132,6 +132,23 @@ enum ClientType {
   public_entity // Administración pública
 }
 
+enum RecurringStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  FINISHED
+}
+
+enum RecurringFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  BIMONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
 enum VatRegime {
   general // Régimen general
   simplified // Simplificado
@@ -510,7 +527,8 @@ model Invoice {
   paymentMethod PaymentMethod? @map("payment_method")
 
   // Origen
-  fromQuoteId String? @map("from_quote_id") @db.Uuid
+  fromQuoteId         String? @map("from_quote_id") @db.Uuid
+  recurringContractId String? @map("recurring_contract_id") @db.Uuid
 
   // Import histórico (ADR-0010)
   // Para facturas migradas desde sistemas anteriores (Holded, Quipu, Excel, etc.)
@@ -523,15 +541,16 @@ model Invoice {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client         Client          @relation(fields: [clientId], references: [id])
-  series         InvoiceSeries   @relation(fields: [seriesId], references: [id])
-  lines          InvoiceLine[]
-  records        InvoiceRecord[]
-  payments       Payment[]
-  rectifiedBy    Invoice?        @relation("Rectification", fields: [rectifiedId], references: [id])
-  rectifications Invoice[]       @relation("Rectification")
-  fromQuote      Quote?          @relation(fields: [fromQuoteId], references: [id])
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client              Client             @relation(fields: [clientId], references: [id])
+  series              InvoiceSeries      @relation(fields: [seriesId], references: [id])
+  lines               InvoiceLine[]
+  records             InvoiceRecord[]
+  payments            Payment[]
+  rectifiedBy         Invoice?           @relation("Rectification", fields: [rectifiedId], references: [id])
+  rectifications      Invoice[]          @relation("Rectification")
+  fromQuote           Quote?             @relation(fields: [fromQuoteId], references: [id])
+  recurringContract   RecurringContract? @relation("RecurringInvoices", fields: [recurringContractId], references: [id])
 
   @@unique([tenantId, seriesId, number])
   @@map("invoices")
@@ -745,23 +764,44 @@ model RecurringContract {
   clientId String @map("client_id") @db.Uuid
 
   name          String
-  frequency     String   @default("monthly") // weekly | biweekly | monthly | quarterly | yearly
-  nextBillingAt DateTime @map("next_billing_at")
-  amount        Decimal  @db.Decimal(12, 2)
-  vatRate       Decimal  @default(21) @map("vat_rate") @db.Decimal(5, 2)
-  active        Boolean  @default(true)
+  status        RecurringStatus    @default(ACTIVE)
+  frequency     RecurringFrequency
+  startDate     DateTime           @map("start_date")
+  endDate       DateTime?          @map("end_date")
+  nextBillingAt DateTime           @map("next_billing_at")
+  seriesCode    String             @map("series_code")
+  notes         String?
 
-  startDate DateTime? @map("start_date")
-  endDate   DateTime? @map("end_date")
+  subtotal  Decimal @db.Decimal(10, 2)
+  taxAmount Decimal @map("tax_amount") @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
 
   sectorMetadata Json?    @map("sector_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client Client @relation(fields: [clientId], references: [id])
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client   Client          @relation(fields: [clientId], references: [id])
+  lines    RecurringLine[]
+  invoices Invoice[]       @relation("RecurringInvoices")
 
   @@map("recurring_contracts")
+}
+
+model RecurringLine {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractId String @map("contract_id") @db.Uuid
+
+  description String
+  quantity    Decimal @db.Decimal(10, 3)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  taxRate     Decimal @map("tax_rate") @db.Decimal(5, 2)
+  total       Decimal @db.Decimal(10, 2)
+  position    Int
+
+  contract RecurringContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_lines")
 }
 
 // ════════════════════════════════════════════════════════════════════════════
