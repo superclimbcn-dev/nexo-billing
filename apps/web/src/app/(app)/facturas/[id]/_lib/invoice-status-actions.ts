@@ -1,9 +1,20 @@
 'use server'
 
-import { prisma } from '@nexo/prisma'
+import { prisma, InvoiceStatus } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+
+export async function syncOverdueInvoices(tenantId: string): Promise<void> {
+  await prisma.invoice.updateMany({
+    where: {
+      tenantId,
+      status: InvoiceStatus.sent,
+      dueAt: { lt: new Date() },
+    },
+    data: { status: InvoiceStatus.overdue },
+  })
+}
 
 type ActionResult = { ok: true } | { ok: false; error: string }
 

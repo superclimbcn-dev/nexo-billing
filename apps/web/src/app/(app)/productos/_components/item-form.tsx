@@ -40,7 +40,7 @@ export function ItemForm({ mode, itemId, initialData }: ItemFormProps) {
       if (mode === 'create') {
         const res = await createItem(raw)
         if (res.ok) {
-          router.push(`/productos/${res.data.id}`)
+          router.push('/productos')
         } else {
           setGeneralError(res.error)
           if (res.fieldErrors) setErrors(res.fieldErrors)

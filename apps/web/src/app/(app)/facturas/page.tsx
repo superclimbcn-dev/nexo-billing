@@ -4,6 +4,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { listInvoices } from './_lib/invoice-queries'
 import { InvoiceList } from './_components/invoice-list'
 import { EmptyState } from './_components/empty-state'
+import { syncOverdueInvoices } from './[id]/_lib/invoice-status-actions'
 
 interface PageProps {
   searchParams: Promise<{ q?: string; page?: string; estado?: string; clientId?: string }>
@@ -21,6 +22,8 @@ export default async function FacturasPage({ searchParams }: PageProps) {
 
   const { q, page, estado, clientId } = await searchParams
   const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1
+
+  await syncOverdueInvoices(tenantId)
 
   const result = await listInvoices({
     tenantId,

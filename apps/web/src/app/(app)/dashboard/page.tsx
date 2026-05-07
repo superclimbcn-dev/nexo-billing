@@ -3,6 +3,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { getDashboardStats } from './_lib/dashboard-queries'
 import { StatCard, CurrencyStatCard } from './_components/stat-card'
 import { RecentInvoices } from './_components/recent-invoices'
+import { syncOverdueInvoices } from '../facturas/[id]/_lib/invoice-status-actions'
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()
@@ -14,6 +15,7 @@ export default async function DashboardPage() {
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
+  await syncOverdueInvoices(tenantId)
   const stats = await getDashboardStats(tenantId)
 
   const now = new Date()
