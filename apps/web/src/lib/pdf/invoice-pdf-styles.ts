@@ -1,145 +1,191 @@
 import { StyleSheet } from '@react-pdf/renderer'
 
-const ACCENT = '#a3e635'
-const ACCENT_DIM = '#84cc16'
+const ACCENT = '#d4ff3f'
+const ACCENT_DIM = '#a3cc2c'
 const TEXT = '#0a0a0a'
 const TEXT_DIM = '#525252'
 const TEXT_SUBTLE = '#a3a3a3'
 const BORDER = '#e5e5e5'
 const BG_SUBTLE = '#fafafa'
+const BG_DARK = '#1a1a1a'
+const WHITE = '#ffffff'
 
 export const styles = StyleSheet.create({
   page: {
-    paddingTop: 50,
-    paddingBottom: 70,
-    paddingHorizontal: 50,
+    paddingTop: 40,
+    paddingBottom: 80,
+    paddingHorizontal: 45,
     fontFamily: 'Inter',
     fontSize: 9,
     color: TEXT,
     lineHeight: 1.5,
+    backgroundColor: WHITE,
   },
 
-  accentBar: {
+  // Top bar
+  topBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 6,
+    height: 4,
     backgroundColor: ACCENT,
   },
 
-  headerRow: {
+  // Header section
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 30,
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoBox: {
+    width: 48,
+    height: 48,
+    backgroundColor: ACCENT,
+    borderRadius: 8,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  logo: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain',
-  },
-  logoFallbackText: {
-    fontSize: 14,
+  logoBoxText: {
+    fontSize: 20,
     fontWeight: 700,
     color: TEXT,
   },
-  invoiceTitle: {
-    textAlign: 'right',
+  logo: {
+    width: 48,
+    height: 48,
+    objectFit: 'contain',
   },
-  invoiceTitleLabel: {
-    fontSize: 9,
+  headerBrand: {
+    justifyContent: 'center',
+  },
+  headerBrandName: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: TEXT,
+    letterSpacing: 0.3,
+  },
+  headerBrandSub: {
+    fontSize: 7,
+    color: TEXT_SUBTLE,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  docTypeLabel: {
+    fontSize: 8,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 4,
   },
-  invoiceNumber: {
+  docNumber: {
     fontFamily: 'Lora',
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 700,
     color: TEXT,
-  },
-  statusBadge: {
-    marginTop: 6,
-    fontSize: 8,
-    color: ACCENT_DIM,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: 500,
+    letterSpacing: -0.5,
   },
 
-  partiesRow: {
+  // Meta grid
+  metaGrid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 30,
+    marginBottom: 24,
+    gap: 16,
   },
-  partyLeft: {
+  metaItem: {
     flex: 1,
-    marginRight: 30,
+    padding: 10,
+    backgroundColor: BG_SUBTLE,
+    borderRadius: 6,
   },
-  party: {
+  metaLabel: {
+    fontSize: 7,
+    color: TEXT_SUBTLE,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    fontWeight: 500,
+  },
+  metaValue: {
+    fontSize: 10,
+    color: TEXT,
+    fontWeight: 600,
+  },
+  metaValueAccent: {
+    fontSize: 10,
+    color: ACCENT_DIM,
+    fontWeight: 700,
+  },
+
+  // Parties
+  partiesSection: {
+    flexDirection: 'row',
+    gap: 20,
+    marginBottom: 24,
+  },
+  partyBox: {
     flex: 1,
+    padding: 14,
+    backgroundColor: BG_SUBTLE,
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT,
   },
   partyLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 6,
+    marginBottom: 8,
     fontWeight: 500,
   },
   partyName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     color: TEXT,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   partyDetail: {
     fontSize: 9,
     color: TEXT_DIM,
-    marginBottom: 1,
+    marginBottom: 2,
+  },
+  partyDetailMono: {
+    fontSize: 9,
+    color: TEXT_DIM,
+    fontFamily: 'Inter',
+    letterSpacing: 0.3,
   },
 
-  datesRow: {
-    flexDirection: 'row',
-    gap: 30,
-    marginBottom: 30,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+  // Table
+  tableSection: {
+    marginBottom: 20,
   },
-  dateBlock: {
-    flex: 1,
-  },
-  dateLabel: {
+  tableTitle: {
     fontSize: 8,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  dateValue: {
-    fontSize: 10,
-    color: TEXT,
+    marginBottom: 10,
     fontWeight: 500,
-  },
-
-  table: {
-    marginBottom: 20,
   },
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: 1.5,
     borderBottomColor: TEXT,
   },
   tableHeaderCell: {
@@ -164,14 +210,23 @@ export const styles = StyleSheet.create({
     fontSize: 9,
     color: TEXT,
   },
+  cellTextBold: {
+    fontSize: 9,
+    color: TEXT,
+    fontWeight: 600,
+  },
 
-  summarySection: {
+  // Summary
+  summaryWrapper: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginBottom: 20,
   },
   summaryBox: {
-    width: '50%',
+    width: '55%',
+    padding: 16,
+    backgroundColor: BG_SUBTLE,
+    borderRadius: 8,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -185,49 +240,49 @@ export const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 9,
     color: TEXT,
+    fontWeight: 500,
   },
   summaryDivider: {
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    marginVertical: 4,
+    marginVertical: 6,
   },
-  totalBox: {
-    backgroundColor: BG_SUBTLE,
-    borderLeftWidth: 3,
-    borderLeftColor: ACCENT,
-    padding: 12,
-    marginTop: 8,
+  totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 10,
+    marginTop: 6,
+    borderTopWidth: 2,
+    borderTopColor: ACCENT,
   },
   totalLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: TEXT,
-    fontWeight: 500,
+    fontWeight: 700,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   totalValue: {
     fontFamily: 'Lora',
-    fontSize: 18,
+    fontSize: 20,
     color: TEXT,
     fontWeight: 700,
   },
 
+  // Notes
   notesSection: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     padding: 12,
     backgroundColor: BG_SUBTLE,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   notesLabel: {
     fontSize: 8,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 6,
     fontWeight: 500,
   },
   notesText: {
@@ -236,9 +291,12 @@ export const styles = StyleSheet.create({
     lineHeight: 1.6,
   },
 
+  // Payment
   paymentSection: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: BG_SUBTLE,
+    borderRadius: 6,
   },
   paymentLabel: {
     fontSize: 8,
@@ -249,22 +307,55 @@ export const styles = StyleSheet.create({
     fontWeight: 500,
   },
   paymentMethod: {
-    fontSize: 9,
+    fontSize: 10,
     color: TEXT,
-    marginBottom: 2,
+    fontWeight: 600,
+    marginBottom: 4,
   },
   iban: {
-    fontSize: 10,
+    fontSize: 11,
     color: TEXT,
     fontWeight: 500,
     letterSpacing: 1,
+    fontFamily: 'Inter',
   },
 
+  // Verifactu placeholder
+  verifactuSection: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: BG_DARK,
+    borderRadius: 6,
+  },
+  verifactuTitle: {
+    fontSize: 7,
+    color: ACCENT,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    fontWeight: 600,
+  },
+  verifactuRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  verifactuLabel: {
+    fontSize: 8,
+    color: TEXT_SUBTLE,
+  },
+  verifactuValue: {
+    fontSize: 8,
+    color: WHITE,
+    fontFamily: 'Inter',
+  },
+
+  // Footer
   footer: {
     position: 'absolute',
     bottom: 30,
-    left: 50,
-    right: 50,
+    left: 45,
+    right: 45,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -282,7 +373,7 @@ export const styles = StyleSheet.create({
   },
   footerBrandHighlight: {
     color: ACCENT_DIM,
-    fontWeight: 500,
+    fontWeight: 600,
   },
   pageNumber: {
     fontSize: 7,
