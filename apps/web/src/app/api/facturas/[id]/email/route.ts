@@ -27,136 +27,176 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params
+  try {
+    const { id } = await params
 
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return NextResponse.json({ error: 'No tenant' }, { status: 403 })
+    const tenantId = user.app_metadata?.tenant_id as string | undefined
+    if (!tenantId) {
+      return NextResponse.json({ error: 'No tenant' }, { status: 403 })
+    }
 
-  const [invoice, tenant] = await Promise.all([
-    prisma.invoice.findFirst({
-      where: { id, tenantId },
-      include: {
-        client: true,
-        lines: { orderBy: { sortOrder: 'asc' } },
-      },
-    }),
-    prisma.tenant.findUnique({
-      where: { id: tenantId },
-      include: { branding: true },
-    }),
-  ])
+    const [invoice, tenant] = await Promise.all([
+      prisma.invoice.findFirst({
+        where: { id, tenantId },
+        include: {
+          client: true,
+          lines: { orderBy: { sortOrder: 'asc' } },
+        },
+      }),
+      prisma.tenant.findUnique({
+        where: { id: tenantId },
+        include: { branding: true },
+      }),
+    ])
 
-  if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-  if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    if (!invoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    }
 
-  const clientEmail = invoice.client.email
-  if (!clientEmail) {
-    return NextResponse.json(
-      { error: 'El cliente no tiene email registrado' },
-      { status: 400 },
+    const clientEmail = invoice.client.email
+    if (!clientEmail) {
+      return NextResponse.json(
+        { error: 'El cliente no tiene email registrado' },
+        { status: 400 },
+      )
+    }
+
+    const totals = calculateInvoiceTotals(
+      invoice.lines.map((l) => ({
+        quantity: Number(l.quantity),
+        unitPrice: Number(l.unitPrice),
+        vatRate: Number(l.vatRate),
+      })),
     )
-  }
 
-  const totals = calculateInvoiceTotals(
-    invoice.lines.map((l) => ({
-      quantity: Number(l.quantity),
-      unitPrice: Number(l.unitPrice),
-      vatRate: Number(l.vatRate),
-    })),
-  )
-
-  const data: PdfInvoiceData = {
-    tenant: {
-      name: tenant.name,
-      legalName: tenant.legalName,
-      nif: tenant.nif,
-      fiscalAddress: tenant.fiscalAddress,
-      fiscalCity: tenant.fiscalCity,
-      fiscalPostal: tenant.fiscalPostal,
-      fiscalProvince: tenant.fiscalProvince,
-      country: tenant.country,
-      iban: tenant.iban,
-      email: tenant.email,
-      phone: tenant.phone,
-      websiteUrl: tenant.websiteUrl,
-      logoUrl: tenant.branding?.logoUrl ?? null,
-    },
-    client: {
-      name: invoice.client.name,
-      legalName: invoice.client.legalName,
-      nif: invoice.client.nif,
-      address: invoice.client.address,
-      city: invoice.client.city,
-      postalCode: invoice.client.postalCode,
-      province: invoice.client.province,
-      country: invoice.client.country,
-      email: invoice.client.email,
-    },
-    invoice: {
-      fullNumber: invoice.fullNumber,
-      issuedAt: invoice.issuedAt,
-      dueAt: invoice.dueAt,
-      notes: invoice.notes,
-      status: invoice.status,
-      subtotal: Number(invoice.subtotal),
-      vatAmount: Number(invoice.vatAmount),
-      totalAmount: Number(invoice.totalAmount),
-    },
-    lines: invoice.lines.map((l) => ({
-      description: l.description,
-      quantity: Number(l.quantity),
-      unitPrice: Number(l.unitPrice),
-      vatRate: Number(l.vatRate),
-      subtotal: Number(l.subtotal),
-      vatAmount: Number(l.vatAmount),
-      totalAmount: Number(l.totalAmount),
-    })),
-    vatBreakdown: totals.vatBreakdown,
-  }
-
-  // Generate PDF buffer
-  const pdfBuffer = await renderToBuffer(
-    createElement(InvoicePdfDocument, { data }) as ReactElement<DocumentProps>,
-  )
-
-  // Generate public link token
-  const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
-  const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
-
-  // Send email
-  const { error } = await getResend().emails.send({
-    from: `${tenant.name} <${EMAIL_FROM}>`,
-    to: clientEmail,
-    subject: `Factura ${invoice.fullNumber} — ${tenant.name}`,
-    react: InvoiceEmailTemplate({
-      tenantName: tenant.name,
-      invoiceNumber: invoice.fullNumber,
-      totalAmount: Number(invoice.totalAmount),
-      clientName: invoice.client.legalName || invoice.client.name,
-      publicUrl,
-      dueDate: invoice.dueAt,
-    }) as ReactElement,
-    attachments: [
-      {
-        filename: `${invoice.fullNumber}.pdf`,
-        content: Buffer.from(pdfBuffer).toString('base64'),
+    const data: PdfInvoiceData = {
+      tenant: {
+        name: tenant.name,
+        legalName: tenant.legalName,
+        nif: tenant.nif,
+        fiscalAddress: tenant.fiscalAddress,
+        fiscalCity: tenant.fiscalCity,
+        fiscalPostal: tenant.fiscalPostal,
+        fiscalProvince: tenant.fiscalProvince,
+        country: tenant.country,
+        iban: tenant.iban,
+        email: tenant.email,
+        phone: tenant.phone,
+        websiteUrl: tenant.websiteUrl,
+        logoUrl: tenant.branding?.logoUrl ?? null,
       },
-    ],
-  })
+      client: {
+        name: invoice.client.name,
+        legalName: invoice.client.legalName,
+        nif: invoice.client.nif,
+        address: invoice.client.address,
+        city: invoice.client.city,
+        postalCode: invoice.client.postalCode,
+        province: invoice.client.province,
+        country: invoice.client.country,
+        email: invoice.client.email,
+      },
+      invoice: {
+        fullNumber: invoice.fullNumber,
+        issuedAt: invoice.issuedAt,
+        dueAt: invoice.dueAt,
+        notes: invoice.notes,
+        status: invoice.status,
+        subtotal: Number(invoice.subtotal),
+        vatAmount: Number(invoice.vatAmount),
+        totalAmount: Number(invoice.totalAmount),
+      },
+      lines: invoice.lines.map((l) => ({
+        description: l.description,
+        quantity: Number(l.quantity),
+        unitPrice: Number(l.unitPrice),
+        vatRate: Number(l.vatRate),
+        subtotal: Number(l.subtotal),
+        vatAmount: Number(l.vatAmount),
+        totalAmount: Number(l.totalAmount),
+      })),
+      vatBreakdown: totals.vatBreakdown,
+    }
 
-  if (error) {
-    console.error('Resend error:', error)
+    // Generate PDF buffer
+    let pdfBuffer: Buffer
+    try {
+      pdfBuffer = await renderToBuffer(
+        createElement(InvoicePdfDocument, { data }) as ReactElement<DocumentProps>,
+      )
+    } catch (pdfErr) {
+      console.error('PDF generation error:', pdfErr)
+      return NextResponse.json(
+        { error: 'Error al generar el PDF adjunto' },
+        { status: 500 },
+      )
+    }
+
+    // Generate public link token
+    let publicUrl: string
+    try {
+      const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
+      publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
+    } catch (tokenErr) {
+      console.error('Token generation error:', tokenErr)
+      publicUrl = ''
+    }
+
+    // Send email
+    let sendResult
+    try {
+      sendResult = await getResend().emails.send({
+        from: `${tenant.name} <${EMAIL_FROM}>`,
+        to: clientEmail,
+        subject: `Factura ${invoice.fullNumber} — ${tenant.name}`,
+        react: InvoiceEmailTemplate({
+          tenantName: tenant.name,
+          invoiceNumber: invoice.fullNumber,
+          totalAmount: Number(invoice.totalAmount),
+          clientName: invoice.client.legalName || invoice.client.name,
+          publicUrl,
+          dueDate: invoice.dueAt,
+        }) as ReactElement,
+        attachments: [
+          {
+            filename: `${invoice.fullNumber}.pdf`,
+            content: Buffer.from(pdfBuffer).toString('base64'),
+          },
+        ],
+      })
+    } catch (resendErr) {
+      console.error('Resend send error:', resendErr)
+      return NextResponse.json(
+        { error: 'Error al enviar el email. Inténtalo de nuevo.' },
+        { status: 500 },
+      )
+    }
+
+    if (sendResult.error) {
+      console.error('Resend API error:', sendResult.error)
+      return NextResponse.json(
+        { error: 'Error al enviar el email. Inténtalo de nuevo.' },
+        { status: 500 },
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('Unhandled email route error:', err)
     return NextResponse.json(
-      { error: 'Error al enviar el email. Inténtalo de nuevo.' },
+      { error: 'Error inesperado al enviar el email' },
       { status: 500 },
     )
   }
-
-  return NextResponse.json({ success: true })
 }

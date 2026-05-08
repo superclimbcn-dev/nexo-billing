@@ -64,9 +64,14 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
       const res = await fetch(`/api/facturas/${invoiceId}/email`, {
         method: 'POST',
       })
-      const data = await res.json()
+      let data: { error?: string } = {}
+      try {
+        data = await res.json()
+      } catch {
+        // Response is not JSON
+      }
       if (!res.ok) {
-        throw new Error(data.error || 'Error al enviar el email')
+        throw new Error(data.error || `Error ${res.status}: ${res.statusText}`)
       }
       setEmailSent(true)
       setTimeout(() => setEmailSent(false), 3000)
