@@ -14,7 +14,11 @@
         "SUPABASE_PROJECT_REF",
         "HEALTH_CHECK_TOKEN",
         "NODE_ENV",
-        "VERCEL_ENV"
+        "VERCEL_ENV",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "PUBLIC_INVOICE_TOKEN_SECRET",
+        "NEXT_PUBLIC_APP_URL"
       ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },

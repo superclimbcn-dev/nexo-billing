@@ -13,8 +13,15 @@ import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
 
 export const runtime = 'nodejs'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const EMAIL_FROM = process.env.EMAIL_FROM ?? 'facturas@nexo-billing.app'
+
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY not configured')
+  }
+  return new Resend(apiKey)
+}
 
 export async function POST(
   _req: NextRequest,
@@ -123,7 +130,7 @@ export async function POST(
   const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
 
   // Send email
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: `${tenant.name} <${EMAIL_FROM}>`,
     to: clientEmail,
     subject: `Factura ${invoice.fullNumber} — ${tenant.name}`,
