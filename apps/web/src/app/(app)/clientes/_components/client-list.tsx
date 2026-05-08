@@ -56,7 +56,10 @@ export function ClientList({ items, page, totalPages, search, isPaginated }: Cli
               </tr>
             ) : (
               items.map((c) => {
-                const displayName = c.legalName?.trim() || c.name;
+                const rawName = c.name?.trim();
+                const rawLegal = c.legalName?.trim();
+                const displayName = rawLegal || rawName || '[Sin nombre]';
+                const showSubtitle = rawLegal && rawLegal !== rawName && rawName;
                 return (
                   <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors">
                     <td className="px-4 py-3">
@@ -66,8 +69,8 @@ export function ClientList({ items, page, totalPages, search, isPaginated }: Cli
                       >
                         {displayName}
                       </Link>
-                      {c.legalName && c.legalName !== c.name && (
-                        <p className="text-xs text-[var(--text-subtle)]">{c.name}</p>
+                      {showSubtitle && (
+                        <p className="text-xs text-[var(--text-subtle)]">{rawName}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-[var(--text-dim)] font-mono text-sm">

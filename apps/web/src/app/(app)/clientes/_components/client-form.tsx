@@ -60,6 +60,7 @@ export function ClientForm({ mode, clientId, initialData }: ClientFormProps) {
         name="name"
         defaultValue={initialData?.name ?? ''}
         errors={errors.name}
+        required
       />
       <Field
         label="NIF / CIF / NIE *"
@@ -161,6 +162,7 @@ function Field({
   errors,
   type = 'text',
   placeholder,
+  required,
 }: {
   label: string
   name: string
@@ -168,6 +170,7 @@ function Field({
   errors?: string[]
   type?: string
   placeholder?: string
+  required?: boolean
 }) {
   const inputClass =
     'w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] transition-colors'
@@ -183,6 +186,7 @@ function Field({
           name={name}
           defaultValue={defaultValue}
           placeholder={placeholder}
+          required={required}
           rows={3}
           className={inputClass}
         />
@@ -193,6 +197,7 @@ function Field({
           type={type}
           defaultValue={defaultValue}
           placeholder={placeholder}
+          required={required}
           className={inputClass}
         />
       )}
