@@ -31,7 +31,7 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-    return `Hola, te adjunto la factura ${fullNumber} por importe de ${total} €.\nPuedes verla y descargarla aquí: ${link}`
+    return `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online, descargar el PDF y pagarla de forma segura aquí:\n${link}\n\nGracias por tu confianza.`
   }
 
   function handleDownload() {

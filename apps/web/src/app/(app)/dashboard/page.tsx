@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@nexo/core-auth';
 import { KpiCard, Panel } from '@nexo/core-ui';
+import { CsvImportButton } from './_components/csv-import-button';
 import { formatCurrency } from '@nexo/core-utils';
 import { getDashboardStats } from './_lib/dashboard-queries';
 import { RecentInvoices } from './_components/recent-invoices';
@@ -93,12 +94,7 @@ export default async function DashboardPage() {
           <p className="text-sm text-[var(--text-dim)] mt-3">Tu facturación en {dateLabel}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/facturas"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--surface-raised)] text-[var(--text)] border border-[var(--border)] text-sm font-semibold hover:bg-[var(--surface-hover)] transition-colors"
-          >
-            Importar CSV
-          </Link>
+          <CsvImportButton />
           <Link
             href="/facturas/nueva"
             className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--accent)] text-[var(--bg)] text-sm font-semibold hover:bg-[var(--accent-dim)] transition-colors"
