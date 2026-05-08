@@ -323,31 +323,61 @@ export const styles = StyleSheet.create({
   // Verifactu placeholder
   verifactuSection: {
     marginTop: 20,
-    padding: 12,
-    backgroundColor: BG_DARK,
+    padding: 14,
+    backgroundColor: '#f9fafb',
     borderRadius: 6,
+    borderTopWidth: 2,
+    borderTopColor: ACCENT,
+    borderLeftWidth: 1,
+    borderLeftColor: BORDER,
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  verifactuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  verifactuBadge: {
+    width: 16,
+    height: 16,
+    backgroundColor: ACCENT,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifactuBadgeText: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: TEXT,
   },
   verifactuTitle: {
-    fontSize: 7,
-    color: ACCENT,
+    fontSize: 8,
+    color: TEXT,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 8,
     fontWeight: 600,
   },
-  verifactuRow: {
+  verifactuGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    gap: 12,
+  },
+  verifactuCol: {
+    flex: 1,
   },
   verifactuLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: TEXT_SUBTLE,
+    marginBottom: 2,
   },
   verifactuValue: {
     fontSize: 8,
-    color: WHITE,
+    color: TEXT,
     fontFamily: 'Inter',
+    fontWeight: 500,
   },
 
   // Footer
