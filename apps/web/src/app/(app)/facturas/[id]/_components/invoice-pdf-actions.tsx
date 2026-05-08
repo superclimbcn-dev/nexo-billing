@@ -13,6 +13,7 @@ interface Props {
 export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEmail }: Props) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
   const [loadingAction, setLoadingAction] = useState<'wa' | 'email' | 'copy' | null>(null)
   const [isPending, startTransition] = useTransition()
   const cachedLinkRef = useRef<string | null>(null)
@@ -55,22 +56,25 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
     })
   }
 
-  function handleEmail() {
+  async function handleEmail() {
     setError(null)
+    setEmailSent(false)
     setLoadingAction('email')
-    startTransition(async () => {
-      try {
-        const link = await getOrGeneratePublicLink()
-        const email = clientEmail ?? ''
-        const subject = encodeURIComponent(`Factura ${fullNumber}`)
-        const body = encodeURIComponent(buildMessage(link))
-        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al abrir email')
-      } finally {
-        setLoadingAction(null)
+    try {
+      const res = await fetch(`/api/facturas/${invoiceId}/email`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al enviar el email')
       }
-    })
+      setEmailSent(true)
+      setTimeout(() => setEmailSent(false), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al enviar el email')
+    } finally {
+      setLoadingAction(null)
+    }
   }
 
   function handleShare() {
@@ -123,11 +127,11 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
 
         <button
           onClick={handleEmail}
-          disabled={isPending}
+          disabled={isPending || loadingAction === 'email'}
           className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border)] text-sm rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-dim)] hover:text-[var(--text)] disabled:opacity-50 transition-colors"
         >
           <MailIcon />
-          {loadingAction === 'email' ? '…' : 'Email'}
+          {loadingAction === 'email' ? 'Enviando…' : emailSent ? '¡Enviado!' : 'Email'}
         </button>
 
         <button
