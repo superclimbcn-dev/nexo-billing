@@ -1,39 +1,44 @@
-import { prisma, InvoiceStatus } from '@nexo/prisma'
+import { prisma, InvoiceStatus } from '@nexo/prisma';
 
 export interface DashboardStats {
-  invoicedThisMonth: { amount: number; count: number }
-  invoicedLastMonth: { amount: number; count: number }
-  pendingCollection: { amount: number; count: number }
-  overdue: { amount: number; count: number }
-  activeClients: number
-  catalogItems: number
+  invoicedThisMonth: { amount: number; count: number };
+  invoicedLastMonth: { amount: number; count: number };
+  collectedThisMonth: { amount: number; count: number };
+  pendingCollection: { amount: number; count: number };
+  overdue: { amount: number; count: number };
+  vatThisQuarter: { amount: number };
+  activeClients: number;
+  catalogItems: number;
   recentInvoices: Array<{
-    id: string
-    fullNumber: string
-    issuedAt: Date
-    status: string
-    totalAmount: number
-    clientName: string
-  }>
+    id: string;
+    fullNumber: string;
+    issuedAt: Date;
+    status: string;
+    totalAmount: number;
+    clientName: string;
+  }>;
 }
 
 function monthStart(year: number, month: number): Date {
-  return new Date(year, month, 1)
+  return new Date(year, month, 1);
 }
 
 export async function getDashboardStats(tenantId: string): Promise<DashboardStats> {
-  const now = new Date()
-  const thisMonthStart = monthStart(now.getFullYear(), now.getMonth())
-  const lastMonthStart = monthStart(now.getFullYear(), now.getMonth() - 1)
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+  const now = new Date();
+  const thisMonthStart = monthStart(now.getFullYear(), now.getMonth());
+  const lastMonthStart = monthStart(now.getFullYear(), now.getMonth() - 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+  const quarterStart = monthStart(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3);
 
-  const excludedStatuses = [InvoiceStatus.draft, InvoiceStatus.cancelled]
+  const excludedStatuses = [InvoiceStatus.draft, InvoiceStatus.cancelled];
 
   const [
     invoicedThisMonthAgg,
     invoicedLastMonthAgg,
+    collectedThisMonthAgg,
     pendingAgg,
     overdueAgg,
+    vatThisQuarterAgg,
     activeClients,
     catalogItems,
     recentInvoices,
@@ -61,6 +66,16 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
     prisma.invoice.aggregate({
       where: {
         tenantId,
+        issuedAt: { gte: thisMonthStart },
+        status: InvoiceStatus.paid,
+      },
+      _sum: { paidAmount: true },
+      _count: { _all: true },
+    }),
+
+    prisma.invoice.aggregate({
+      where: {
+        tenantId,
         status: { in: [InvoiceStatus.sent, InvoiceStatus.overdue, InvoiceStatus.partially_paid] },
       },
       _sum: { totalAmount: true },
@@ -70,13 +85,19 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
     prisma.invoice.aggregate({
       where: {
         tenantId,
-        OR: [
-          { status: InvoiceStatus.overdue },
-          { status: InvoiceStatus.sent, dueAt: { lt: now } },
-        ],
+        OR: [{ status: InvoiceStatus.overdue }, { status: InvoiceStatus.sent, dueAt: { lt: now } }],
       },
       _sum: { totalAmount: true },
       _count: { _all: true },
+    }),
+
+    prisma.invoice.aggregate({
+      where: {
+        tenantId,
+        issuedAt: { gte: quarterStart },
+        status: { notIn: excludedStatuses },
+      },
+      _sum: { vatAmount: true },
     }),
 
     prisma.client.count({ where: { tenantId, isActive: true } }),
@@ -89,7 +110,7 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
       orderBy: { issuedAt: 'desc' },
       take: 5,
     }),
-  ])
+  ]);
 
   return {
     invoicedThisMonth: {
@@ -100,6 +121,10 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
       amount: Number(invoicedLastMonthAgg._sum.totalAmount ?? 0),
       count: invoicedLastMonthAgg._count._all,
     },
+    collectedThisMonth: {
+      amount: Number(collectedThisMonthAgg._sum.paidAmount ?? 0),
+      count: collectedThisMonthAgg._count._all,
+    },
     pendingCollection: {
       amount: Number(pendingAgg._sum.totalAmount ?? 0),
       count: pendingAgg._count._all,
@@ -107,6 +132,9 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
     overdue: {
       amount: Number(overdueAgg._sum.totalAmount ?? 0),
       count: overdueAgg._count._all,
+    },
+    vatThisQuarter: {
+      amount: Number(vatThisQuarterAgg._sum.vatAmount ?? 0),
     },
     activeClients,
     catalogItems,
@@ -118,5 +146,5 @@ export async function getDashboardStats(tenantId: string): Promise<DashboardStat
       totalAmount: Number(inv.totalAmount),
       clientName: inv.client.name,
     })),
-  }
+  };
 }

@@ -1,21 +1,21 @@
-import Link from 'next/link'
-import { formatCurrency } from '@nexo/core-utils'
-import { Panel } from '@nexo/core-ui'
-import { InvoiceStatusBadge } from '../../facturas/_components/invoice-status-badge'
+import Link from 'next/link';
+import { formatCurrency, formatDate } from '@nexo/core-utils';
+import { Panel } from '@nexo/core-ui';
+import { InvoiceStatusBadge } from '../../facturas/_components/invoice-status-badge';
 
 interface RecentInvoice {
-  id: string
-  fullNumber: string
-  issuedAt: Date
-  status: string
-  totalAmount: number
-  clientName: string
+  id: string;
+  fullNumber: string;
+  issuedAt: Date;
+  status: string;
+  totalAmount: number;
+  clientName: string;
 }
 
 export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
   return (
     <Panel
-      title="Últimas facturas"
+      title="Facturas recientes"
       headerRight={
         <Link href="/facturas" className="text-xs text-[var(--accent)] hover:underline">
           Ver todas →
@@ -38,15 +38,20 @@ export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
             <Link
               key={inv.id}
               href={`/facturas/${inv.id}`}
-              className="flex items-center justify-between px-6 py-3 hover:bg-[var(--surface-hover)] transition-colors"
+              className="grid grid-cols-[minmax(110px,0.7fr)_minmax(0,1.7fr)_auto] items-center gap-4 px-6 py-4 hover:bg-[var(--surface-hover)] transition-colors"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="font-mono text-sm font-medium text-[var(--text)]">
-                  {inv.fullNumber}
+              <span className="font-mono text-sm font-medium text-[var(--text)]">
+                {inv.fullNumber}
+              </span>
+              <div className="min-w-0">
+                <span className="block text-sm font-medium text-[var(--text)] truncate">
+                  {inv.clientName}
                 </span>
-                <span className="text-sm text-[var(--text-dim)] truncate">{inv.clientName}</span>
+                <span className="block text-xs text-[var(--text-subtle)]">
+                  {formatDate(inv.issuedAt)}
+                </span>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3 justify-end">
                 <span className="text-sm font-mono text-[var(--text)]">
                   {formatCurrency(inv.totalAmount)}
                 </span>
@@ -57,5 +62,5 @@ export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
         </div>
       )}
     </Panel>
-  )
+  );
 }

@@ -1,20 +1,20 @@
-import Link from 'next/link'
-import { formatCurrency, formatNif, formatPhone } from '@nexo/core-utils'
-import type { Client } from '@nexo/prisma'
-import { ClientSearch } from './client-search'
-import { ClientRowActions } from './client-row-actions'
+import Link from 'next/link';
+import { formatCurrency, formatNif, formatPhone } from '@nexo/core-utils';
+import type { Client } from '@nexo/prisma';
+import { ClientSearch } from './client-search';
+import { ClientRowActions } from './client-row-actions';
 
 type ClientListItem = Client & {
-  invoiceCount: number
-  totalInvoiced: number
-}
+  invoiceCount: number;
+  totalInvoiced: number;
+};
 
 interface ClientListProps {
-  items: ClientListItem[]
-  page: number
-  totalPages: number
-  search: string
-  isPaginated: boolean
+  items: ClientListItem[];
+  page: number;
+  totalPages: number;
+  search: string;
+  isPaginated: boolean;
 }
 
 export function ClientList({ items, page, totalPages, search, isPaginated }: ClientListProps) {
@@ -55,39 +55,40 @@ export function ClientList({ items, page, totalPages, search, isPaginated }: Cli
                 </td>
               </tr>
             ) : (
-              items.map((c) => (
-                <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/clientes/${c.id}`}
-                      className="text-[var(--text)] hover:text-[var(--accent)] transition-colors font-medium"
-                    >
-                      {c.legalName ?? c.name}
-                    </Link>
-                    {c.legalName && c.legalName !== c.name && (
-                      <p className="text-xs text-[var(--text-subtle)]">{c.name}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--text-dim)] font-mono text-sm">
-                    {formatNif(c.nif)}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
-                    {c.email ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
-                    {c.phone ? formatPhone(c.phone) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm text-[var(--text-dim)]">
-                    {c.invoiceCount > 0 ? c.invoiceCount : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-mono text-[var(--text)]">
-                    {c.totalInvoiced > 0 ? formatCurrency(c.totalInvoiced) : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <ClientRowActions clientId={c.id} clientName={c.name} />
-                  </td>
-                </tr>
-              ))
+              items.map((c) => {
+                const displayName = c.legalName?.trim() || c.name;
+                return (
+                  <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/clientes/${c.id}`}
+                        className="text-[var(--text)] hover:text-[var(--accent)] transition-colors font-medium"
+                      >
+                        {displayName}
+                      </Link>
+                      {c.legalName && c.legalName !== c.name && (
+                        <p className="text-xs text-[var(--text-subtle)]">{c.name}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--text-dim)] font-mono text-sm">
+                      {formatNif(c.nif)}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--text-dim)] text-sm">{c.email ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
+                      {c.phone ? formatPhone(c.phone) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-[var(--text-dim)]">
+                      {c.invoiceCount > 0 ? c.invoiceCount : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-mono text-[var(--text)]">
+                      {c.totalInvoiced > 0 ? formatCurrency(c.totalInvoiced) : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <ClientRowActions clientId={c.id} clientName={c.name} />
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -97,7 +98,7 @@ export function ClientList({ items, page, totalPages, search, isPaginated }: Cli
         <Pagination page={page} totalPages={totalPages} search={search} />
       )}
     </div>
-  )
+  );
 }
 
 function Pagination({
@@ -105,16 +106,16 @@ function Pagination({
   totalPages,
   search,
 }: {
-  page: number
-  totalPages: number
-  search: string
+  page: number;
+  totalPages: number;
+  search: string;
 }) {
   function buildHref(p: number) {
-    const params = new URLSearchParams()
-    if (search) params.set('q', search)
-    if (p > 1) params.set('page', p.toString())
-    const query = params.toString()
-    return `/clientes${query ? `?${query}` : ''}`
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (p > 1) params.set('page', p.toString());
+    const query = params.toString();
+    return `/clientes${query ? `?${query}` : ''}`;
   }
 
   return (
@@ -141,5 +142,5 @@ function Pagination({
         )}
       </div>
     </div>
-  )
+  );
 }
