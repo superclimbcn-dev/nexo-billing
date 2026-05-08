@@ -253,7 +253,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
         )}
 
         {/* VERIFACTU BLOCK */}
-        <View style={styles.verifactuSection}>
+        <View style={styles.verifactuSection} wrap={false}>
           <View style={styles.verifactuHeader}>
             <View style={styles.verifactuBadge}>
               <Text style={styles.verifactuBadgeText}>V</Text>

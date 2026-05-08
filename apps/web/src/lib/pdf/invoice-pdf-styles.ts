@@ -322,8 +322,8 @@ export const styles = StyleSheet.create({
 
   // Verifactu placeholder
   verifactuSection: {
-    marginTop: 20,
-    padding: 14,
+    marginTop: 12,
+    padding: 10,
     backgroundColor: '#f9fafb',
     borderRadius: 6,
     borderTopWidth: 2,
@@ -339,23 +339,23 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   verifactuBadge: {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
     backgroundColor: ACCENT,
-    borderRadius: 4,
+    borderRadius: 3,
     justifyContent: 'center',
     alignItems: 'center',
   },
   verifactuBadgeText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 700,
     color: TEXT,
   },
   verifactuTitle: {
-    fontSize: 8,
+    fontSize: 7,
     color: TEXT,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -363,18 +363,18 @@ export const styles = StyleSheet.create({
   },
   verifactuGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   verifactuCol: {
     flex: 1,
   },
   verifactuLabel: {
-    fontSize: 7,
+    fontSize: 6,
     color: TEXT_SUBTLE,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   verifactuValue: {
-    fontSize: 8,
+    fontSize: 7,
     color: TEXT,
     fontFamily: 'Inter',
     fontWeight: 500,
