@@ -81,7 +81,14 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
                   className="px-3 py-2 cursor-pointer hover:bg-[var(--surface-hover)] flex justify-between items-start gap-2"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{it.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-sm truncate">{it.name}</span>
+                      {it.source === 'catalog' && (
+                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 bg-[var(--accent)]/20 text-[var(--accent)] rounded-full font-medium">
+                          Catálogo
+                        </span>
+                      )}
+                    </div>
                     {it.description && (
                       <div className="text-xs text-[var(--text-dim)] truncate">
                         {it.description}

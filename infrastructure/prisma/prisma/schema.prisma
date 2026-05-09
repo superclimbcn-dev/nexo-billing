@@ -273,9 +273,33 @@ model Vertical {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  tenants Tenant[]
+  tenants      Tenant[]
+  catalogItems CatalogItem[]
 
   @@map("verticals")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                         CATALOGO GLOBAL POR VERTICAL
+// ════════════════════════════════════════════════════════════════════════════
+
+model CatalogItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  verticalId  String   @map("vertical_id") @db.Uuid
+  name        String
+  description String?
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 2)
+  vatRate     Decimal  @map("vat_rate") @db.Decimal(5, 2)
+  unit        String   @default("ud")
+  category    String? // puertas, ventanas, muebles, tarimas...
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  vertical Vertical @relation(fields: [verticalId], references: [id], onDelete: Cascade)
+
+  @@unique([verticalId, name])
+  @@map("catalog_items")
 }
 
 model VerticalRequest {

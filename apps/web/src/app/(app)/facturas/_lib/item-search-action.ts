@@ -11,6 +11,7 @@ export interface ItemSearchResult {
   vatRate: number
   unit: string | null
   type: string
+  source: 'tenant' | 'catalog'
 }
 
 export async function searchItemsForAutocomplete(
@@ -26,13 +27,21 @@ export async function searchItemsForAutocomplete(
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) return []
 
-  const items = await prisma.item.findMany({
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { verticalId: true },
+  })
+
+  const q = query.trim()
+
+  // 1. Items del tenant (prioridad alta)
+  const tenantItems = await prisma.item.findMany({
     where: {
       tenantId,
       isActive: true,
       OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
       ],
     },
     select: {
@@ -45,10 +54,10 @@ export async function searchItemsForAutocomplete(
       type: true,
     },
     orderBy: { name: 'asc' },
-    take: 10,
+    take: 8,
   })
 
-  return items.map((it) => ({
+  const results: ItemSearchResult[] = tenantItems.map((it) => ({
     id: it.id,
     name: it.name,
     description: it.description,
@@ -56,7 +65,50 @@ export async function searchItemsForAutocomplete(
     vatRate: Number(it.vatRate),
     unit: it.unit,
     type: String(it.type),
+    source: 'tenant',
   }))
+
+  // 2. Catálogo global de la vertical (si tiene vertical asignada)
+  if (tenant?.verticalId) {
+    const catalogItems = await prisma.catalogItem.findMany({
+      where: {
+        verticalId: tenant.verticalId,
+        isActive: true,
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        unitPrice: true,
+        vatRate: true,
+        unit: true,
+        category: true,
+      },
+      orderBy: { name: 'asc' },
+      take: 6,
+    })
+
+    for (const it of catalogItems) {
+      // Evitar duplicados si el tenant ya tiene un item con el mismo nombre
+      if (results.some((r) => r.name.toLowerCase() === it.name.toLowerCase())) continue
+      results.push({
+        id: `catalog-${it.id}`,
+        name: it.name,
+        description: it.description,
+        unitPrice: Number(it.unitPrice),
+        vatRate: Number(it.vatRate),
+        unit: it.unit,
+        type: it.category ?? 'product',
+        source: 'catalog',
+      })
+    }
+  }
+
+  return results.slice(0, 12)
 }
 
 export async function searchClientsForAutocomplete(query: string) {

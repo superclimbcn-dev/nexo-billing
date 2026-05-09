@@ -46,7 +46,66 @@ async function main() {
     },
   })
 
-  console.log(`  ✓ Verticals: ${verticalCleaning.name}, ${verticalGeneric.name}`)
+  const verticalConstruction = await prisma.vertical.upsert({
+    where: { slug: 'construction' },
+    update: {},
+    create: {
+      slug: 'construction',
+      name: 'Construcción y carpintería',
+      description: 'Carpintería industrial, ebanistería, instalación de puertas, ventanas y muebles a medida',
+      status: 'active',
+      modulesEnabled: ['projects', 'materials'],
+      cnaeMapping: ['3109', '4332', '1623'],
+      iconName: '🔨',
+      color: '#f59e0b',
+      sortOrder: 2,
+    },
+  })
+
+  console.log(`  ✓ Verticals: ${verticalCleaning.name}, ${verticalGeneric.name}, ${verticalConstruction.name}`)
+
+  // ── 1b. CATALOGO GLOBAL — Carpintería ─────────────────────────────────────
+  const carpentryProducts = [
+    { name: 'Puerta interior lacada blanca', description: 'Puerta de paso lacada en blanco, marco incluido', unitPrice: 185.0, unit: 'ud', category: 'puertas' },
+    { name: 'Puerta exterior blindada', description: 'Puerta de seguridad acorazada grado 3, cerradura multipunto', unitPrice: 520.0, unit: 'ud', category: 'puertas' },
+    { name: 'Puerta corredera empotrada', description: 'Sistema de puerta corredera con carril oculto', unitPrice: 340.0, unit: 'ud', category: 'puertas' },
+    { name: 'Ventana aluminio 2 hojas', description: 'Ventana corredera de aluminio con doble acristalamiento', unitPrice: 295.0, unit: 'ud', category: 'ventanas' },
+    { name: 'Ventana PVC oscilobatiente', description: 'Ventana de PVC con apertura oscilobatiente, rotura de puente térmico', unitPrice: 380.0, unit: 'ud', category: 'ventanas' },
+    { name: 'Armario empotrado a medida', description: 'Interior de armario con barras, cajoneras y estantes a medida', unitPrice: 650.0, unit: 'ml', category: 'armarios' },
+    { name: 'Tarima flotante roble', description: 'Tarima flotante de roble natural, acabado aceitado', unitPrice: 42.0, unit: 'm²', category: 'suelos' },
+    { name: 'Parquet multicapa nogal', description: 'Parquet multicapa de nogal americano, grosor 14mm', unitPrice: 68.0, unit: 'm²', category: 'suelos' },
+    { name: 'Escalera de caracol madera', description: 'Escalera de caracol con estructura metálica y peldaños de roble', unitPrice: 1850.0, unit: 'ud', category: 'escaleras' },
+    { name: 'Mostrador recepción a medida', description: 'Mostrador de recepción en melamina con iluminación LED integrada', unitPrice: 1200.0, unit: 'ud', category: 'mobiliario' },
+    { name: 'Mesa comedor extensible roble', description: 'Mesa de comedor extensible, patas torneadas en roble macizo', unitPrice: 780.0, unit: 'ud', category: 'mobiliario' },
+    { name: 'Cocina integral a medida', description: 'Muebles de cocina altos y bajos, encimera de cuarzo incluida', unitPrice: 4500.0, unit: 'proyecto', category: 'cocinas' },
+    { name: 'Ventana de madera laminada', description: 'Ventana de madera laminada con herrajes de latón', unitPrice: 450.0, unit: 'ud', category: 'ventanas' },
+    { name: 'Puerta de garaje seccional', description: 'Puerta de garaje seccional automática con motor', unitPrice: 890.0, unit: 'ud', category: 'puertas' },
+    { name: 'Barandilla de acero inoxidable', description: 'Barandilla de acero inoxidable con postes y cable tensado', unitPrice: 180.0, unit: 'ml', category: 'barandillas' },
+    { name: 'Revestimiento de pared friso', description: 'Friso de madera natural para revestimiento de paredes', unitPrice: 35.0, unit: 'm²', category: 'revestimientos' },
+    { name: 'Escalera recta de madera', description: 'Escalera recta con zancas de madera y barandilla', unitPrice: 950.0, unit: 'ud', category: 'escaleras' },
+    { name: 'Mueble baño suspendido', description: 'Mueble de baño suspendido con lavabo integrado y espejo', unitPrice: 420.0, unit: 'ud', category: 'mobiliario' },
+    { name: 'Persiana enrollable aluminio', description: 'Persiana enrollable de aluminio con cajón exterior', unitPrice: 155.0, unit: 'ud', category: 'ventanas' },
+    { name: 'Puerta corredera de madera', description: 'Puerta corredera rústica de madera maciza con guías', unitPrice: 390.0, unit: 'ud', category: 'puertas' },
+  ]
+
+  for (const p of carpentryProducts) {
+    await prisma.catalogItem.upsert({
+      where: { verticalId_name: { verticalId: verticalConstruction.id, name: p.name } },
+      update: {},
+      create: {
+        verticalId: verticalConstruction.id,
+        name: p.name,
+        description: p.description,
+        unitPrice: new Prisma.Decimal(p.unitPrice),
+        vatRate: new Prisma.Decimal(21),
+        unit: p.unit,
+        category: p.category,
+        isActive: true,
+      },
+    })
+  }
+
+  console.log(`  ✓ Catalogo carpintería: ${carpentryProducts.length} productos`)
 
   // ── 2. TENANT ─────────────────────────────────────────────────────────────
   const tenantId = '00000000-0000-0000-0000-000000000001'
