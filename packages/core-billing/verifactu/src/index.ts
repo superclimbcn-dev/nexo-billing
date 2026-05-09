@@ -13,3 +13,18 @@ export {
   VerifactuAEATRejectionError,
   VerifactuTimeoutError,
 } from './errors'
+
+// AEAT record schemas and types
+export {
+  RegistroAltaSchema,
+  RegistroAnulacionSchema,
+  EncadenamientoSchema,
+  SistemaInformaticoSchema,
+} from './records/schemas'
+
+export type {
+  RegistroAlta,
+  RegistroAnulacion,
+  Encadenamiento,
+  SistemaInformatico,
+} from './records/types'
