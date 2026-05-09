@@ -1,11 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
+import { prisma } from '@nexo/prisma'
 import { getInvoiceById } from '../_lib/invoice-queries'
 import { InvoiceDetailHeader } from './_components/invoice-detail-header'
 import { InvoiceDetailClient } from './_components/invoice-detail-client'
 import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
 import { InvoicePdfActions } from './_components/invoice-pdf-actions'
+import { InvoiceVerifactuActions } from './_components/invoice-verifactu-actions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -25,6 +27,11 @@ export default async function InvoiceDetailPage({ params }: Props) {
 
   const invoice = await getInvoiceById(tenantId, id)
   if (!invoice) notFound()
+
+  const verifactuRecord = await prisma.invoiceRecord.findFirst({
+    where: { invoiceId: id, tenantId },
+    orderBy: { createdAt: 'desc' },
+  })
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
@@ -47,6 +54,17 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 fullNumber={invoice.fullNumber}
                 totalAmount={Number(invoice.totalAmount)}
                 clientEmail={invoice.client.email}
+              />
+            </section>
+            <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
+              <h2 className="text-xs font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
+                Verifactu · AEAT
+              </h2>
+              <InvoiceVerifactuActions
+                invoiceId={invoice.id}
+                status={invoice.status}
+                hasRecord={!!verifactuRecord}
+                recordStatus={verifactuRecord?.status ?? null}
               />
             </section>
           </div>

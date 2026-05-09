@@ -11,6 +11,7 @@ interface InvoiceRow {
   status: string
   client: { id: string; name: string; nif: string } | null
   series: { code: string; name: string } | null
+  records: { status: string }[]
 }
 
 interface InvoiceListProps {
@@ -46,13 +47,16 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
               <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
                 Estado
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
+                AEAT
+              </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-dim)]">
+                <td colSpan={7} className="px-4 py-8 text-center text-[var(--text-dim)]">
                   No se encontraron facturas con esa búsqueda.
                 </td>
               </tr>
@@ -88,6 +92,9 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
                   <td className="px-4 py-3">
                     <InvoiceStatusBadge status={inv.status} />
                   </td>
+                  <td className="px-4 py-3">
+                    <VerifactuBadge records={inv.records} />
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/facturas/${inv.id}`}
@@ -108,6 +115,23 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
       )}
     </div>
   )
+}
+
+function VerifactuBadge({ records }: { records: { status: string }[] }) {
+  const record = records[0]
+  if (!record) return <span className="text-[var(--text-dim)] text-xs">—</span>
+
+  const status = record.status
+  if (status === 'accepted') {
+    return <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-[var(--success)]/10 text-[var(--success)] rounded-full">✓ AEAT</span>
+  }
+  if (status === 'error') {
+    return <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-[var(--danger)]/10 text-[var(--danger)] rounded-full">⚠ AEAT</span>
+  }
+  if (status === 'pending') {
+    return <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-[var(--warning)]/10 text-[var(--warning)] rounded-full">⏳ AEAT</span>
+  }
+  return <span className="text-[var(--text-dim)] text-xs">—</span>
 }
 
 function Pagination({

@@ -48,6 +48,7 @@ export async function listInvoices({
       include: {
         client: { select: { id: true, name: true, nif: true } },
         series: { select: { code: true, name: true } },
+        records: { select: { status: true }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: { issuedAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,

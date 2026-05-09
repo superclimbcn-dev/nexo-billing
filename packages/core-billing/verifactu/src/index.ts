@@ -28,3 +28,8 @@ export type {
   Encadenamiento,
   SistemaInformatico,
 } from './records/types'
+
+// Hash and chain
+export { computeRecordHash } from './crypto/hash'
+export { ChainService } from './chain/chain-service'
+export type { IRecordRepository } from './chain/chain-service'
