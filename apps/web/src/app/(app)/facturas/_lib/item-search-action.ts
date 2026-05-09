@@ -156,6 +156,56 @@ export async function searchCatalogTopItems(): Promise<ItemSearchResult[]> {
   }))
 }
 
+export async function createItemQuick(data: {
+  name: string
+  description?: string
+  unitPrice: number
+  vatRate: number
+  unit?: string
+  type?: string
+}): Promise<ItemSearchResult | null> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const tenantId = user.app_metadata?.tenant_id as string | undefined
+  if (!tenantId) return null
+
+  const created = await prisma.item.create({
+    data: {
+      tenantId,
+      name: data.name,
+      description: data.description ?? null,
+      unitPrice: data.unitPrice,
+      vatRate: data.vatRate,
+      unit: data.unit ?? 'ud',
+      type: (data.type as 'product' | 'service' | 'subscription' | 'kit' | 'digital') ?? 'product',
+      isActive: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      unitPrice: true,
+      vatRate: true,
+      unit: true,
+      type: true,
+    },
+  })
+
+  return {
+    id: created.id,
+    name: created.name,
+    description: created.description,
+    unitPrice: Number(created.unitPrice),
+    vatRate: Number(created.vatRate),
+    unit: created.unit,
+    type: String(created.type),
+    source: 'tenant',
+  }
+}
+
 export async function searchClientsForAutocomplete(query: string) {
   if (!query || query.trim().length < 2) return []
 
