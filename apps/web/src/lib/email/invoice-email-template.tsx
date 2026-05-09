@@ -145,7 +145,7 @@ export function InvoiceEmailTemplate({
             Generado con <span style={{ color: '#84cc16', fontWeight: 600 }}>Nexo Billing</span>
           </p>
           <p style={{ fontSize: '11px', color: '#d4d4d4', margin: 0 }}>
-            SIF certificado · Verifactu-ready
+            Nexo Billing · Facturación digital
           </p>
         </div>
       </div>

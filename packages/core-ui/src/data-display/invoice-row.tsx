@@ -14,7 +14,7 @@ export interface InvoiceRowProps {
   amount: string
   status: StatusType
   statusLabel: string
-  verifactu?: boolean
+  verifactuStatus?: 'sent' | 'pending' | 'error' | 'none'
   className?: string
 }
 
@@ -26,7 +26,7 @@ export function InvoiceRow({
   amount,
   status,
   statusLabel,
-  verifactu = true,
+  verifactuStatus = 'none',
   className,
 }: InvoiceRowProps) {
   return (
@@ -54,7 +54,7 @@ export function InvoiceRow({
         {amount}
       </div>
       <StatusChip status={status} label={statusLabel} />
-      {verifactu && <VerifactuChip />}
+      <VerifactuChip status={verifactuStatus} />
     </div>
   )
 }

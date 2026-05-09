@@ -16,6 +16,8 @@ interface AppSidebarProps {
   tenantVertical: string
   userName: string
   userEmail: string
+  verifactuSentCount?: number
+  verifactuLastError?: boolean
 }
 
 function getInitials(name: string): string {
@@ -33,6 +35,8 @@ export function AppSidebar({
   tenantVertical,
   userName,
   userEmail,
+  verifactuSentCount = 0,
+  verifactuLastError = false,
 }: AppSidebarProps) {
   const pathname = usePathname()
 
@@ -40,7 +44,10 @@ export function AppSidebar({
     <Sidebar
       footer={
         <div className="flex flex-col gap-3">
-          <ComplianceBadge />
+          <ComplianceBadge
+            sentCount={verifactuSentCount}
+            lastError={verifactuLastError}
+          />
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text)] font-medium truncate">{userName}</span>
             <span className="text-[11px] text-[var(--text-subtle)] truncate">{userEmail}</span>

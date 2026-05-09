@@ -113,7 +113,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaLabel}>VeriFactu</Text>
-            <Text style={styles.metaValueAccent}>Registrado</Text>
+            <Text style={styles.metaValueAccent}>Pendiente de envío</Text>
           </View>
         </View>
 
@@ -302,7 +302,6 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           <Text style={styles.footerBrand}>
             {'Generado con '}
             <Text style={styles.footerBrandHighlight}>Nexo Billing</Text>
-            {' · SIF certificado'}
           </Text>
         </View>
       </Page>

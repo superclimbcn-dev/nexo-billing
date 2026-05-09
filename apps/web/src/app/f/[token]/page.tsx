@@ -269,7 +269,7 @@ export default async function PublicInvoicePage({ params }: Props) {
               </Link>
             </p>
             <p className="text-[10px] text-[var(--text-subtle)] mt-1 opacity-60">
-              SIF certificado · Verifactu-ready
+              Nexo Billing · Facturación digital
             </p>
           </footer>
         </main>

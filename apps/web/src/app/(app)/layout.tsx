@@ -28,6 +28,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const userName = dbUser?.name ?? (user.user_metadata?.name as string) ?? user.email ?? ''
 
+  // Verifactu status for sidebar
+  const verifactuStats = await prisma.invoiceRecord.aggregate({
+    where: { tenantId },
+    _count: { _all: true },
+  })
+  const lastVerifactuRecord = await prisma.invoiceRecord.findFirst({
+    where: { tenantId },
+    orderBy: { createdAt: 'desc' },
+    select: { status: true },
+  })
+  const sentCount = verifactuStats._count._all
+  const lastError = lastVerifactuRecord?.status === 'error' || lastVerifactuRecord?.status === 'rejected'
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <TopBar
@@ -45,6 +58,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             tenantVertical={tenant.vertical?.name ?? tenant.businessType ?? 'Sector personalizado'}
             userName={userName}
             userEmail={user.email ?? ''}
+            verifactuSentCount={sentCount}
+            verifactuLastError={lastError}
           />
         }
       >
