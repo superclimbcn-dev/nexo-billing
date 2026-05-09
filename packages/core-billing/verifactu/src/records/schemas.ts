@@ -116,7 +116,8 @@ export const RegistroAltaSchema = z
     cuotaTotal: z.number().min(0),
     encadenamiento: EncadenamientoSchema,
     huella: z.string().min(1, 'Huella SHA-256 es obligatoria'),
-    fechaHoraHusoGenRegistro: z.coerce.date(),
+    tipoHuella: z.literal('01'),
+    fechaHoraHusoGenRegistro: z.string().datetime({ offset: true }),
   })
   .refine(
     (data) => {
@@ -160,6 +161,7 @@ export const RegistroAnulacionSchema = z.object({
   idFactura: idFacturaSchema,
   idEmisorFactura: idEmisorSchema,
   huella: z.string().min(1, 'Huella SHA-256 es obligatoria'),
-  fechaHoraHusoGenRegistro: z.coerce.date(),
+  tipoHuella: z.literal('01'),
+  fechaHoraHusoGenRegistro: z.string().datetime({ offset: true }),
   encadenamiento: EncadenamientoSchema,
 })
