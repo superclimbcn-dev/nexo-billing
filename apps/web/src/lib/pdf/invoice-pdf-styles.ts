@@ -12,8 +12,8 @@ const WHITE = '#ffffff'
 
 export const styles = StyleSheet.create({
   page: {
-    paddingTop: 40,
-    paddingBottom: 80,
+    paddingTop: 28,
+    paddingBottom: 36,
     paddingHorizontal: 45,
     fontFamily: 'Inter',
     fontSize: 9,
@@ -37,8 +37,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
-    paddingBottom: 16,
+    marginBottom: 14,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -102,12 +102,12 @@ export const styles = StyleSheet.create({
   // Meta grid
   metaGrid: {
     flexDirection: 'row',
-    marginBottom: 24,
-    gap: 16,
+    marginBottom: 12,
+    gap: 10,
   },
   metaItem: {
     flex: 1,
-    padding: 10,
+    padding: 6,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -133,12 +133,12 @@ export const styles = StyleSheet.create({
   // Parties
   partiesSection: {
     flexDirection: 'row',
-    gap: 20,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 12,
   },
   partyBox: {
     flex: 1,
-    padding: 14,
+    padding: 8,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
     borderLeftWidth: 3,
@@ -172,19 +172,19 @@ export const styles = StyleSheet.create({
 
   // Table
   tableSection: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   tableTitle: {
     fontSize: 8,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 10,
+    marginBottom: 4,
     fontWeight: 500,
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: 5,
     borderBottomWidth: 1.5,
     borderBottomColor: TEXT,
   },
@@ -197,7 +197,7 @@ export const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -220,11 +220,11 @@ export const styles = StyleSheet.create({
   summaryWrapper: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   summaryBox: {
     width: '55%',
-    padding: 16,
+    padding: 10,
     backgroundColor: BG_SUBTLE,
     borderRadius: 8,
   },
@@ -245,14 +245,14 @@ export const styles = StyleSheet.create({
   summaryDivider: {
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    marginVertical: 6,
+    marginVertical: 3,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 10,
-    marginTop: 6,
+    paddingTop: 6,
+    marginTop: 3,
     borderTopWidth: 2,
     borderTopColor: ACCENT,
   },
@@ -272,8 +272,8 @@ export const styles = StyleSheet.create({
 
   // Notes
   notesSection: {
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: 8,
+    padding: 6,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -293,8 +293,8 @@ export const styles = StyleSheet.create({
 
   // Payment
   paymentSection: {
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: 8,
+    padding: 6,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -322,8 +322,8 @@ export const styles = StyleSheet.create({
 
   // Verifactu placeholder
   verifactuSection: {
-    marginTop: 12,
-    padding: 10,
+    marginTop: 6,
+    padding: 6,
     backgroundColor: '#f9fafb',
     borderRadius: 6,
     borderTopWidth: 2,
@@ -383,13 +383,13 @@ export const styles = StyleSheet.create({
   // Footer
   footer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 16,
     left: 45,
     right: 45,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 10,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: BORDER,
   },
