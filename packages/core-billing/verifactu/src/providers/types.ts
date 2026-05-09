@@ -12,6 +12,7 @@ export interface VerifactuResult {
   recordId: string
   csv?: string
   error?: string
+  previousHash?: string | null
 }
 
 export interface InvoiceData {
