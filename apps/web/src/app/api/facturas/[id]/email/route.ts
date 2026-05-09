@@ -83,7 +83,12 @@ export async function POST(
 
     const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
     const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
-    const qrCodeUrl = await QRCode.toDataURL(publicUrl, { width: 180, margin: 1 })
+    const qrCodeUrl = await QRCode.toDataURL(publicUrl, {
+      width: 400,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+    })
 
     const data: PdfInvoiceData = {
       tenant: {

@@ -13,7 +13,7 @@ const WHITE = '#ffffff'
 export const styles = StyleSheet.create({
   page: {
     paddingTop: 36,
-    paddingBottom: 110,
+    paddingBottom: 140,
     paddingHorizontal: 45,
     fontFamily: 'Inter',
     fontSize: 9,
@@ -323,7 +323,7 @@ export const styles = StyleSheet.create({
   // Verifactu placeholder
   verifactuSection: {
     position: 'absolute',
-    bottom: 52,
+    bottom: 56,
     left: 45,
     right: 45,
     padding: 10,
@@ -386,8 +386,9 @@ export const styles = StyleSheet.create({
     fontWeight: 500,
   },
   qrCode: {
-    width: 56,
-    height: 56,
+    width: 72,
+    height: 72,
+    objectFit: 'contain',
   },
   qrCodeLabel: {
     fontSize: 6,
