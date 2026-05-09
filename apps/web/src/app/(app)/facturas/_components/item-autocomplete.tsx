@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { searchItemsForAutocomplete, type ItemSearchResult } from '../_lib/item-search-action'
+import { searchItemsForAutocomplete, searchCatalogTopItems, type ItemSearchResult } from '../_lib/item-search-action'
 
 interface Props {
   value: string
@@ -21,17 +21,26 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
   }, [value])
 
   useEffect(() => {
-    if (!isOpen || query.trim().length < 2) {
+    if (!isOpen) {
       setResults([])
       return
     }
+    // Si hay query de 2+ chars, busca normal
+    if (query.trim().length >= 2) {
+      setIsLoading(true)
+      const timer = setTimeout(async () => {
+        const data = await searchItemsForAutocomplete(query)
+        setResults(data)
+        setIsLoading(false)
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+    // Si no hay query pero el campo tiene foco, muestra catálogo popular
     setIsLoading(true)
-    const timer = setTimeout(async () => {
-      const data = await searchItemsForAutocomplete(query)
+    searchCatalogTopItems().then((data) => {
       setResults(data)
       setIsLoading(false)
-    }, 250)
-    return () => clearTimeout(timer)
+    })
   }, [query, isOpen])
 
   useEffect(() => {
@@ -61,7 +70,7 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
           setIsOpen(true)
         }}
         onFocus={() => setIsOpen(true)}
-        placeholder="Buscar producto/servicio o escribir descripción..."
+        placeholder="Haz clic para ver catálogo o escribe para buscar..."
         className="w-full px-2 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-md text-sm focus:outline-none focus:border-[var(--accent)]"
       />
       {isOpen && query.trim().length >= 2 && (

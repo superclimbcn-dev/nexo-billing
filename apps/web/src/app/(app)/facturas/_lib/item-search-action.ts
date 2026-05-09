@@ -111,6 +111,51 @@ export async function searchItemsForAutocomplete(
   return results.slice(0, 12)
 }
 
+export async function searchCatalogTopItems(): Promise<ItemSearchResult[]> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+  const tenantId = user.app_metadata?.tenant_id as string | undefined
+  if (!tenantId) return []
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { verticalId: true },
+  })
+  if (!tenant?.verticalId) return []
+
+  const catalogItems = await prisma.catalogItem.findMany({
+    where: {
+      verticalId: tenant.verticalId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      unitPrice: true,
+      vatRate: true,
+      unit: true,
+      category: true,
+    },
+    orderBy: { name: 'asc' },
+    take: 10,
+  })
+
+  return catalogItems.map((it) => ({
+    id: `catalog-${it.id}`,
+    name: it.name,
+    description: it.description,
+    unitPrice: Number(it.unitPrice),
+    vatRate: Number(it.vatRate),
+    unit: it.unit,
+    type: it.category ?? 'product',
+    source: 'catalog',
+  }))
+}
+
 export async function searchClientsForAutocomplete(query: string) {
   if (!query || query.trim().length < 2) return []
 
