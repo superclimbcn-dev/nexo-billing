@@ -49,4 +49,5 @@ export interface PdfInvoiceData {
     base: number
     amount: number
   }>
+  qrCodeUrl?: string
 }

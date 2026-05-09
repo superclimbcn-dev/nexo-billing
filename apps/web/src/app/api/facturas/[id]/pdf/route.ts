@@ -7,6 +7,8 @@ import { prisma } from '@nexo/prisma'
 import { InvoicePdfDocument } from '@/lib/pdf/invoice-pdf-document'
 import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
+import { signInvoiceToken } from '@/lib/public-invoice-token'
+import QRCode from 'qrcode'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +51,10 @@ export async function GET(
       vatRate: Number(l.vatRate),
     })),
   )
+
+  const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
+  const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
+  const qrCodeUrl = await QRCode.toDataURL(publicUrl, { width: 180, margin: 1 })
 
   const data: PdfInvoiceData = {
     tenant: {
@@ -97,6 +103,7 @@ export async function GET(
       totalAmount: Number(l.totalAmount),
     })),
     vatBreakdown: totals.vatBreakdown,
+    qrCodeUrl,
   }
 
   const buffer = await renderToBuffer(

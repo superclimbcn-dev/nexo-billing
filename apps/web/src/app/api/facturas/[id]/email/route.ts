@@ -10,6 +10,7 @@ import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals
 import { signInvoiceToken } from '@/lib/public-invoice-token'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
+import QRCode from 'qrcode'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,10 @@ export async function POST(
       })),
     )
 
+    const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
+    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
+    const qrCodeUrl = await QRCode.toDataURL(publicUrl, { width: 180, margin: 1 })
+
     const data: PdfInvoiceData = {
       tenant: {
         name: tenant.name,
@@ -127,6 +132,7 @@ export async function POST(
         totalAmount: Number(l.totalAmount),
       })),
       vatBreakdown: totals.vatBreakdown,
+      qrCodeUrl,
     }
 
     // Generate PDF buffer
@@ -143,15 +149,7 @@ export async function POST(
       )
     }
 
-    // Generate public link token
-    let publicUrl: string
-    try {
-      const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
-      publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
-    } catch (tokenErr) {
-      console.error('Token generation error:', tokenErr)
-      publicUrl = ''
-    }
+    // publicUrl already generated above with qrCodeUrl
 
     // Send email
     let sendResult

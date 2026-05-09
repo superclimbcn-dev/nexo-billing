@@ -12,8 +12,8 @@ const WHITE = '#ffffff'
 
 export const styles = StyleSheet.create({
   page: {
-    paddingTop: 28,
-    paddingBottom: 36,
+    paddingTop: 36,
+    paddingBottom: 110,
     paddingHorizontal: 45,
     fontFamily: 'Inter',
     fontSize: 9,
@@ -37,8 +37,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 14,
-    paddingBottom: 10,
+    marginBottom: 18,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -102,12 +102,12 @@ export const styles = StyleSheet.create({
   // Meta grid
   metaGrid: {
     flexDirection: 'row',
-    marginBottom: 12,
-    gap: 10,
+    marginBottom: 18,
+    gap: 12,
   },
   metaItem: {
     flex: 1,
-    padding: 6,
+    padding: 10,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -133,12 +133,12 @@ export const styles = StyleSheet.create({
   // Parties
   partiesSection: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 16,
+    marginBottom: 18,
   },
   partyBox: {
     flex: 1,
-    padding: 8,
+    padding: 12,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
     borderLeftWidth: 3,
@@ -172,19 +172,19 @@ export const styles = StyleSheet.create({
 
   // Table
   tableSection: {
-    marginBottom: 10,
+    marginBottom: 16,
   },
   tableTitle: {
     fontSize: 8,
     color: TEXT_SUBTLE,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 8,
     fontWeight: 500,
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 5,
+    paddingVertical: 7,
     borderBottomWidth: 1.5,
     borderBottomColor: TEXT,
   },
@@ -197,7 +197,7 @@ export const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -220,11 +220,11 @@ export const styles = StyleSheet.create({
   summaryWrapper: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   summaryBox: {
     width: '55%',
-    padding: 10,
+    padding: 14,
     backgroundColor: BG_SUBTLE,
     borderRadius: 8,
   },
@@ -245,14 +245,14 @@ export const styles = StyleSheet.create({
   summaryDivider: {
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    marginVertical: 3,
+    marginVertical: 5,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 6,
-    marginTop: 3,
+    paddingTop: 8,
+    marginTop: 5,
     borderTopWidth: 2,
     borderTopColor: ACCENT,
   },
@@ -272,8 +272,8 @@ export const styles = StyleSheet.create({
 
   // Notes
   notesSection: {
-    marginBottom: 8,
-    padding: 6,
+    marginBottom: 12,
+    padding: 10,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -293,8 +293,8 @@ export const styles = StyleSheet.create({
 
   // Payment
   paymentSection: {
-    marginBottom: 8,
-    padding: 6,
+    marginBottom: 12,
+    padding: 10,
     backgroundColor: BG_SUBTLE,
     borderRadius: 6,
   },
@@ -322,8 +322,14 @@ export const styles = StyleSheet.create({
 
   // Verifactu placeholder
   verifactuSection: {
-    marginTop: 6,
-    padding: 6,
+    position: 'absolute',
+    bottom: 52,
+    left: 45,
+    right: 45,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: '#f9fafb',
     borderRadius: 6,
     borderTopWidth: 2,
@@ -379,17 +385,27 @@ export const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: 500,
   },
+  qrCode: {
+    width: 56,
+    height: 56,
+  },
+  qrCodeLabel: {
+    fontSize: 6,
+    color: TEXT_SUBTLE,
+    marginTop: 2,
+    textAlign: 'center',
+  },
 
   // Footer
   footer: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 24,
     left: 45,
     right: 45,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 6,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: BORDER,
   },

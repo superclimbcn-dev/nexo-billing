@@ -254,30 +254,38 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
 
         {/* VERIFACTU BLOCK */}
         <View style={styles.verifactuSection}>
-          <View style={styles.verifactuHeader}>
-            <View style={styles.verifactuBadge}>
-              <Text style={styles.verifactuBadgeText}>V</Text>
-            </View>
-            <Text style={styles.verifactuTitle}>
-              Datos de trazabilidad VeriFactu · Registro de facturación encadenado
-            </Text>
-          </View>
-          <View style={styles.verifactuGrid}>
-            <View style={styles.verifactuCol}>
-              <Text style={styles.verifactuLabel}>ID Registro de alta</Text>
-              <Text style={styles.verifactuValue}>
-                RF-A-{invoice.fullNumber.replace(/-/g, '')}-{invoice.issuedAt.getFullYear()}-001
+          <View style={{ flex: 1 }}>
+            <View style={styles.verifactuHeader}>
+              <View style={styles.verifactuBadge}>
+                <Text style={styles.verifactuBadgeText}>V</Text>
+              </View>
+              <Text style={styles.verifactuTitle}>
+                Datos de trazabilidad VeriFactu · Registro de facturación encadenado
               </Text>
             </View>
-            <View style={styles.verifactuCol}>
-              <Text style={styles.verifactuLabel}>Hash criptográfico (SHA-256)</Text>
-              <Text style={styles.verifactuValue}>a8f4c2...e9d1b7</Text>
-            </View>
-            <View style={styles.verifactuCol}>
-              <Text style={styles.verifactuLabel}>Hash registro anterior</Text>
-              <Text style={styles.verifactuValue}>b7e1a0...c3f8d2</Text>
+            <View style={styles.verifactuGrid}>
+              <View style={styles.verifactuCol}>
+                <Text style={styles.verifactuLabel}>ID Registro de alta</Text>
+                <Text style={styles.verifactuValue}>
+                  RF-A-{invoice.fullNumber.replace(/-/g, '')}-{invoice.issuedAt.getFullYear()}-001
+                </Text>
+              </View>
+              <View style={styles.verifactuCol}>
+                <Text style={styles.verifactuLabel}>Hash criptográfico (SHA-256)</Text>
+                <Text style={styles.verifactuValue}>a8f4c2...e9d1b7</Text>
+              </View>
+              <View style={styles.verifactuCol}>
+                <Text style={styles.verifactuLabel}>Hash registro anterior</Text>
+                <Text style={styles.verifactuValue}>b7e1a0...c3f8d2</Text>
+              </View>
             </View>
           </View>
+          {data.qrCodeUrl && (
+            <View style={{ alignItems: 'center' }}>
+              <Image src={data.qrCodeUrl} style={styles.qrCode} />
+              <Text style={styles.qrCodeLabel}>Escanea para ver online</Text>
+            </View>
+          )}
         </View>
 
         {/* FOOTER */}
