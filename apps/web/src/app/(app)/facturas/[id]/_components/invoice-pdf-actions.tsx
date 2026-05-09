@@ -61,22 +61,21 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
     setEmailSent(false)
     setLoadingAction('email')
     try {
-      const res = await fetch(`/api/facturas/${invoiceId}/email`, {
-        method: 'POST',
+      const link = await getOrGeneratePublicLink()
+      const total = totalAmount.toLocaleString('es-ES', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       })
-      let data: { error?: string } = {}
-      try {
-        data = await res.json()
-      } catch {
-        // Response is not JSON
-      }
-      if (!res.ok) {
-        throw new Error(data.error || `Error ${res.status}: ${res.statusText}`)
-      }
+      const subject = encodeURIComponent(`Factura ${fullNumber}`)
+      const body = encodeURIComponent(
+        `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online, descargar el PDF y pagarla de forma segura aquí:\n${link}\n\nGracias por tu confianza.`,
+      )
+      const to = clientEmail ? encodeURIComponent(clientEmail) : ''
+      window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank')
       setEmailSent(true)
       setTimeout(() => setEmailSent(false), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar el email')
+      setError(err instanceof Error ? err.message : 'Error al abrir el email')
     } finally {
       setLoadingAction(null)
     }
