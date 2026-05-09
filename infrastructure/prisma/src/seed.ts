@@ -64,31 +64,156 @@ async function main() {
 
   console.log(`  ✓ Verticals: ${verticalCleaning.name}, ${verticalGeneric.name}, ${verticalConstruction.name}`)
 
-  // ── 1b. CATALOGO GLOBAL — Carpintería ─────────────────────────────────────
-  const carpentryProducts = [
-    { name: 'Puerta interior lacada blanca', description: 'Puerta de paso lacada en blanco, marco incluido', unitPrice: 185.0, unit: 'ud', category: 'puertas' },
-    { name: 'Puerta exterior blindada', description: 'Puerta de seguridad acorazada grado 3, cerradura multipunto', unitPrice: 520.0, unit: 'ud', category: 'puertas' },
-    { name: 'Puerta corredera empotrada', description: 'Sistema de puerta corredera con carril oculto', unitPrice: 340.0, unit: 'ud', category: 'puertas' },
-    { name: 'Ventana aluminio 2 hojas', description: 'Ventana corredera de aluminio con doble acristalamiento', unitPrice: 295.0, unit: 'ud', category: 'ventanas' },
-    { name: 'Ventana PVC oscilobatiente', description: 'Ventana de PVC con apertura oscilobatiente, rotura de puente térmico', unitPrice: 380.0, unit: 'ud', category: 'ventanas' },
-    { name: 'Armario empotrado a medida', description: 'Interior de armario con barras, cajoneras y estantes a medida', unitPrice: 650.0, unit: 'ml', category: 'armarios' },
-    { name: 'Tarima flotante roble', description: 'Tarima flotante de roble natural, acabado aceitado', unitPrice: 42.0, unit: 'm²', category: 'suelos' },
-    { name: 'Parquet multicapa nogal', description: 'Parquet multicapa de nogal americano, grosor 14mm', unitPrice: 68.0, unit: 'm²', category: 'suelos' },
-    { name: 'Escalera de caracol madera', description: 'Escalera de caracol con estructura metálica y peldaños de roble', unitPrice: 1850.0, unit: 'ud', category: 'escaleras' },
-    { name: 'Mostrador recepción a medida', description: 'Mostrador de recepción en melamina con iluminación LED integrada', unitPrice: 1200.0, unit: 'ud', category: 'mobiliario' },
-    { name: 'Mesa comedor extensible roble', description: 'Mesa de comedor extensible, patas torneadas en roble macizo', unitPrice: 780.0, unit: 'ud', category: 'mobiliario' },
-    { name: 'Cocina integral a medida', description: 'Muebles de cocina altos y bajos, encimera de cuarzo incluida', unitPrice: 4500.0, unit: 'proyecto', category: 'cocinas' },
-    { name: 'Ventana de madera laminada', description: 'Ventana de madera laminada con herrajes de latón', unitPrice: 450.0, unit: 'ud', category: 'ventanas' },
-    { name: 'Puerta de garaje seccional', description: 'Puerta de garaje seccional automática con motor', unitPrice: 890.0, unit: 'ud', category: 'puertas' },
-    { name: 'Barandilla de acero inoxidable', description: 'Barandilla de acero inoxidable con postes y cable tensado', unitPrice: 180.0, unit: 'ml', category: 'barandillas' },
-    { name: 'Revestimiento de pared friso', description: 'Friso de madera natural para revestimiento de paredes', unitPrice: 35.0, unit: 'm²', category: 'revestimientos' },
-    { name: 'Escalera recta de madera', description: 'Escalera recta con zancas de madera y barandilla', unitPrice: 950.0, unit: 'ud', category: 'escaleras' },
-    { name: 'Mueble baño suspendido', description: 'Mueble de baño suspendido con lavabo integrado y espejo', unitPrice: 420.0, unit: 'ud', category: 'mobiliario' },
-    { name: 'Persiana enrollable aluminio', description: 'Persiana enrollable de aluminio con cajón exterior', unitPrice: 155.0, unit: 'ud', category: 'ventanas' },
-    { name: 'Puerta corredera de madera', description: 'Puerta corredera rústica de madera maciza con guías', unitPrice: 390.0, unit: 'ud', category: 'puertas' },
+  // ── 1b. CATALOGO GLOBAL — Construcción y carpintería (uso diario) ─────────
+  const constructionProducts = [
+    // Materiales básicos
+    { name: 'Cemento Portland 25kg', description: 'Cemento Portland gris tipo CEM II para obra general', unitPrice: 4.5, unit: 'saco', category: 'materiales' },
+    { name: 'Mortero de albañilería 25kg', description: 'Mortero premezclado para ladrillo y bloque', unitPrice: 3.8, unit: 'saco', category: 'materiales' },
+    { name: 'Yeso en polvo 25kg', description: 'Yeso de acabado para interior, alisado de paredes y techos', unitPrice: 5.2, unit: 'saco', category: 'materiales' },
+    { name: 'Escayola 25kg', description: 'Escayola para molduras, techos desmontables y reparaciones', unitPrice: 6.0, unit: 'saco', category: 'materiales' },
+    { name: 'Cal hidratada 25kg', description: 'Cal apagada para morteros, revocos y pintura de cal', unitPrice: 3.2, unit: 'saco', category: 'materiales' },
+    { name: 'Arena de construcción', description: 'Arena lavada de río para morteros y hormigón', unitPrice: 18.0, unit: 'ton', category: 'materiales' },
+    { name: 'Grava 20kg', description: 'Grava de trituración para hormigón y drenajes', unitPrice: 2.8, unit: 'saco', category: 'materiales' },
+    { name: 'Ladrillo hueco doble', description: 'Ladrillo perforado doble para muros de carga y tabiques', unitPrice: 0.45, unit: 'ud', category: 'materiales' },
+    { name: 'Ladrillo macizo', description: 'Ladrillo macizo para muros de carga y fachadas', unitPrice: 0.55, unit: 'ud', category: 'materiales' },
+    { name: 'Bloque de hormigón 20x20x40', description: 'Bloque de hormigón vibrado para muros y cerramientos', unitPrice: 1.2, unit: 'ud', category: 'materiales' },
+    { name: 'Placa de yeso laminado Pladur 120x260x13', description: 'Placa de yeso estándar para techos y tabiques', unitPrice: 6.5, unit: 'ud', category: 'pladur' },
+    { name: 'Placa de yeso hidrófugo 120x260x13', description: 'Placa de yeso resistente a la humedad para baños y cocinas', unitPrice: 9.8, unit: 'ud', category: 'pladur' },
+    { name: 'Placa de cemento 120x260', description: 'Placa de fibrocemento para exteriores y zonas húmedas', unitPrice: 22.0, unit: 'ud', category: 'materiales' },
+    { name: 'Pasta de juntas Pladur 5kg', description: 'Pasta lista para juntas de pladur, acabado liso', unitPrice: 4.5, unit: 'bote', category: 'pladur' },
+    { name: 'Cinta de papel para juntas 50m', description: 'Cinta de papel reforzada para juntas de pladur', unitPrice: 3.2, unit: 'rollo', category: 'pladur' },
+
+    // Siliconas y selladores
+    { name: 'Silicona acética transparente 280ml', description: 'Silicona universal transparente para sellado general', unitPrice: 2.8, unit: 'cartucho', category: 'selladores' },
+    { name: 'Silicona acética blanca 280ml', description: 'Silicona universal blanca para cocinas, baños y carpintería', unitPrice: 2.8, unit: 'cartucho', category: 'selladores' },
+    { name: 'Silicona neutra gris 280ml', description: 'Silicona neutra para exterior, no corroe metales', unitPrice: 4.2, unit: 'cartucho', category: 'selladores' },
+    { name: 'Silicona sanitaria (baños) 280ml', description: 'Silicona antihongos para juntas de baño y cocina', unitPrice: 5.5, unit: 'cartucho', category: 'selladores' },
+    { name: 'Sellador acrílico pintable 300ml', description: 'Sellador de acrílico para grietas y juntas, pintable al agua', unitPrice: 2.2, unit: 'cartucho', category: 'selladores' },
+    { name: 'Sellador de poliuretano 300ml', description: 'Sellador elástico de poliuretano para juntas de dilatación', unitPrice: 5.8, unit: 'cartucho', category: 'selladores' },
+    { name: 'Espuma de poliuretano 750ml', description: 'Espuma expansiva para sellado de huecos y fijación', unitPrice: 4.5, unit: 'bote', category: 'selladores' },
+    { name: 'Masilla acrílica tubo 400ml', description: 'Masilla lista para rellenar grietas y agujeros, pintable', unitPrice: 3.5, unit: 'tubo', category: 'selladores' },
+    { name: 'Masilla de poliéster bicomponente 1kg', description: 'Masilla de poliester con catalizador para reparaciones', unitPrice: 8.5, unit: 'bote', category: 'selladores' },
+
+    // Pinturas
+    { name: 'Pintura plástica blanca mate 15L', description: 'Pintura plástica de calidad para interior y exterior', unitPrice: 28.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Pintura plástica blanca mate 4L', description: 'Pintura plástica blanca mate para paredes y techos', unitPrice: 12.5, unit: 'bote', category: 'pinturas' },
+    { name: 'Imprimación al agua 4L', description: 'Imprimación de fijación para paredes nuevas o reparadas', unitPrice: 15.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Barniz mate para madera 750ml', description: 'Barniz protector incoloro con acabado mate para madera', unitPrice: 9.5, unit: 'bote', category: 'pinturas' },
+    { name: 'Barniz brillante para madera 750ml', description: 'Barniz protector incoloro con acabado brillante', unitPrice: 9.5, unit: 'bote', category: 'pinturas' },
+    { name: 'Esmalte al agua blanco 750ml', description: 'Esmalte sintético al agua para metales y madera', unitPrice: 8.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Pintura de tráfico 4L', description: 'Pintura acrílica para señalización horizontal en parking', unitPrice: 32.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Pintura de suelos epoxi 4kg', description: 'Pintura epoxi bicomponente para suelos industriales', unitPrice: 45.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Pintura impermeabilizante 15L', description: 'Pintura impermeabilizante para terrazas y cubiertas', unitPrice: 55.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Fijador al agua 5L', description: 'Fijador sellador para paredes antes de pintar', unitPrice: 12.0, unit: 'bote', category: 'pinturas' },
+    { name: 'Enduido en pasta 5kg', description: 'Pasta de alisado para paredes, acabado liso', unitPrice: 8.5, unit: 'bote', category: 'pinturas' },
+    { name: 'Disolvente universal 1L', description: 'Disolvente multiusos para limpieza de herramientas', unitPrice: 3.5, unit: 'bote', category: 'pinturas' },
+
+    // Adhesivos
+    { name: 'Cola blanca para madera 1kg', description: 'Cola blanca D2 para ensamblaje de madera', unitPrice: 4.5, unit: 'bote', category: 'adhesivos' },
+    { name: 'Cola de contacto 1L', description: 'Cola de contacto neopreno para laminados y moquetas', unitPrice: 8.0, unit: 'bote', category: 'adhesivos' },
+    { name: 'Cemento cola flexible 25kg', description: 'Cemento cola C2 TE S1 para cerámica y gres porcelánico', unitPrice: 12.5, unit: 'saco', category: 'adhesivos' },
+    { name: 'Cemento cola normal 25kg', description: 'Cemento cola C1 para baldosas y azulejos en interior', unitPrice: 7.5, unit: 'saco', category: 'adhesivos' },
+    { name: 'Masilla epoxi 1kg', description: 'Masilla epoxi para relleno de juntas anchas en suelos', unitPrice: 18.0, unit: 'bote', category: 'adhesivos' },
+
+    // Ferretería y tornillería
+    { name: 'Taco Fischer SX8 (caja 100)', description: 'Taco de expansión universal para hormigón y ladrillo', unitPrice: 6.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Taco Fischer SX10 (caja 100)', description: 'Taco de expansión universal Ø10 para cargas medias', unitPrice: 9.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Taco Fischer DUOPOWER 8x40 (caja 100)', description: 'Taco dual para hormigón, ladrillo y pladur', unitPrice: 12.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo autoperforante 4.2x16 (caja 1000)', description: 'Tornillo autotaladrante para chapa de acero hasta 2mm', unitPrice: 8.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo autoperforante 4.8x38 (caja 1000)', description: 'Tornillo autotaladrante para fijación de panel sándwich', unitPrice: 11.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo para madera 4x40 (caja 500)', description: 'Tornillo de rosca metrica para madera', unitPrice: 5.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo para madera 5x60 (caja 500)', description: 'Tornillo de rosca metrica para estructuras de madera', unitPrice: 7.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo para aglomerado 4x40 (caja 500)', description: 'Tornillo avellanado para tableros de aglomerado y DM', unitPrice: 5.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Clavo galvanizado 40mm (kg)', description: 'Clavo de acero galvanizado para carpintería general', unitPrice: 3.2, unit: 'kg', category: 'ferretería' },
+    { name: 'Clavo galvanizado 60mm (kg)', description: 'Clavo de acero galvanizado para estructuras ligeras', unitPrice: 3.5, unit: 'kg', category: 'ferretería' },
+    { name: 'Brida nylon 200x4.8 (caja 100)', description: 'Brida de nylon para agrupación de cables y tubos', unitPrice: 2.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Brida nylon 300x4.8 (caja 100)', description: 'Brida de nylon grande para instalaciones industriales', unitPrice: 3.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo Pladur 3.5x25 (caja 1000)', description: 'Tornillo autorroscante para fijación de pladur a perfil', unitPrice: 7.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Tornillo Pladur 3.5x45 (caja 1000)', description: 'Tornillo autorroscante largo para doble placa de pladur', unitPrice: 8.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Varilla roscada M8 (1m)', description: 'Varilla roscada zincada para estructuras y suspensión', unitPrice: 2.5, unit: 'ud', category: 'ferretería' },
+    { name: 'Varilla roscada M10 (1m)', description: 'Varilla roscada zincada M10 para cargas pesadas', unitPrice: 3.5, unit: 'ud', category: 'ferretería' },
+    { name: 'Tuerca hexagonal M8 (caja 100)', description: 'Tuerca hexagonal zincada para varilla roscada', unitPrice: 3.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Arandela plana M8 (caja 100)', description: 'Arandela plana zincada para distribución de carga', unitPrice: 1.5, unit: 'caja', category: 'ferretería' },
+    { name: 'Anclaje químico M10 (caja 10)', description: 'Anclaje químico con resina para fijaciones estructurales', unitPrice: 18.0, unit: 'caja', category: 'ferretería' },
+    { name: 'Resina de anclaje 300ml', description: 'Resina de poliéster para anclajes químicos en hormigón', unitPrice: 12.0, unit: 'cartucho', category: 'ferretería' },
+
+    // Electricidad
+    { name: 'Cable eléctrico H07RN-F 3x1.5 (metro)', description: 'Cable flexible para instalaciones provisionales y obra', unitPrice: 1.8, unit: 'm', category: 'electricidad' },
+    { name: 'Cable eléctrico H07RN-F 3x2.5 (metro)', description: 'Cable flexible para alimentación de maquinaria', unitPrice: 2.8, unit: 'm', category: 'electricidad' },
+    { name: 'Tubo corrugado 16mm (rollo 50m)', description: 'Tubo corrugado para instalación de cables eléctricos', unitPrice: 18.0, unit: 'rollo', category: 'electricidad' },
+    { name: 'Tubo corrugado 20mm (rollo 50m)', description: 'Tubo corrugado Ø20 para instalaciones con más cables', unitPrice: 25.0, unit: 'rollo', category: 'electricidad' },
+    { name: 'Caja de empotrar universal', description: 'Caja de empotrar para mecanismos eléctricos', unitPrice: 0.45, unit: 'ud', category: 'electricidad' },
+    { name: 'Interruptor simple empotrable', description: 'Mecanismo de interruptor simple para caja de empotrar', unitPrice: 2.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Enchufe Schuko empotrable', description: 'Base de enchufe Schuko con protección para niños', unitPrice: 3.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Foco LED empotrable 7W', description: 'Foco downlight LED empotrable para techos de pladur', unitPrice: 4.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Foco LED empotrable 9W', description: 'Foco downlight LED empotrable de mayor potencia', unitPrice: 5.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Tubo LED T8 120cm 18W', description: 'Tubo LED sustituto de fluorescente 36W', unitPrice: 5.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Panel LED 60x60cm 40W', description: 'Panel LED para techos desmontables 60x60', unitPrice: 22.0, unit: 'ud', category: 'electricidad' },
+    { name: 'Proyector LED 30W', description: 'Foco proyector LED para exterior e industrial', unitPrice: 18.0, unit: 'ud', category: 'electricidad' },
+    { name: 'Regleta con interruptor 3 tomas', description: 'Regleta de 3 enchufes con interruptor y protección', unitPrice: 6.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Cable prolongación Schuko 5m', description: 'Prolongador eléctrico 5 metros con protección', unitPrice: 8.5, unit: 'ud', category: 'electricidad' },
+    { name: 'Cable prolongación Schuko 10m', description: 'Prolongador eléctrico 10 metros con protección', unitPrice: 14.0, unit: 'ud', category: 'electricidad' },
+
+    // Fontanería
+    { name: 'Tubo PVC evacuación Ø110 (3m)', description: 'Tubo de PVC para saneamiento y evacuación de aguas', unitPrice: 8.5, unit: 'ud', category: 'fontanería' },
+    { name: 'Tubo PVC evacuación Ø50 (3m)', description: 'Tubo de PVC Ø50 para desagües de lavabos y fregaderos', unitPrice: 3.5, unit: 'ud', category: 'fontanería' },
+    { name: 'Codo PVC 90º Ø110', description: 'Codo de PVC a 90 grados para cambio de dirección', unitPrice: 3.2, unit: 'ud', category: 'fontanería' },
+    { name: 'Válvula de esfera 1/2"', description: 'Válvula de esfera palanca para corte de agua', unitPrice: 4.5, unit: 'ud', category: 'fontanería' },
+    { name: 'Válvula de esfera 3/4"', description: 'Válvula de esfera palanca 3/4 para contadores', unitPrice: 5.5, unit: 'ud', category: 'fontanería' },
+    { name: 'Grifo monomando lavabo', description: 'Grifo monomando cromado para lavabo con ahorro de agua', unitPrice: 35.0, unit: 'ud', category: 'fontanería' },
+    { name: 'Grifo monomando cocina', description: 'Grifo monomando cromado para fregadero de cocina', unitPrice: 42.0, unit: 'ud', category: 'fontanería' },
+    { name: 'Flexo de ducha 1.5m', description: 'Flexo de ducha cromado antitorsión 1.5 metros', unitPrice: 8.5, unit: 'ud', category: 'fontanería' },
+    { name: 'Sifón botella lavabo', description: 'Sifón botella cromado para lavabo con válvula', unitPrice: 12.0, unit: 'ud', category: 'fontanería' },
+    { name: 'Sifón extensible fregadero', description: 'Sifón extensible para fregadero con toma de lavadora', unitPrice: 15.0, unit: 'ud', category: 'fontanería' },
+    { name: 'Llave de paso con purga 1/2"', description: 'Llave de paso con purga para vaciado de instalaciones', unitPrice: 6.5, unit: 'ud', category: 'fontanería' },
+
+    // Herramientas manuales
+    { name: 'Martillo de albañil 500g', description: 'Martillo con mango de fibra de vidrio para albañilería', unitPrice: 8.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Cúter profesional 18mm', description: 'Cúter retráctil de aluminio con depósito de cuchillas', unitPrice: 5.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Nivel de burbuja 80cm', description: 'Nivel de aluminio con 3 burbujas para horizontal y vertical', unitPrice: 12.0, unit: 'ud', category: 'herramientas' },
+    { name: 'Cinta métrica 5m', description: 'Flexómetro 5 metros con freno y gancho magnético', unitPrice: 6.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Llave ajustable 10"', description: 'Llave inglesa ajustable cromada 10 pulgadas', unitPrice: 9.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Alicate universal', description: 'Alicate universal mango bimaterial para electricidad', unitPrice: 7.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Destornillador Phillips PH2', description: 'Destornillador Phillips PH2 mango ergonómico', unitPrice: 3.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Llave Allen juego 10 piezas', description: 'Juego de llaves Allen hexagonales métricas con bola', unitPrice: 8.5, unit: 'juego', category: 'herramientas' },
+    { name: 'Espátula 100mm', description: 'Espátula de acero inoxidable para alisado de masillas', unitPrice: 3.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Espátula 60mm', description: 'Espátula de acero inoxidable para masillas y selladores', unitPrice: 2.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Llana de acero 280x130mm', description: 'Llana de acero con mango de madera para alisado', unitPrice: 7.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Paleta de albañil 180x140', description: 'Paleta de acero mango madera para mortero', unitPrice: 6.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Sierra de calar manual', description: 'Arco de sierra para calar con hoja intercambiable', unitPrice: 12.0, unit: 'ud', category: 'herramientas' },
+    { name: 'Cincel de albañil 250x16mm', description: 'Cincel de acero forjado para picado de hormigón', unitPrice: 8.5, unit: 'ud', category: 'herramientas' },
+    { name: 'Carretilla 90L', description: 'Carretilla de obra con rueda neumática y cubeta 90L', unitPrice: 55.0, unit: 'ud', category: 'herramientas' },
+
+    // Seguridad
+    { name: 'Guantes de trabajo de nitrilo (pack 100)', description: 'Guantes desechables de nitrilo sin polvo talla M/L', unitPrice: 8.5, unit: 'pack', category: 'seguridad' },
+    { name: 'Guantes de trabajo de cuero (par)', description: 'Guantes de cuero flor para trabajo pesado', unitPrice: 6.5, unit: 'par', category: 'seguridad' },
+    { name: 'Gafas de seguridad transparentes', description: 'Gafas de protección contra proyecciones y polvo', unitPrice: 4.5, unit: 'ud', category: 'seguridad' },
+    { name: 'Mascarilla desechable FFP2 (pack 20)', description: 'Mascarilla FFP2 con filtro de partículas', unitPrice: 6.0, unit: 'pack', category: 'seguridad' },
+    { name: 'Casco de seguridad amarillo', description: 'Casco de obra con ajuste de rosca y barbiquejo', unitPrice: 8.5, unit: 'ud', category: 'seguridad' },
+    { name: 'Botas de seguridad S3 (par)', description: 'Bota de seguridad con puntera y plantilla antiperforación', unitPrice: 35.0, unit: 'par', category: 'seguridad' },
+    { name: 'Arnés de seguridad 4 puntos', description: 'Arnés anticaídas con 4 puntos de anclaje', unitPrice: 45.0, unit: 'ud', category: 'seguridad' },
+    { name: 'Red de seguridad 2x10m', description: 'Red de protección perimetral para obras y andamios', unitPrice: 28.0, unit: 'ud', category: 'seguridad' },
+    { name: 'Puntales metálicos 3m', description: 'Puntales metálicos para encofrado y soporte de cargas', unitPrice: 18.0, unit: 'ud', category: 'seguridad' },
+
+    // Aislamiento
+    { name: 'Lana de roca 60kg/m³ (placa)', description: 'Placa de lana de roca para aislamiento térmico y acústico', unitPrice: 8.5, unit: 'ud', category: 'aislamiento' },
+    { name: 'Lana de vidrio 15kg/m³ (rollo)', description: 'Rollo de lana de vidrio para aislamiento de cubiertas', unitPrice: 12.0, unit: 'rollo', category: 'aislamiento' },
+    { name: 'Poliestireno extruido XPS 50mm', description: 'Placa de poliestireno extruido para suelos y cubiertas', unitPrice: 15.0, unit: 'ud', category: 'aislamiento' },
+    { name: 'Poliestireno expandido EPS 30mm', description: 'Placa de poliestireno expandido para fachadas', unitPrice: 6.5, unit: 'ud', category: 'aislamiento' },
+    { name: 'Tela asfáltica 4mm (rollo 10m²)', description: 'Tela asfáltica con armadura para impermeabilización', unitPrice: 22.0, unit: 'rollo', category: 'aislamiento' },
+    { name: 'Membrana EPDM (rollo 10m²)', description: 'Membrana de caucho EPDM para impermeabilización', unitPrice: 65.0, unit: 'rollo', category: 'aislamiento' },
+    { name: 'Junta de dilatación 15mm (rollo 25m)', description: 'Perfil de junta de dilatación para pavimentos', unitPrice: 18.0, unit: 'rollo', category: 'aislamiento' },
+
+    // Carpintería (productos a medida, menos frecuentes)
+    { name: 'Puerta interior lacada blanca', description: 'Puerta de paso lacada en blanco, marco incluido', unitPrice: 185.0, unit: 'ud', category: 'carpintería' },
+    { name: 'Puerta exterior blindada', description: 'Puerta de seguridad acorazada grado 3, cerradura multipunto', unitPrice: 520.0, unit: 'ud', category: 'carpintería' },
+    { name: 'Ventana aluminio 2 hojas', description: 'Ventana corredera de aluminio con doble acristalamiento', unitPrice: 295.0, unit: 'ud', category: 'carpintería' },
+    { name: 'Armario empotrado a medida', description: 'Interior de armario con barras, cajoneras y estantes a medida', unitPrice: 650.0, unit: 'ml', category: 'carpintería' },
+    { name: 'Tarima flotante roble', description: 'Tarima flotante de roble natural, acabado aceitado', unitPrice: 42.0, unit: 'm²', category: 'carpintería' },
+    { name: 'Cocina integral a medida', description: 'Muebles de cocina altos y bajos, encimera de cuarzo incluida', unitPrice: 4500.0, unit: 'proyecto', category: 'carpintería' },
   ]
 
-  for (const p of carpentryProducts) {
+  for (const p of constructionProducts) {
     await prisma.catalogItem.upsert({
       where: { verticalId_name: { verticalId: verticalConstruction.id, name: p.name } },
       update: {},
@@ -105,7 +230,7 @@ async function main() {
     })
   }
 
-  console.log(`  ✓ Catalogo carpintería: ${carpentryProducts.length} productos`)
+  console.log(`  ✓ Catalogo construcción: ${constructionProducts.length} productos`)
 
   // ── 2. TENANT ─────────────────────────────────────────────────────────────
   const tenantId = '00000000-0000-0000-0000-000000000001'
