@@ -241,33 +241,43 @@ export async function getTreasuryKpis(): Promise<TreasuryKpi> {
 export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
   const { tenantId } = await requireAuth()
 
-  const [paidInvoices, pendingInvoices, expensesMonth] = await Promise.all([
-    prisma.invoice.aggregate({
-      where: { tenantId, status: 'paid' },
-      _sum: { totalAmount: true },
-    }),
-    prisma.invoice.aggregate({
-      where: {
-        tenantId,
-        status: { in: ['sent', 'overdue', 'partially_paid'] },
-      },
-      _sum: { totalAmount: true },
-    }),
-    prisma.expense.aggregate({
-      where: {
-        tenantId,
-        issuedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
-      },
-      _sum: { totalAmount: true },
-    }),
-  ])
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 
-  const balance = Number(paidInvoices._sum.totalAmount ?? 0)
-  const pendingIn = Number(pendingInvoices._sum.totalAmount ?? 0)
-  const pendingOut = Number(expensesMonth._sum.totalAmount ?? 0)
+  const [balanceAgg, pendingInvoicesAgg, expensesMonthAgg, incomeMonthAgg] =
+    await Promise.all([
+      prisma.invoice.aggregate({
+        where: { tenantId, status: 'paid' },
+        _sum: { totalAmount: true },
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: { in: ['sent', 'overdue', 'partially_paid'] },
+        },
+        _sum: { totalAmount: true },
+      }),
+      prisma.expense.aggregate({
+        where: { tenantId, issuedAt: { gte: monthStart } },
+        _sum: { totalAmount: true },
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: 'paid',
+          issuedAt: { gte: monthStart },
+        },
+        _sum: { totalAmount: true },
+      }),
+    ])
+
+  const balance = Number(balanceAgg._sum.totalAmount ?? 0)
+  const pendingIn = Number(pendingInvoicesAgg._sum.totalAmount ?? 0)
+  const monthlyExpenses = Number(expensesMonthAgg._sum.totalAmount ?? 0)
+  const monthlyIncome = Number(incomeMonthAgg._sum.totalAmount ?? 0)
 
   const alerts: TreasuryAlert[] = []
 
+  // Alerta 1: Saldo negativo
   if (balance < 0) {
     alerts.push({
       level: 'danger',
@@ -276,27 +286,33 @@ export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
     })
   }
 
-  if (pendingIn < pendingOut && balance > 0) {
+  // Alerta 2: Gastos del mes superan entradas del mes
+  if (monthlyExpenses > monthlyIncome && monthlyExpenses > 0) {
     alerts.push({
       level: 'warning',
-      message: 'Gastos superan cobros pendientes',
-      detail: `Tienes ${pendingOut.toFixed(2)} € en gastos vs ${pendingIn.toFixed(2)} € por cobrar.`,
+      message: 'Gastos superan entradas este mes',
+      detail: `Este mes gastaste ${monthlyExpenses.toFixed(2)} € y recibiste ${monthlyIncome.toFixed(2)} €.`,
     })
   }
 
-  if (balance < 1000 && balance >= 0) {
+  // Alerta 3: Reserva baja (menos de 2 meses de gastos)
+  if (balance >= 0 && balance < monthlyExpenses * 2 && monthlyExpenses > 0) {
     alerts.push({
       level: 'warning',
       message: 'Reserva de tesorería baja',
-      detail: `Saldo acumulado: ${balance.toFixed(2)} €. Considera acelerar cobros.`,
+      detail:
+        pendingIn > 0 && balance < monthlyExpenses
+          ? `Saldo: ${balance.toFixed(2)} €. Considera acelerar cobros.`
+          : `Saldo: ${balance.toFixed(2)} €. Cubre menos de 2 meses de gastos.`,
     })
   }
 
-  if (pendingIn > pendingOut * 2) {
+  // Alerta positiva: buena proyección de cobros
+  if (pendingIn > monthlyExpenses * 2 && pendingIn > 0) {
     alerts.push({
       level: 'info',
       message: 'Buena proyección de cobros',
-      detail: `Tienes ${pendingIn.toFixed(2)} € por cobrar, el doble de tus gastos actuales.`,
+      detail: `Tienes ${pendingIn.toFixed(2)} € por cobrar, más del doble de tus gastos mensuales.`,
     })
   }
 
