@@ -16,6 +16,7 @@
     "@nexo/core-utils": "workspace:*",
     "@nexo/verifactu": "workspace:*",
     "@nexo/prisma": "workspace:*",
+    "@supabase/supabase-js": "^2.47.0",
     "@react-pdf/renderer": "^4.5.1",
     "@types/papaparse": "^5.5.2",
     "next": "^15.3.0",

@@ -24,5 +24,7 @@ export {
   InvoiceType,
   RecurringStatus,
   RecurringFrequency,
+  ExpenseCategory,
+  ExpenseStatus,
 } from '@prisma/client'
 export type { PrismaClient, Client, Item, Invoice, InvoiceLine, InvoiceSeries } from '@prisma/client'

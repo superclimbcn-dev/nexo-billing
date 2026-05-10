@@ -65,6 +65,14 @@ enum QuoteStatus {
   converted
 }
 
+enum ExpenseCategory {
+  ALIMENTACION
+  TRANSPORTE
+  MATERIAL
+  SERVICIOS
+  OTROS
+}
+
 enum ExpenseStatus {
   pending
   paid
@@ -695,11 +703,11 @@ model QuoteLine {
 model Expense {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id") @db.Uuid
-  supplierId String @map("supplier_id") @db.Uuid
+  supplierId String? @map("supplier_id") @db.Uuid
 
-  externalNumber String        @map("external_number") // número que viene en la factura del proveedor
+  externalNumber String?       @map("external_number") // número que viene en la factura del proveedor
   status         ExpenseStatus @default(pending)
-  category       String? // alquiler, suministros, profesionales, etc.
+  category       ExpenseCategory? // categoría estándar para gastos simples
 
   issuedAt DateTime  @map("issued_at")
   dueAt    DateTime? @map("due_at")
@@ -712,17 +720,19 @@ model Expense {
   currency      String  @default("EUR")
 
   notes         String?
-  attachmentUrl String? @map("attachment_url") // PDF de la factura del proveedor
+  vendor        String? // proveedor libre para gastos sin supplier registrado
+  attachmentUrl String? @map("attachment_url") // PDF de la factura del proveedor o recibo
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  supplier Supplier      @relation(fields: [supplierId], references: [id])
+  supplier Supplier?     @relation(fields: [supplierId], references: [id])
   lines    ExpenseLine[]
   payments Payment[]
 
-  @@unique([tenantId, supplierId, externalNumber])
+  @@index([tenantId, issuedAt])
+  @@index([tenantId, category])
   @@map("expenses")
 }
 

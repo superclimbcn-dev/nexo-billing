@@ -48,6 +48,9 @@ importers:
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@19.2.5)
+      '@supabase/supabase-js':
+        specifier: ^2.47.0
+        version: 2.104.0
       '@types/papaparse':
         specifier: ^5.5.2
         version: 5.5.2

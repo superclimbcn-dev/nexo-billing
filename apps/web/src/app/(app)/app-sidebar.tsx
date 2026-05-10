@@ -96,6 +96,12 @@ export function AppSidebar({
           active={pathname.startsWith('/recurrentes')}
         />
         <NavItem
+          href="/gastos"
+          icon="⊟"
+          label="Gastos"
+          active={pathname.startsWith('/gastos')}
+        />
+        <NavItem
           href="/clientes"
           icon="◎"
           label="Clientes"
