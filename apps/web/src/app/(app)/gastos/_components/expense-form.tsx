@@ -15,9 +15,10 @@ interface Props {
     vendor: string | null
   }
   onClose: () => void
+  onSuccess?: () => void
 }
 
-export function ExpenseForm({ expense, onClose }: Props) {
+export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +58,7 @@ export function ExpenseForm({ expense, onClose }: Props) {
         setError(res.error)
       } else {
         router.refresh()
+        onSuccess?.()
         onClose()
       }
     })

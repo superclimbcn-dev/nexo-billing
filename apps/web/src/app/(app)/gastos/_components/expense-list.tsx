@@ -36,10 +36,21 @@ const categoryLabels: Record<string, string> = {
   OTROS: 'Otros',
 }
 
+interface Toast {
+  message: string
+  type: 'success' | 'error'
+}
+
 export function ExpenseList({ items }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [toast, setToast] = useState<Toast | null>(null)
 
   const editingExpense = editingId ? items.find((it) => it.id === editingId) ?? null : null
+
+  function showToast(message: string, type: 'success' | 'error') {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   if (items.length === 0) {
     return (
@@ -141,7 +152,27 @@ export function ExpenseList({ items }: Props) {
         <ExpenseEditModal
           expense={editingExpense}
           onClose={() => setEditingId(null)}
+          onSuccess={(action) =>
+            showToast(
+              action === 'updated'
+                ? 'Gasto actualizado correctamente'
+                : 'Gasto eliminado',
+              action === 'updated' ? 'success' : 'success',
+            )
+          }
         />
+      )}
+
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-opacity ${
+            toast.type === 'success'
+              ? 'bg-green-100 text-green-800 border border-green-200'
+              : 'bg-[var(--danger)]/10 text-[var(--danger)] border border-[var(--danger)]/20'
+          }`}
+        >
+          {toast.message}
+        </div>
       )}
     </>
   )

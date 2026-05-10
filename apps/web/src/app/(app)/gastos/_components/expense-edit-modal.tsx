@@ -16,11 +16,12 @@ interface Props {
     vendor: string | null
   }
   onClose: () => void
+  onSuccess?: (action: 'updated' | 'deleted') => void
 }
 
 type View = 'edit' | 'confirm-delete'
 
-export function ExpenseEditModal({ expense, onClose }: Props) {
+export function ExpenseEditModal({ expense, onClose, onSuccess }: Props) {
   const router = useRouter()
   const [view, setView] = useState<View>('edit')
   const [isDeleting, startDelete] = useTransition()
@@ -34,6 +35,7 @@ export function ExpenseEditModal({ expense, onClose }: Props) {
         setDeleteError(res.error)
       } else {
         router.refresh()
+        onSuccess?.('deleted')
         onClose()
       }
     })
@@ -57,7 +59,7 @@ export function ExpenseEditModal({ expense, onClose }: Props) {
 
         {view === 'edit' && (
           <>
-            <ExpenseForm expense={expense} onClose={onClose} />
+            <ExpenseForm expense={expense} onClose={onClose} onSuccess={() => onSuccess?.('updated')} />
 
             <div className="border-t border-[var(--border)] pt-4">
               <button

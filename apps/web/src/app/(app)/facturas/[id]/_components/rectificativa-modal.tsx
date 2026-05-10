@@ -119,7 +119,7 @@ export function RectificativaModal({ invoiceId, fullNumber, originalLines, onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-4xl bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--text)]">
             Crear rectificativa de {fullNumber}
@@ -180,60 +180,70 @@ export function RectificativaModal({ invoiceId, fullNumber, originalLines, onClo
               <table className="w-full text-sm">
                 <thead className="bg-[var(--surface-raised)]">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-[var(--text-dim)] uppercase">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-[var(--text-dim)] uppercase w-[40%]">
                       Descripción
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-24">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-[15%]">
                       Cant.
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-28">
-                      Precio
+                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-[20%]">
+                      Precio unit.
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-20">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-[15%]">
                       IVA %
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-[var(--text-dim)] uppercase w-[10%]">
+                      Total
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((line, idx) => (
-                    <tr key={idx} className="border-t border-[var(--border)]">
-                      <td className="px-2 py-2">
-                        <input
-                          type="text"
-                          value={line.description}
-                          onChange={(e) => updateLine(idx, 'description', e.target.value)}
-                          className={tableCellClass}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={line.quantity}
-                          onChange={(e) => updateLine(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                          className={`${tableCellClass} text-right`}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={line.unitPrice}
-                          onChange={(e) => updateLine(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                          className={`${tableCellClass} text-right`}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={line.vatRate}
-                          onChange={(e) => updateLine(idx, 'vatRate', parseFloat(e.target.value) || 0)}
-                          className={`${tableCellClass} text-right`}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {lines.map((line, idx) => {
+                    const lineSub = roundCents(line.quantity * line.unitPrice)
+                    const lineTotal = roundCents(lineSub + roundCents(lineSub * (line.vatRate / 100)))
+                    return (
+                      <tr key={idx} className="border-t border-[var(--border)]">
+                        <td className="px-2 py-2">
+                          <input
+                            type="text"
+                            value={line.description}
+                            onChange={(e) => updateLine(idx, 'description', e.target.value)}
+                            className={`${tableCellClass} w-full`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={line.quantity}
+                            onChange={(e) => updateLine(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                            className={`${tableCellClass} w-full text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={line.unitPrice}
+                            onChange={(e) => updateLine(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className={`${tableCellClass} w-full text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={line.vatRate}
+                            onChange={(e) => updateLine(idx, 'vatRate', parseFloat(e.target.value) || 0)}
+                            className={`${tableCellClass} w-full text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-2 text-right text-sm font-mono text-[var(--text)]">
+                          {lineTotal.toFixed(2)} €
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

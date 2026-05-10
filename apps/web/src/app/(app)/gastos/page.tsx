@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
+import { prisma, ExpenseCategory } from '@nexo/prisma'
 import { listExpenses, getMonthlyTotal } from './_lib/expense-actions'
 import { ExpenseList } from './_components/expense-list'
 import { ExpenseFilters } from './_components/expense-filters'
@@ -26,8 +27,14 @@ export default async function GastosPage({ searchParams }: Props) {
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
 
+  function isExpenseCategory(value: string): value is ExpenseCategory {
+    return Object.values(ExpenseCategory).includes(value as ExpenseCategory)
+  }
+
   const filters = {
-    ...(params.categoria ? { category: params.categoria as any } : {}),
+    ...(params.categoria && isExpenseCategory(params.categoria)
+      ? { category: params.categoria }
+      : {}),
     ...(params.desde ? { dateFrom: params.desde } : {}),
     ...(params.hasta ? { dateTo: params.hasta } : {}),
   }
