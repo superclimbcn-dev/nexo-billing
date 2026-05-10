@@ -83,13 +83,19 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
     setShowCreateForm(true)
   }
 
+  const [createError, setCreateError] = useState<string | null>(null)
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
+    setCreateError(null)
     const price = parseFloat(newUnitPrice.replace(',', '.'))
-    if (!newName.trim() || isNaN(price) || price < 0) return
+    if (!newName.trim() || isNaN(price) || price < 0) {
+      setCreateError('Precio inválido')
+      return
+    }
 
     setCreating(true)
-    const item = await createItemQuick({
+    const res = await createItemQuick({
       name: newName.trim(),
       unitPrice: price,
       vatRate: parseFloat(newVatRate),
@@ -98,8 +104,10 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
     })
     setCreating(false)
 
-    if (item) {
-      handleSelect(item)
+    if (res.ok) {
+      handleSelect(res.item)
+    } else {
+      setCreateError(res.error)
     }
   }
 
@@ -126,6 +134,11 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
             <div className="p-2 text-sm text-[var(--text-dim)]">Buscando...</div>
           ) : showCreateForm ? (
             <form onSubmit={handleCreate} className="p-3 space-y-2">
+              {createError && (
+                <div className="p-2 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded">
+                  <p className="text-xs text-[var(--danger)]">{createError}</p>
+                </div>
+              )}
               <p className="text-xs font-medium text-[var(--text)] uppercase tracking-wide">
                 Añadir producto nuevo
               </p>

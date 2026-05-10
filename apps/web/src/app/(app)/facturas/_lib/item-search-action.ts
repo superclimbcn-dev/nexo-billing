@@ -163,46 +163,55 @@ export async function createItemQuick(data: {
   vatRate: number
   unit?: string
   type?: string
-}): Promise<ItemSearchResult | null> {
+}): Promise<{ ok: true; item: ItemSearchResult } | { ok: false; error: string }> {
   const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return { ok: false, error: 'No autenticado' }
   const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return null
+  if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
 
-  const created = await prisma.item.create({
-    data: {
-      tenantId,
-      name: data.name,
-      description: data.description ?? null,
-      unitPrice: data.unitPrice,
-      vatRate: data.vatRate,
-      unit: data.unit ?? 'ud',
-      type: (data.type as 'product' | 'service' | 'subscription' | 'kit' | 'digital') ?? 'product',
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      unitPrice: true,
-      vatRate: true,
-      unit: true,
-      type: true,
-    },
-  })
+  try {
+    const created = await prisma.item.create({
+      data: {
+        tenantId,
+        name: data.name,
+        description: data.description ?? null,
+        unitPrice: data.unitPrice,
+        vatRate: data.vatRate,
+        unit: data.unit ?? 'ud',
+        type: (data.type as 'product' | 'service' | 'subscription' | 'kit' | 'digital') ?? 'product',
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        unitPrice: true,
+        vatRate: true,
+        unit: true,
+        type: true,
+      },
+    })
 
-  return {
-    id: created.id,
-    name: created.name,
-    description: created.description,
-    unitPrice: Number(created.unitPrice),
-    vatRate: Number(created.vatRate),
-    unit: created.unit,
-    type: String(created.type),
-    source: 'tenant',
+    return {
+      ok: true,
+      item: {
+        id: created.id,
+        name: created.name,
+        description: created.description,
+        unitPrice: Number(created.unitPrice),
+        vatRate: Number(created.vatRate),
+        unit: created.unit,
+        type: String(created.type),
+        source: 'tenant',
+      },
+    }
+  } catch (err) {
+    console.error('[createItemQuick] Prisma error:', err)
+    const message = err instanceof Error ? err.message : 'Error desconocido al crear producto'
+    return { ok: false, error: message }
   }
 }
 
