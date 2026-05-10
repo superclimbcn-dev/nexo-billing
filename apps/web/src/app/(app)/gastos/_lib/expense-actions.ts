@@ -5,6 +5,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import { expenseSchema, type ExpenseInput } from './expense-schema'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export interface ExpenseFilters {
   category?: ExpenseCategory
@@ -32,8 +33,8 @@ async function getAuthContext() {
 export async function createExpense(
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const parsed = expenseSchema.safeParse(raw)
   if (!parsed.success) {
@@ -73,8 +74,8 @@ export async function updateExpense(
   id: string,
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const parsed = expenseSchema.safeParse(raw)
   if (!parsed.success) {
@@ -111,8 +112,8 @@ export async function updateExpense(
 }
 
 export async function deleteExpense(id: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const owned = await prisma.expense.findFirst({
     where: { id, tenantId: ctx.tenantId },

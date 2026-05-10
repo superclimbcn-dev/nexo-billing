@@ -16,6 +16,7 @@ interface AppSidebarProps {
   tenantVertical: string
   userName: string
   userEmail: string
+  userRole?: string | null
   verifactuSentCount?: number
   verifactuLastError?: boolean
 }
@@ -35,10 +36,12 @@ export function AppSidebar({
   tenantVertical,
   userName,
   userEmail,
+  userRole,
   verifactuSentCount = 0,
   verifactuLastError = false,
 }: AppSidebarProps) {
   const pathname = usePathname()
+  const showSettings = userRole !== 'ACCOUNTANT'
 
   return (
     <Sidebar
@@ -115,21 +118,23 @@ export function AppSidebar({
         />
       </div>
 
-      <div className="mt-4 flex flex-col gap-0.5">
-        <NavSectionLabel>Configuración</NavSectionLabel>
-        <NavItem
-          href="/settings/team"
-          icon="⊙"
-          label="Equipo"
-          active={pathname.startsWith('/settings/team')}
-        />
-        <NavItem
-          href="/settings"
-          icon="⚙"
-          label="Ajustes"
-          active={pathname === '/settings'}
-        />
-      </div>
+      {showSettings && (
+        <div className="mt-4 flex flex-col gap-0.5">
+          <NavSectionLabel>Configuración</NavSectionLabel>
+          <NavItem
+            href="/settings/team"
+            icon="⊙"
+            label="Equipo"
+            active={pathname.startsWith('/settings/team')}
+          />
+          <NavItem
+            href="/settings"
+            icon="⚙"
+            label="Ajustes"
+            active={pathname === '/settings'}
+          />
+        </div>
+      )}
     </Sidebar>
   )
 }

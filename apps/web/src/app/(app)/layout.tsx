@@ -27,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   })
 
   const userName = dbUser?.name ?? (user.user_metadata?.name as string) ?? user.email ?? ''
+  const userRole = user.app_metadata?.role as string | undefined
 
   // Verifactu status for sidebar
   const verifactuStats = await prisma.invoiceRecord.aggregate({
@@ -58,6 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             tenantVertical={tenant.vertical?.name ?? tenant.businessType ?? 'Sector personalizado'}
             userName={userName}
             userEmail={user.email ?? ''}
+            userRole={userRole}
             verifactuSentCount={sentCount}
             verifactuLastError={lastError}
           />

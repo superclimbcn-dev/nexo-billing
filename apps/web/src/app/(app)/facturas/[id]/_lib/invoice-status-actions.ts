@@ -4,6 +4,7 @@ import { prisma, InvoiceStatus } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export async function syncOverdueInvoices(tenantId: string): Promise<void> {
   await prisma.invoice.updateMany({
@@ -30,8 +31,9 @@ async function getAuthContext() {
 }
 
 export async function markInvoiceAsSent(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const ctx = { tenantId: auth.tenantId }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
@@ -53,8 +55,9 @@ export async function markInvoiceAsSent(invoiceId: string): Promise<ActionResult
 }
 
 export async function markInvoiceAsPaid(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const ctx = { tenantId: auth.tenantId }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
@@ -79,8 +82,9 @@ export async function markInvoiceAsPaid(invoiceId: string): Promise<ActionResult
 }
 
 export async function cancelInvoice(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const ctx = { tenantId: auth.tenantId }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
@@ -102,8 +106,9 @@ export async function cancelInvoice(invoiceId: string): Promise<ActionResult> {
 }
 
 export async function deleteDraftInvoice(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const ctx = { tenantId: auth.tenantId }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },

@@ -5,6 +5,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { itemSchema } from './item-schema'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -24,7 +25,9 @@ async function requireAuth() {
 }
 
 export async function createItem(raw: unknown): Promise<ActionResult<{ id: string }>> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const parsed = itemSchema.safeParse(raw)
   if (!parsed.success) {
@@ -45,7 +48,9 @@ export async function createItem(raw: unknown): Promise<ActionResult<{ id: strin
 }
 
 export async function updateItem(id: string, raw: unknown): Promise<ActionResult> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const parsed = itemSchema.safeParse(raw)
   if (!parsed.success) {
@@ -69,7 +74,9 @@ export async function updateItem(id: string, raw: unknown): Promise<ActionResult
 }
 
 export async function softDeleteItem(id: string): Promise<ActionResult> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const owned = await prisma.item.findFirst({
     where: { id, tenantId, isActive: true },

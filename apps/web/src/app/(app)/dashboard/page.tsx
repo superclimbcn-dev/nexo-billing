@@ -48,7 +48,10 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login');
   const tenantId = user.app_metadata?.tenant_id as string | undefined;
+  const userRole = user.app_metadata?.role as string | undefined;
   if (!tenantId) redirect('/onboarding/cuenta');
+
+  const canWrite = userRole === 'OWNER' || userRole === 'ADMIN';
 
   await Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)]);
   const stats = await getDashboardStats(tenantId);
@@ -95,8 +98,12 @@ export default async function DashboardPage() {
           <p className="text-sm text-[var(--text-dim)] mt-3">Tu facturación en {dateLabel}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <CsvImportButton />
-          <ExportButton />
+          {canWrite && (
+            <>
+              <CsvImportButton />
+              <ExportButton />
+            </>
+          )}
           <Link
             href="/facturas/nueva"
             className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--accent)] text-[var(--bg)] text-sm font-semibold hover:bg-[var(--accent-dim)] transition-colors"

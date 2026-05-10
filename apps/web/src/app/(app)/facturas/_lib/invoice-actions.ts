@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createInvoiceSchema } from './invoice-schema'
 import { calculateInvoiceTotals } from './invoice-totals'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -29,7 +30,9 @@ function roundCents(v: number): number {
 export async function createInvoiceDraft(
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const parsed = createInvoiceSchema.safeParse(raw)
   if (!parsed.success) {
