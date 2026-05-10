@@ -4,7 +4,6 @@ import { verifyInvoiceToken } from '@/lib/public-invoice-token'
 import { formatCurrency, formatDate, formatNif } from '@nexo/core-utils'
 import Link from 'next/link'
 import { ShareButton, WhatsAppShareButton } from './_components/invoice-actions'
-import { PaymentButton } from './_components/payment-button'
 
 interface Props {
   params: Promise<{ token: string }>
@@ -38,6 +37,7 @@ export default async function PublicInvoicePage({ params }: Props) {
           fiscalCity: true,
           fiscalPostal: true,
           fiscalProvince: true,
+          iban: true,
           email: true,
           phone: true,
           branding: {
@@ -243,11 +243,20 @@ export default async function PublicInvoicePage({ params }: Props) {
               Descargar PDF
             </a>
 
-            <PaymentButton
-              invoiceId={invoice.id}
-              tenantId={invoice.tenantId}
-              disabled={invoice.status === 'paid' || invoice.status === 'cancelled'}
-            />
+            <div className="p-4 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl text-center">
+              <p className="text-sm font-medium text-[var(--text)]">
+                Pago por transferencia bancaria
+              </p>
+              {tenant.iban ? (
+                <p className="text-sm font-mono text-[var(--accent)] mt-1 tracking-wide">
+                  IBAN: {tenant.iban}
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--text-dim)] mt-1">
+                  Consultar datos bancarios con el emisor
+                </p>
+              )}
+            </div>
 
             <WhatsAppShareButton
               invoiceNumber={invoice.fullNumber}

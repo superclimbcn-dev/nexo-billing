@@ -286,15 +286,19 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
         )}
 
         {/* PAYMENT */}
-        {tenant.iban && (
-          <View style={styles.paymentSection}>
-            <Text style={styles.paymentLabel}>Forma de pago</Text>
-            <Text style={styles.paymentMethod}>
-              {getPaymentMethodLabel()}
-            </Text>
+        <View style={styles.paymentSection}>
+          <Text style={styles.paymentLabel}>Forma de pago</Text>
+          <Text style={styles.paymentMethod}>
+            {getPaymentMethodLabel()}
+          </Text>
+          {tenant.iban ? (
             <Text style={styles.iban}>IBAN: {formatIban(tenant.iban)}</Text>
-          </View>
-        )}
+          ) : (
+            <Text style={styles.paymentMethod}>
+              Consultar datos bancarios con el emisor
+            </Text>
+          )}
+        </View>
 
         {/* VERIFACTU BLOCK */}
         <View style={styles.verifactuSection}>
