@@ -18,7 +18,10 @@
         "RESEND_API_KEY",
         "EMAIL_FROM",
         "PUBLIC_INVOICE_TOKEN_SECRET",
-        "NEXT_PUBLIC_APP_URL"
+        "NEXT_PUBLIC_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
       ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
