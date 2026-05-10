@@ -68,14 +68,14 @@ export async function getCashFlow(
   const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth() - months + 1, 1)
 
-  // Cash in: inbound payments grouped by month
-  const inboundPayments = await prisma.payment.findMany({
+  // Cash in: paid invoices grouped by month (using issuedAt as proxy)
+  const paidInvoices = await prisma.invoice.findMany({
     where: {
       tenantId,
-      direction: 'inbound',
-      paidAt: { gte: start },
+      status: 'paid',
+      issuedAt: { gte: start },
     },
-    select: { paidAt: true, amount: true },
+    select: { issuedAt: true, totalAmount: true },
   })
 
   // Expenses grouped by month
@@ -95,12 +95,12 @@ export async function getCashFlow(
     const d = new Date(now.getFullYear(), now.getMonth() - months + 1 + i, 1)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 
-    const cashIn = inboundPayments
-      .filter((pay) => {
-        const p = new Date(pay.paidAt)
+    const cashIn = paidInvoices
+      .filter((inv) => {
+        const p = new Date(inv.issuedAt)
         return p.getFullYear() === d.getFullYear() && p.getMonth() === d.getMonth()
       })
-      .reduce((sum, pay) => sum + Number(pay.amount), 0)
+      .reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
 
     const cashOut = expenses
       .filter((exp) => {
@@ -200,10 +200,10 @@ export async function getPendingPayments(): Promise<{
 export async function getTreasuryKpis(): Promise<TreasuryKpi> {
   const { tenantId } = await requireAuth()
 
-  const [inboundAgg, pendingInvoices, expensesMonth] = await Promise.all([
-    prisma.payment.aggregate({
-      where: { tenantId, direction: 'inbound' },
-      _sum: { amount: true },
+  const [paidInvoices, pendingInvoices, expensesMonth] = await Promise.all([
+    prisma.invoice.aggregate({
+      where: { tenantId, status: 'paid' },
+      _sum: { totalAmount: true },
     }),
     prisma.invoice.aggregate({
       where: {
@@ -223,7 +223,7 @@ export async function getTreasuryKpis(): Promise<TreasuryKpi> {
     }),
   ])
 
-  const currentBalance = Number(inboundAgg._sum.amount ?? 0)
+  const currentBalance = Number(paidInvoices._sum.totalAmount ?? 0)
   const pendingIn = Number(pendingInvoices._sum.totalAmount ?? 0)
   const pendingOut = Number(expensesMonth._sum.totalAmount ?? 0)
 
@@ -241,10 +241,10 @@ export async function getTreasuryKpis(): Promise<TreasuryKpi> {
 export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
   const { tenantId } = await requireAuth()
 
-  const [inboundAgg, pendingInvoices, expensesMonth] = await Promise.all([
-    prisma.payment.aggregate({
-      where: { tenantId, direction: 'inbound' },
-      _sum: { amount: true },
+  const [paidInvoices, pendingInvoices, expensesMonth] = await Promise.all([
+    prisma.invoice.aggregate({
+      where: { tenantId, status: 'paid' },
+      _sum: { totalAmount: true },
     }),
     prisma.invoice.aggregate({
       where: {
@@ -262,7 +262,7 @@ export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
     }),
   ])
 
-  const balance = Number(inboundAgg._sum.amount ?? 0)
+  const balance = Number(paidInvoices._sum.totalAmount ?? 0)
   const pendingIn = Number(pendingInvoices._sum.totalAmount ?? 0)
   const pendingOut = Number(expensesMonth._sum.totalAmount ?? 0)
 
