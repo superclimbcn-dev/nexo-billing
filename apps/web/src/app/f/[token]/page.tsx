@@ -4,6 +4,7 @@ import { verifyInvoiceToken } from '@/lib/public-invoice-token'
 import { formatCurrency, formatDate, formatNif } from '@nexo/core-utils'
 import Link from 'next/link'
 import { ShareButton, WhatsAppShareButton } from './_components/invoice-actions'
+import { PaymentButton } from './_components/payment-button'
 
 interface Props {
   params: Promise<{ token: string }>
@@ -242,17 +243,11 @@ export default async function PublicInvoicePage({ params }: Props) {
               Descargar PDF
             </a>
 
-            <button
-              disabled
-              className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-[var(--surface-raised)] text-[var(--text-dim)] font-semibold rounded-xl border border-[var(--border)] cursor-not-allowed opacity-60 text-sm"
-              title="Próximamente"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                <line x1="1" y1="10" x2="23" y2="10" />
-              </svg>
-              Pagar ahora
-            </button>
+            <PaymentButton
+              invoiceId={invoice.id}
+              tenantId={invoice.tenantId}
+              disabled={invoice.status === 'paid' || invoice.status === 'cancelled'}
+            />
 
             <WhatsAppShareButton
               invoiceNumber={invoice.fullNumber}
