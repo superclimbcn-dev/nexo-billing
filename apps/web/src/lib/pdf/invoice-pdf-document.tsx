@@ -56,6 +56,19 @@ function getPaymentMethodLabel(method?: string | null): string {
 export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
   const { tenant, client, invoice, lines, vatBreakdown } = data
   const statusMeta = getStatusMeta(invoice.status)
+  const isRectificativa = ['R1', 'R2', 'R3', 'R4', 'R5'].includes(invoice.type ?? '')
+  const rectTypeLabel =
+    invoice.type === 'R1'
+      ? 'Error fundado en derecho'
+      : invoice.type === 'R2'
+        ? 'Devolución de mercancía'
+        : invoice.type === 'R3'
+          ? 'Descuento posterior'
+          : invoice.type === 'R4'
+            ? 'Obra por administración'
+            : invoice.type === 'R5'
+              ? 'Resolución de contrato'
+              : ''
 
   return (
     <Document
@@ -88,8 +101,15 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
             </View>
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.docTypeLabel}>Factura</Text>
+            <Text style={styles.docTypeLabel}>
+              {isRectificativa ? 'Rectificativa' : 'Factura'}
+            </Text>
             <Text style={styles.docNumber}>{invoice.fullNumber}</Text>
+            {isRectificativa && invoice.rectifiedBy && (
+              <Text style={styles.docSubNumber}>
+                de {invoice.rectifiedBy.fullNumber}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -123,6 +143,14 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
                     : 'Pendiente de envío'}
             </Text>
           </View>
+          {isRectificativa && (
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Tipo</Text>
+              <Text style={styles.metaValueAccent}>
+                {invoice.type} — {rectTypeLabel}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* PARTIES */}
@@ -246,6 +274,14 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           <View style={styles.notesSection}>
             <Text style={styles.notesLabel}>Observaciones</Text>
             <Text style={styles.notesText}>{invoice.notes}</Text>
+          </View>
+        )}
+
+        {/* RECTIFICATION REASON */}
+        {isRectificativa && invoice.rectificationReason && (
+          <View style={[styles.notesSection, { backgroundColor: '#fef3c7', borderLeftWidth: 3, borderLeftColor: '#f59e0b' }]}>
+            <Text style={styles.notesLabel}>Motivo de la rectificación</Text>
+            <Text style={styles.notesText}>{invoice.rectificationReason}</Text>
           </View>
         )}
 

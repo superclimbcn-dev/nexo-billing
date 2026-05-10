@@ -34,6 +34,9 @@ export interface PdfInvoiceData {
     subtotal: number
     vatAmount: number
     totalAmount: number
+    type?: string
+    rectificationReason?: string | null
+    rectifiedBy?: { fullNumber: string } | null
   }
   lines: Array<{
     description: string

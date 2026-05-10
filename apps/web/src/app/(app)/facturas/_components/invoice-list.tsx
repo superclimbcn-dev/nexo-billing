@@ -12,6 +12,8 @@ interface InvoiceRow {
   client: { id: string; name: string; nif: string } | null
   series: { code: string; name: string } | null
   records: { status: string }[]
+  rectifications: { id: string; fullNumber: string }[]
+  rectifiedBy: { id: string; fullNumber: string } | null
 }
 
 interface InvoiceListProps {
@@ -70,6 +72,28 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
                     >
                       {inv.fullNumber}
                     </Link>
+                    {inv.rectifications.length > 0 && (
+                      <p className="text-xs text-[var(--text-dim)] mt-0.5">
+                        Rectificada por{' '}
+                        <Link
+                          href={`/facturas/${inv.rectifications[0]!.id}`}
+                          className="text-[var(--accent)] hover:underline"
+                        >
+                          {inv.rectifications[0]!.fullNumber}
+                        </Link>
+                      </p>
+                    )}
+                    {inv.rectifiedBy && (
+                      <p className="text-xs text-[var(--text-dim)] mt-0.5">
+                        Rectificativa de{' '}
+                        <Link
+                          href={`/facturas/${inv.rectifiedBy.id}`}
+                          className="text-[var(--accent)] hover:underline"
+                        >
+                          {inv.rectifiedBy.fullNumber}
+                        </Link>
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-[var(--text-dim)] text-sm">
                     {formatDate(inv.issuedAt)}

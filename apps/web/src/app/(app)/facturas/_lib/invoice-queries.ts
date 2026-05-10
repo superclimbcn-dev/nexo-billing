@@ -49,6 +49,8 @@ export async function listInvoices({
         client: { select: { id: true, name: true, nif: true } },
         series: { select: { code: true, name: true } },
         records: { select: { status: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+        rectifications: { select: { id: true, fullNumber: true }, take: 1 },
+        rectifiedBy: { select: { id: true, fullNumber: true } },
       },
       orderBy: { issuedAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
@@ -72,6 +74,8 @@ export async function getInvoiceById(tenantId: string, id: string) {
     include: {
       client: true,
       series: true,
+      rectifications: { select: { id: true, fullNumber: true } },
+      rectifiedBy: { select: { id: true, fullNumber: true } },
       lines: {
         include: { item: { select: { id: true, name: true, unit: true } } },
         orderBy: { sortOrder: 'asc' },

@@ -8,6 +8,7 @@ import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
 import { InvoicePdfActions } from './_components/invoice-pdf-actions'
 import { InvoiceVerifactuActions } from './_components/invoice-verifactu-actions'
+import { RectificativaButton } from './_components/rectificativa-button'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -54,6 +55,18 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 fullNumber={invoice.fullNumber}
                 totalAmount={Number(invoice.totalAmount)}
                 clientEmail={invoice.client.email}
+              />
+              <RectificativaButton
+                invoiceId={invoice.id}
+                fullNumber={invoice.fullNumber}
+                status={invoice.status}
+                hasRectification={invoice.rectifications.length > 0}
+                originalLines={invoice.lines.map((l) => ({
+                  description: l.description,
+                  quantity: Number(l.quantity),
+                  unitPrice: Number(l.unitPrice),
+                  vatRate: Number(l.vatRate),
+                }))}
               />
             </section>
             <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">

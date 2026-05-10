@@ -31,6 +31,7 @@ export async function GET(
       include: {
         client: true,
         lines: { orderBy: { sortOrder: 'asc' } },
+        rectifiedBy: { select: { fullNumber: true } },
       },
     }),
     prisma.tenant.findUnique({
@@ -90,6 +91,9 @@ export async function GET(
       subtotal: Number(invoice.subtotal),
       vatAmount: Number(invoice.vatAmount),
       totalAmount: Number(invoice.totalAmount),
+      type: invoice.type,
+      rectificationReason: invoice.rectificationReason,
+      rectifiedBy: invoice.rectifiedBy ? { fullNumber: invoice.rectifiedBy.fullNumber } : null,
     },
     lines: invoice.lines.map((l) => ({
       description: l.description,

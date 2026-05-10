@@ -98,6 +98,11 @@ export const styles = StyleSheet.create({
     color: TEXT,
     letterSpacing: -0.5,
   },
+  docSubNumber: {
+    fontSize: 9,
+    color: TEXT_DIM,
+    marginTop: 2,
+  },
 
   // Meta grid
   metaGrid: {
