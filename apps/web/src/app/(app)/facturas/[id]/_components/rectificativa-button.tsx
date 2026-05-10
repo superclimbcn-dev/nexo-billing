@@ -19,6 +19,9 @@ interface Props {
 export function RectificativaButton({ invoiceId, fullNumber, status, hasRectification, originalLines }: Props) {
   const [isOpen, setIsOpen] = useState(false)
 
+  // Defensive: ensure originalLines is always an array
+  const safeLines = originalLines ?? []
+
   // Only show for sent/overdue/partially_paid/paid invoices that don't already have a rectification
   const canRectify = ['sent', 'overdue', 'partially_paid', 'paid'].includes(status) && !hasRectification
   if (!canRectify) return null
@@ -37,7 +40,7 @@ export function RectificativaButton({ invoiceId, fullNumber, status, hasRectific
         <RectificativaModal
           invoiceId={invoiceId}
           fullNumber={fullNumber}
-          originalLines={originalLines}
+          originalLines={safeLines}
           onClose={() => setIsOpen(false)}
         />
       )}

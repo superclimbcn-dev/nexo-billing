@@ -60,8 +60,8 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 invoiceId={invoice.id}
                 fullNumber={invoice.fullNumber}
                 status={invoice.status}
-                hasRectification={invoice.rectifications.length > 0}
-                originalLines={invoice.lines.map((l) => ({
+                hasRectification={(invoice.rectifications ?? []).length > 0}
+                originalLines={(invoice.lines ?? []).map((l) => ({
                   description: l.description,
                   quantity: Number(l.quantity),
                   unitPrice: Number(l.unitPrice),

@@ -62,7 +62,7 @@ export function RectificativaModal({ invoiceId, fullNumber, originalLines, onClo
   const [type, setType] = useState<'R1' | 'R2' | 'R3' | 'R4' | 'R5'>('R1')
   const [reason, setReason] = useState('')
   const [lines, setLines] = useState<LineItem[]>(
-    originalLines.map((l) => ({
+    (originalLines ?? []).map((l) => ({
       description: l.description,
       quantity: l.quantity,
       unitPrice: -Math.abs(l.unitPrice),
