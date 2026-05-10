@@ -113,7 +113,15 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaLabel}>VeriFactu</Text>
-            <Text style={styles.metaValueAccent}>Pendiente de envío</Text>
+            <Text style={styles.metaValueAccent}>
+              {data.verifactu?.status === 'accepted'
+                ? 'Enviada a AEAT'
+                : data.verifactu?.status === 'error'
+                  ? 'Error en envío'
+                  : data.verifactu?.status === 'rejected'
+                    ? 'Rechazada'
+                    : 'Pendiente de envío'}
+            </Text>
           </View>
         </View>
 
@@ -260,32 +268,84 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
                 <Text style={styles.verifactuBadgeText}>V</Text>
               </View>
               <Text style={styles.verifactuTitle}>
-                Datos de trazabilidad VeriFactu · Registro de facturación encadenado
+                {data.verifactu?.status === 'accepted'
+                  ? 'VERI*FACTU · Factura verificable en la sede electrónica de la AEAT'
+                  : 'Datos de trazabilidad VeriFactu · Registro de facturación encadenado'}
               </Text>
             </View>
-            <View style={styles.verifactuGrid}>
-              <View style={styles.verifactuCol}>
-                <Text style={styles.verifactuLabel}>ID Registro de alta</Text>
-                <Text style={styles.verifactuValue}>
-                  RF-A-{invoice.fullNumber.replace(/-/g, '')}-{invoice.issuedAt.getFullYear()}-001
+            {data.verifactu?.status === 'accepted' ? (
+              <>
+                <View style={styles.verifactuGrid}>
+                  <View style={styles.verifactuCol}>
+                    <Text style={styles.verifactuLabel}>CSV (Código Seguro de Verificación)</Text>
+                    <Text style={styles.verifactuValue}>{data.verifactu.csv ?? '—'}</Text>
+                  </View>
+                  <View style={styles.verifactuCol}>
+                    <Text style={styles.verifactuLabel}>Hash criptográfico (SHA-256)</Text>
+                    <Text style={styles.verifactuValue}>
+                      {data.verifactu.hash
+                        ? `${data.verifactu.hash.slice(0, 8)}...${data.verifactu.hash.slice(-8)}`
+                        : '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.verifactuCol}>
+                    <Text style={styles.verifactuLabel}>Hash registro anterior</Text>
+                    <Text style={styles.verifactuValue}>
+                      {data.verifactu.previousHash
+                        ? `${data.verifactu.previousHash.slice(0, 8)}...${data.verifactu.previousHash.slice(-8)}`
+                        : '—'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.verifactuLegalText}>
+                  Factura emitida con cumplimiento del art. 4 y ss. del Reglamento RRSIF,
+                  mediante sistema informático de facturación autorizado.
+                  Puede verificar esta factura escaneando el código QR tributario
+                  o accediendo a la sede electrónica de la Agencia Tributaria.
                 </Text>
+              </>
+            ) : (
+              <View style={styles.verifactuGrid}>
+                <View style={styles.verifactuCol}>
+                  <Text style={styles.verifactuLabel}>ID Registro de alta</Text>
+                  <Text style={styles.verifactuValue}>
+                    RF-A-{invoice.fullNumber.replace(/-/g, '')}-{invoice.issuedAt.getFullYear()}-001
+                  </Text>
+                </View>
+                <View style={styles.verifactuCol}>
+                  <Text style={styles.verifactuLabel}>Estado</Text>
+                  <Text style={styles.verifactuValue}>
+                    {data.verifactu?.status === 'error'
+                      ? 'Error en envío'
+                      : data.verifactu?.status === 'rejected'
+                        ? 'Rechazada'
+                        : 'Pendiente de envío'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.verifactuCol}>
-                <Text style={styles.verifactuLabel}>Hash criptográfico (SHA-256)</Text>
-                <Text style={styles.verifactuValue}>a8f4c2...e9d1b7</Text>
-              </View>
-              <View style={styles.verifactuCol}>
-                <Text style={styles.verifactuLabel}>Hash registro anterior</Text>
-                <Text style={styles.verifactuValue}>b7e1a0...c3f8d2</Text>
-              </View>
-            </View>
+            )}
           </View>
-          {data.qrCodeUrl && (
+          {data.aeatQrUrl ? (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={styles.qrTributarioLabel}>QR tributario</Text>
+              {/* QR image is generated externally and passed as qrCodeUrl */}
+              {data.qrCodeUrl && (
+                <>
+                  <Image src={data.qrCodeUrl} style={styles.qrCode} />
+                  <Text style={styles.qrCodeLabel}>
+                    {data.verifactu?.status === 'accepted'
+                      ? 'VERI*FACTU'
+                      : 'Escanea para ver online'}
+                  </Text>
+                </>
+              )}
+            </View>
+          ) : data.qrCodeUrl ? (
             <View style={{ alignItems: 'center' }}>
               <Image src={data.qrCodeUrl} style={styles.qrCode} />
               <Text style={styles.qrCodeLabel}>Escanea para ver online</Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* FOOTER */}

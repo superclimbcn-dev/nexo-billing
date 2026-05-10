@@ -43,3 +43,10 @@ export {
   generateRegistroAnulacionXml,
   wrapSoapEnvelope,
 } from './xml/templates'
+
+// QR generation
+export {
+  generateAEATQRUrl,
+  generateAEATQRUrlFromInvoice,
+} from './qr/aeat-qr'
+export type { AEATQROptions } from './qr/aeat-qr'

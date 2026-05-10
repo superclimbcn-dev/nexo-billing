@@ -11,6 +11,7 @@ import { signInvoiceToken } from '@/lib/public-invoice-token'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
 import QRCode from 'qrcode'
+import { generateAEATQRUrlFromInvoice } from '@nexo/verifactu'
 
 export const runtime = 'nodejs'
 
@@ -44,7 +45,7 @@ export async function POST(
       return NextResponse.json({ error: 'No tenant' }, { status: 403 })
     }
 
-    const [invoice, tenant] = await Promise.all([
+    const [invoice, tenant, verifactuRecord] = await Promise.all([
       prisma.invoice.findFirst({
         where: { id, tenantId },
         include: {
@@ -55,6 +56,10 @@ export async function POST(
       prisma.tenant.findUnique({
         where: { id: tenantId },
         include: { branding: true },
+      }),
+      prisma.invoiceRecord.findFirst({
+        where: { invoiceId: id, tenantId },
+        orderBy: { createdAt: 'desc' },
       }),
     ])
 
@@ -81,14 +86,30 @@ export async function POST(
       })),
     )
 
-    const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
-    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
-    const qrCodeUrl = await QRCode.toDataURL(publicUrl, {
-      width: 400,
-      margin: 2,
-      errorCorrectionLevel: 'H',
-      type: 'image/png',
-    })
+    let qrCodeUrl: string | undefined
+    let aeatQrUrl: string | undefined
+    let publicUrl: string
+
+    if (verifactuRecord?.status === 'accepted' && verifactuRecord.qrUrl) {
+      aeatQrUrl = verifactuRecord.qrUrl
+      qrCodeUrl = await QRCode.toDataURL(aeatQrUrl, {
+        width: 400,
+        margin: 2,
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+      })
+      const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
+      publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
+    } else {
+      const token = signInvoiceToken({ invoiceId: invoice.id, tenantId: invoice.tenantId })
+      publicUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/f/${token}`
+      qrCodeUrl = await QRCode.toDataURL(publicUrl, {
+        width: 400,
+        margin: 2,
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+      })
+    }
 
     const data: PdfInvoiceData = {
       tenant: {
@@ -138,6 +159,16 @@ export async function POST(
       })),
       vatBreakdown: totals.vatBreakdown,
       qrCodeUrl,
+      aeatQrUrl,
+      verifactu: verifactuRecord
+        ? {
+            status: verifactuRecord.status as 'pending' | 'accepted' | 'rejected' | 'error',
+            csv: (verifactuRecord.aeatResponse as Record<string, string> | null)?.csv ?? undefined,
+            hash: verifactuRecord.hash,
+            previousHash: verifactuRecord.previousHash,
+            sentAt: verifactuRecord.sentAt ?? undefined,
+          }
+        : undefined,
     }
 
     // Generate PDF buffer

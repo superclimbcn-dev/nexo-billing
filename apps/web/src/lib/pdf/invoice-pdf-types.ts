@@ -50,4 +50,14 @@ export interface PdfInvoiceData {
     amount: number
   }>
   qrCodeUrl?: string
+  /** Official AEAT QR validation URL (Verifactu) */
+  aeatQrUrl?: string
+  /** Verifactu record data (when invoice has been submitted to AEAT) */
+  verifactu?: {
+    status: 'pending' | 'accepted' | 'rejected' | 'error'
+    csv?: string
+    hash?: string
+    previousHash?: string | null
+    sentAt?: Date
+  }
 }

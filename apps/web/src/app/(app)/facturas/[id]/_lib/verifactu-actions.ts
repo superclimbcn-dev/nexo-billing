@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import {
   MockProvider,
   computeRecordHash,
+  generateAEATQRUrlFromInvoice,
   type InvoiceRecordData,
   type VerifactuRecordType,
   type VerifactuStatus,
@@ -112,6 +113,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
     where: { id: invoiceId, tenantId: ctx.tenantId },
     include: {
       client: { select: { id: true, name: true, nif: true } },
+      tenant: { select: { nif: true } },
       lines: {
         select: {
           description: true,
@@ -191,7 +193,13 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
     }),
   )
 
-  const qrUrl = provider.generateValidationUrl(recordData)
+  const qrUrl = generateAEATQRUrlFromInvoice(
+    invoice.tenant.nif,
+    invoice.fullNumber,
+    invoice.issuedAt,
+    Number(invoice.totalAmount),
+    false, // pruebas
+  )
   await prisma.invoiceRecord.update({
     where: { id: recordData.id },
     data: { qrUrl },

@@ -396,6 +396,22 @@ export const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: 'center',
   },
+  qrTributarioLabel: {
+    fontSize: 7,
+    color: TEXT,
+    fontWeight: 600,
+    textAlign: 'center',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  verifactuLegalText: {
+    fontSize: 6,
+    color: TEXT_DIM,
+    marginTop: 8,
+    lineHeight: 1.5,
+    textAlign: 'center',
+  },
 
   // Footer
   footer: {

@@ -7,6 +7,8 @@ import { verifyInvoiceToken } from '@/lib/public-invoice-token'
 import { InvoicePdfDocument } from '@/lib/pdf/invoice-pdf-document'
 import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
+import QRCode from 'qrcode'
+import { generateAEATQRUrlFromInvoice } from '@nexo/verifactu'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +25,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
   }
 
-  const [invoice, tenant] = await Promise.all([
+  const [invoice, tenant, verifactuRecord] = await Promise.all([
     prisma.invoice.findFirst({
       where: { id: payload.invoiceId, tenantId: payload.tenantId },
       include: {
@@ -34,6 +36,10 @@ export async function GET(
     prisma.tenant.findUnique({
       where: { id: payload.tenantId },
       include: { branding: true },
+    }),
+    prisma.invoiceRecord.findFirst({
+      where: { invoiceId: payload.invoiceId, tenantId: payload.tenantId },
+      orderBy: { createdAt: 'desc' },
     }),
   ])
 
@@ -95,6 +101,16 @@ export async function GET(
       totalAmount: Number(l.totalAmount),
     })),
     vatBreakdown: totals.vatBreakdown,
+    aeatQrUrl: verifactuRecord?.qrUrl ?? undefined,
+    verifactu: verifactuRecord
+      ? {
+          status: verifactuRecord.status as 'pending' | 'accepted' | 'rejected' | 'error',
+          csv: (verifactuRecord.aeatResponse as Record<string, string> | null)?.csv ?? undefined,
+          hash: verifactuRecord.hash,
+          previousHash: verifactuRecord.previousHash,
+          sentAt: verifactuRecord.sentAt ?? undefined,
+        }
+      : undefined,
   }
 
   const buffer = await renderToBuffer(
