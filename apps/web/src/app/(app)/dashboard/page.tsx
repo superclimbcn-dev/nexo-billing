@@ -53,7 +53,9 @@ export default async function DashboardPage() {
 
   const canWrite = userRole === 'OWNER' || userRole === 'ADMIN';
 
-  await Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)]);
+  // Fire-and-forget background mutations — do NOT block page render
+  void Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)]);
+
   const stats = await getDashboardStats(tenantId);
   const activeContracts = await countActiveContracts(tenantId);
 

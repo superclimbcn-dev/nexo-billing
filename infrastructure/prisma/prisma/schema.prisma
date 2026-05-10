@@ -405,6 +405,7 @@ model Client {
   recurringContracts RecurringContract[]
 
   @@unique([tenantId, nif])
+  @@index([tenantId, isActive])
   @@map("clients")
 }
 
@@ -585,6 +586,9 @@ model Invoice {
   recurringContract   RecurringContract? @relation("RecurringInvoices", fields: [recurringContractId], references: [id])
 
   @@unique([tenantId, seriesId, number])
+  @@index([tenantId, issuedAt])
+  @@index([tenantId, status])
+  @@index([tenantId, dueAt])
   @@map("invoices")
 }
 

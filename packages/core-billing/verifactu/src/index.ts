@@ -4,6 +4,9 @@
 export type { IVerifactuProvider } from './providers/interface'
 export type { InvoiceData, InvoiceRecordData, VerifactuResult, VerifactuStatus, VerifactuRecordType } from './providers/types'
 export { MockProvider } from './providers/mock'
+export { MockProviderV2 } from './providers/mock-v2'
+export { createProvider } from './providers/factory'
+export type { ProviderName, FactoryOptions } from './providers/factory'
 
 export {
   VerifactuError,
@@ -33,3 +36,10 @@ export type {
 export { computeRecordHash } from './crypto/hash'
 export { ChainService } from './chain/chain-service'
 export type { IRecordRepository } from './chain/chain-service'
+
+// XML generation
+export {
+  generateRegistroAltaXml,
+  generateRegistroAnulacionXml,
+  wrapSoapEnvelope,
+} from './xml/templates'
