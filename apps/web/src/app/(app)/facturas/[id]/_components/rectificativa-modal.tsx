@@ -2,10 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  createRectificativa,
-  type CreateRectificativaInput,
-} from '../../_lib/rectificativa-actions'
+import { createRectificativa } from '../../_lib/rectificativa-actions'
+import type { CreateRectificativaInput } from '../../_lib/rectificativa-schema'
 
 interface LineItem {
   description: string
