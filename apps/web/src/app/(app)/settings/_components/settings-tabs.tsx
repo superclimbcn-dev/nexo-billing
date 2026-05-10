@@ -7,6 +7,7 @@ const tabs = [
   { href: '/settings/datos-fiscales', label: 'Datos fiscales' },
   { href: '/settings/logo', label: 'Logo' },
   { href: '/settings/series', label: 'Series' },
+  { href: '/settings/billing', label: 'Facturación' },
 ]
 
 export function SettingsTabs() {

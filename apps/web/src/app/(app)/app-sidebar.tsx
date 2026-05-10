@@ -111,6 +111,12 @@ export function AppSidebar({
           active={pathname.startsWith('/tesoreria')}
         />
         <NavItem
+          href="/impuestos"
+          icon="🧮"
+          label="Impuestos"
+          active={pathname.startsWith('/impuestos')}
+        />
+        <NavItem
           href="/clientes"
           icon="◎"
           label="Clientes"

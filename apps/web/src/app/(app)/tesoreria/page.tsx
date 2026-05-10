@@ -6,16 +6,18 @@ import {
   getTreasuryKpis,
   getTreasuryAlerts,
 } from './_lib/tesoreria-actions'
+import { getQuarterlyTaxEstimate } from '../impuestos/_lib/impuestos-actions'
 import { CashFlowChart } from './_components/cash-flow-chart'
 
 export default async function TesoreriaPage() {
-  const [{ points, totalIn, totalOut }, pendingCollections, pendingPayments, kpis, alerts] =
+  const [{ points, totalIn, totalOut }, pendingCollections, pendingPayments, kpis, alerts, tax] =
     await Promise.all([
       getCashFlow(6),
       getPendingCollections(),
       getPendingPayments(),
       getTreasuryKpis(),
       getTreasuryAlerts(),
+      getQuarterlyTaxEstimate(),
     ])
 
   return (
@@ -28,7 +30,7 @@ export default async function TesoreriaPage() {
       </header>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Saldo acumulado"
           value={kpis.currentBalance}
@@ -45,6 +47,12 @@ export default async function TesoreriaPage() {
           value={kpis.pendingOut}
           sub={`${kpis.pendingOutCount} gastos`}
           accent="text-[var(--danger)]"
+        />
+        <KpiCard
+          label="Impuesto próximo trim."
+          value={tax.totalTaxes}
+          sub={tax.nextDeadline ? `Vence ${formatDate(tax.nextDeadline)}` : 'Sin vencimiento pendiente'}
+          accent="text-[var(--warning)]"
         />
       </div>
 

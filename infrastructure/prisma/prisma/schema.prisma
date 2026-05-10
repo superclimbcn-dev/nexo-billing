@@ -196,6 +196,13 @@ model Tenant {
   phone           String?
   websiteUrl      String?   @map("website_url")
 
+  // Subscription / billing (GoCardless SEPA)
+  subscriptionStatus       String?   @map("subscription_status") // ACTIVE | PENDING | CANCELLED | EXPIRED
+  subscriptionExpiresAt    DateTime? @map("subscription_expires_at")
+  goCardlessCustomerId     String?   @map("gocardless_customer_id")
+  goCardlessMandateId      String?   @map("gocardless_mandate_id")
+  goCardlessSubscriptionId String?   @map("gocardless_subscription_id")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
