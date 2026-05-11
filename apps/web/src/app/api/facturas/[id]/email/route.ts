@@ -194,7 +194,11 @@ export async function POST(
 
     // Resolve tenant email config
     const tenantEmailFrom = tenant.emailFrom || DEFAULT_EMAIL_FROM
-    const tenantFromName = tenant.emailFromName || tenant.name
+    const tenantFromName = tenant.emailFromName || tenant.name || 'Nexo Billing'
+
+    if (!tenantEmailFrom) {
+      console.warn('[email-route] No email from configured, using fallback')
+    }
     const tenantApiKey = tenant.emailApiKey
       ? decryptSecret(tenant.emailApiKey)
       : undefined

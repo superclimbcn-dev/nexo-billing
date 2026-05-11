@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createServerClient } from '@nexo/core-auth';
 import { prisma } from '@nexo/prisma';
 import { KpiCard, Panel } from '@nexo/core-ui';
+import { FilePlus, FileText, TrendingUp, Receipt } from 'lucide-react';
 import { CsvImportButton } from './_components/csv-import-button';
 import { ExportButton } from '../export/_components/export-button';
 import { formatCurrency, formatDate } from '@nexo/core-utils';
@@ -163,10 +164,10 @@ export default async function DashboardPage() {
 
       {/* Mobile quick actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:hidden">
-        <MobileQuickAction href="/facturas/nueva" icon="+" label="Nueva factura" accent />
-        <MobileQuickAction href="/facturas" icon="📄" label="Facturas" />
-        <MobileQuickAction href="/tesoreria" icon="📊" label="Tesorería" />
-        <MobileQuickAction href="/gastos" icon="⊟" label="Nuevo gasto" />
+        <MobileQuickAction href="/facturas/nueva" icon={<FilePlus size={24} />} label="Nueva factura" accent />
+        <MobileQuickAction href="/facturas" icon={<FileText size={24} />} label="Facturas" />
+        <MobileQuickAction href="/tesoreria" icon={<TrendingUp size={24} />} label="Tesorería" />
+        <MobileQuickAction href="/gastos" icon={<Receipt size={24} />} label="Nuevo gasto" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -308,7 +309,7 @@ function MobileQuickAction({
   accent,
 }: {
   href: string
-  icon: string
+  icon: React.ReactNode
   label: string
   accent?: boolean
 }) {
