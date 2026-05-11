@@ -5,7 +5,7 @@ import { prisma } from '@nexo/prisma'
 import { AppShell, TopBar } from '@nexo/core-ui'
 import { AppSidebar } from './app-sidebar'
 import { MobileHeader } from './_components/mobile-header'
-import { FileText, TrendingUp, Receipt, Settings } from 'lucide-react'
+import { FileText, TrendingUp, Receipt, LayoutDashboard } from 'lucide-react'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerClient()
@@ -84,7 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <BottomNavItem href="/facturas" icon={<FileText size={20} />} label="Facturas" />
           <BottomNavItem href="/tesoreria" icon={<TrendingUp size={20} />} label="Tesorería" />
           <BottomNavItem href="/gastos" icon={<Receipt size={20} />} label="Gastos" />
-          <BottomNavItem href="/settings" icon={<Settings size={20} />} label="Ajustes" />
+          <BottomNavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
         </div>
       </nav>
     </div>

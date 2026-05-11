@@ -33,9 +33,18 @@
   50% { opacity: 0.5; }
 }
 
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 /* Used by ComplianceBadge and PhoneServiceItem in-progress */
 .animate-nexo-pulse {
   animation: nexo-pulse 2s infinite;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 300ms ease-out;
 }
 
 body {
