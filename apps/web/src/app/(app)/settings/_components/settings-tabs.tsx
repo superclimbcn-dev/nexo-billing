@@ -8,6 +8,7 @@ const tabs = [
   { href: '/settings/logo', label: 'Logo' },
   { href: '/settings/series', label: 'Series' },
   { href: '/settings/billing', label: 'Facturación' },
+  { href: '/settings/email', label: 'Email' },
 ]
 
 export function SettingsTabs() {

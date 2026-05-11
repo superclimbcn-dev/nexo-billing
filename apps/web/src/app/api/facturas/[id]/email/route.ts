@@ -10,19 +10,20 @@ import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals
 import { signInvoiceToken } from '@/lib/public-invoice-token'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
+import { decryptSecret } from '@/lib/crypto/tenant-secrets'
 import QRCode from 'qrcode'
 import { generateAEATQRUrlFromInvoice } from '@nexo/verifactu'
 
 export const runtime = 'nodejs'
 
-const EMAIL_FROM = process.env.EMAIL_FROM ?? 'facturas@nexo-billing.app'
+const DEFAULT_EMAIL_FROM = process.env.EMAIL_FROM ?? 'facturas@nexo-billing.app'
 
-function getResend() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
+function getResend(apiKey?: string) {
+  const key = apiKey || process.env.RESEND_API_KEY
+  if (!key) {
     throw new Error('RESEND_API_KEY not configured')
   }
-  return new Resend(apiKey)
+  return new Resend(key)
 }
 
 export async function POST(
@@ -191,12 +192,20 @@ export async function POST(
 
     // publicUrl already generated above with qrCodeUrl
 
+    // Resolve tenant email config
+    const tenantEmailFrom = tenant.emailFrom || DEFAULT_EMAIL_FROM
+    const tenantFromName = tenant.emailFromName || tenant.name
+    const tenantApiKey = tenant.emailApiKey
+      ? decryptSecret(tenant.emailApiKey)
+      : undefined
+
     // Send email
     let sendResult
     try {
-      sendResult = await getResend().emails.send({
-        from: `${tenant.name} <${EMAIL_FROM}>`,
+      sendResult = await getResend(tenantApiKey).emails.send({
+        from: `${tenantFromName} <${tenantEmailFrom}>`,
         to: clientEmail,
+        replyTo: tenant.emailReplyTo || undefined,
         subject: `Factura ${invoice.fullNumber} — ${tenant.name}`,
         react: InvoiceEmailTemplate({
           tenantName: tenant.name,
@@ -228,6 +237,12 @@ export async function POST(
         { status: 500 },
       )
     }
+
+    // Mark invoice as sent
+    await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { status: 'sent' },
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

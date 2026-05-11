@@ -9,6 +9,19 @@ import {
   deleteDraftInvoice,
 } from '../_lib/invoice-status-actions'
 
+async function sendInvoiceEmail(invoiceId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/facturas/${invoiceId}/email`, { method: 'POST' })
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      return { ok: false, error: data.error ?? 'Error al enviar el email' }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Error de red al enviar el email' }
+  }
+}
+
 interface Props {
   invoiceId: string
   status: string
@@ -56,11 +69,17 @@ export function InvoiceStatusActions({ invoiceId, status }: Props) {
       {status === 'draft' && (
         <>
           <button
-            onClick={() => handleAction('send', () => markInvoiceAsSent(invoiceId))}
+            onClick={() =>
+              handleAction('send', async () => {
+                const emailRes = await sendInvoiceEmail(invoiceId)
+                if (!emailRes.ok) return { ok: false, error: emailRes.error }
+                return markInvoiceAsSent(invoiceId)
+              })
+            }
             disabled={isPending}
             className={btnPrimary}
           >
-            {confirmAction === 'send' ? '¿Confirmar envío?' : 'Marcar enviada'}
+            {confirmAction === 'send' ? '¿Confirmar envío?' : 'Enviar por email'}
           </button>
           <button
             onClick={() => handleAction('delete', () => deleteDraftInvoice(invoiceId))}

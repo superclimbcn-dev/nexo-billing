@@ -203,6 +203,18 @@ model Tenant {
   goCardlessMandateId      String?   @map("gocardless_mandate_id")
   goCardlessSubscriptionId String?   @map("gocardless_subscription_id")
 
+  // Email configuration
+  emailProvider     String?  @default("resend") @map("email_provider") // resend | sendgrid | smtp
+  emailFrom         String?  @map("email_from")
+  emailFromName     String?  @map("email_from_name")
+  emailReplyTo      String?  @map("email_reply_to")
+  emailApiKey       String?  @map("email_api_key")   // encrypted
+  smtpHost          String?  @map("smtp_host")
+  smtpPort          Int?     @map("smtp_port")
+  smtpUser          String?  @map("smtp_user")
+  smtpPass          String?  @map("smtp_pass")       // encrypted
+  smtpSecure        Boolean? @default(true) @map("smtp_secure")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 

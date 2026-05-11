@@ -24,7 +24,8 @@
         "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
         "GOCARDLESS_ACCESS_TOKEN",
         "GOCARDLESS_WEBHOOK_SECRET",
-        "GOCARDLESS_ENVIRONMENT"
+        "GOCARDLESS_ENVIRONMENT",
+        "TENANT_SECRET_ENCRYPTION_KEY"
       ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
