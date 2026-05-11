@@ -56,3 +56,10 @@ supabase/.branches
 *\ \(1\).md
 *\ \(2\).md
 *\ \(3\).md
+
+# Playwright MCP snapshots
+.playwright-mcp/
+*.png
+
+# Generated service worker
+apps/web/public/sw.js
