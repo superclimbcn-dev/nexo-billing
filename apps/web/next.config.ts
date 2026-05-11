@@ -1,7 +1,8 @@
 import path from 'path'
 import type { NextConfig } from 'next'
+import withSerwist from '@serwist/next'
 
-const config: NextConfig = {
+const nextConfig: NextConfig = {
   transpilePackages: ['@nexo/core-ui'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
   outputFileTracingIncludes: {
@@ -23,4 +24,7 @@ const config: NextConfig = {
   serverExternalPackages: ['@prisma/client'],
 }
 
-export default config
+export default withSerwist({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
+})(nextConfig)

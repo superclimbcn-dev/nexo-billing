@@ -161,6 +161,14 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Mobile quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:hidden">
+        <MobileQuickAction href="/facturas/nueva" icon="+" label="Nueva factura" accent />
+        <MobileQuickAction href="/facturas" icon="📄" label="Facturas" />
+        <MobileQuickAction href="/tesoreria" icon="📊" label="Tesorería" />
+        <MobileQuickAction href="/gastos" icon="⊟" label="Nuevo gasto" />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label="Facturado este mes"
@@ -291,4 +299,30 @@ function QuickAction({
       </span>
     </Link>
   );
+}
+
+function MobileQuickAction({
+  href,
+  icon,
+  label,
+  accent,
+}: {
+  href: string
+  icon: string
+  label: string
+  accent?: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex flex-col items-center justify-center gap-2 rounded-xl p-4 min-h-[80px] transition-colors ${
+        accent
+          ? 'bg-[var(--accent)] text-[var(--bg)]'
+          : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text)]'
+      }`}
+    >
+      <span className="text-2xl">{icon}</span>
+      <span className="text-xs font-medium text-center">{label}</span>
+    </Link>
+  )
 }
