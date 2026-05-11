@@ -4,6 +4,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { prisma } from '@nexo/prisma'
 import { AppShell, TopBar } from '@nexo/core-ui'
 import { AppSidebar } from './app-sidebar'
+import { MobileHeader } from './_components/mobile-header'
 import { FileText, TrendingUp, Receipt, Settings } from 'lucide-react'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -73,6 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Mobile: full-width content without sidebar */}
       <div className="md:hidden">
+        <MobileHeader />
         <main className="p-4 overflow-y-auto">{children}</main>
       </div>
 
