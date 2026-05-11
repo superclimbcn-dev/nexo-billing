@@ -271,21 +271,27 @@ export default function LandingPage() {
             <div>
               <p className="text-sm font-medium text-[var(--text)] mb-3">Legal</p>
               <div className="space-y-2 text-sm text-[var(--text-dim)]">
-                <p>Aviso legal</p>
-                <p>Privacidad</p>
-                <p>Cookies</p>
+                <Link href="/terminos" className="block hover:text-[var(--text)] transition-colors">
+                  Términos de servicio
+                </Link>
+                <Link href="/privacidad" className="block hover:text-[var(--text)] transition-colors">
+                  Privacidad
+                </Link>
+                <Link href="/cookies" className="block hover:text-[var(--text)] transition-colors">
+                  Cookies
+                </Link>
               </div>
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text)] mb-3">Contacto</p>
               <div className="space-y-2 text-sm text-[var(--text-dim)]">
-                <p>hola@nexo-digital.app</p>
-                <p>Nexo Digital S.L. · Barcelona</p>
+                <p>contacto@nexo-digital.app</p>
+                <p>Nexo Digital Unipersonal · Barcelona</p>
               </div>
             </div>
           </div>
           <div className="mt-10 pt-6 border-t border-[var(--border)] text-center text-xs text-[var(--text-subtle)]">
-            © {new Date().getFullYear()} Nexo Digital S.L. Todos los derechos reservados.
+            © {new Date().getFullYear()} Nexo Digital Unipersonal Todos los derechos reservados.
           </div>
         </div>
       </footer>

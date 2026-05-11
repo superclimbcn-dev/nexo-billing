@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@nexo/core-auth';
+import { prisma } from '@nexo/prisma';
 import { KpiCard, Panel } from '@nexo/core-ui';
 import { CsvImportButton } from './_components/csv-import-button';
 import { ExportButton } from '../export/_components/export-button';
-import { formatCurrency } from '@nexo/core-utils';
+import { formatCurrency, formatDate } from '@nexo/core-utils';
 import { getDashboardStats } from './_lib/dashboard-queries';
 import { RecentInvoices } from './_components/recent-invoices';
 import { syncOverdueInvoices } from '../facturas/[id]/_lib/invoice-status-actions';
@@ -56,7 +57,13 @@ export default async function DashboardPage() {
   // Fire-and-forget background mutations — do NOT block page render
   void Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)]);
 
-  const stats = await getDashboardStats(tenantId);
+  const [stats, tenant] = await Promise.all([
+    getDashboardStats(tenantId),
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { subscriptionStatus: true, subscriptionExpiresAt: true },
+    }),
+  ]);
   const activeContracts = await countActiveContracts(tenantId);
 
   const now = new Date();
@@ -114,6 +121,45 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {canWrite && tenant?.subscriptionStatus !== 'ACTIVE' && (
+        <div className="p-5 bg-[var(--surface)] border border-[var(--accent)]/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💳</span>
+              <h2 className="text-base font-semibold text-[var(--text)]">
+                Activa tu suscripción Profesional
+              </h2>
+            </div>
+            <p className="text-sm text-[var(--text-dim)] mt-1">
+              39€/mes · Facturas ilimitadas · 1 contable · Sin permanencia
+            </p>
+          </div>
+          <Link
+            href="/settings/billing"
+            className="shrink-0 px-5 py-2.5 bg-[var(--accent)] text-[var(--bg)] text-sm font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
+          >
+            Activar SEPA →
+          </Link>
+        </div>
+      )}
+
+      {canWrite && tenant?.subscriptionStatus === 'ACTIVE' && (
+        <div className="flex items-center gap-2 text-xs text-[var(--text-subtle)]">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--success)]/10 text-[var(--success)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
+            Profesional
+          </span>
+          {tenant.subscriptionExpiresAt && (
+            <span>
+              Próxima: {formatDate(tenant.subscriptionExpiresAt)}
+            </span>
+          )}
+          <Link href="/settings/billing" className="text-[var(--accent)] hover:underline ml-1">
+            Gestionar
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
