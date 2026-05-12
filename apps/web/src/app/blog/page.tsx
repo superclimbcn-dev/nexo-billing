@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getBlogPosts, getCategoryMeta } from './_lib/blog-actions'
+import { getBlogPosts } from './_lib/blog-actions'
+import { getCategoryMeta } from './_lib/blog-categories'
 import { Search, FileText, TrendingUp, Receipt, Calculator, Settings } from 'lucide-react'
 
 export const metadata: Metadata = {
