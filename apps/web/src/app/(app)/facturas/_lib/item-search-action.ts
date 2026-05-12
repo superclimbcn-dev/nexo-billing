@@ -2,6 +2,7 @@
 
 import { prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
+import { unstable_noStore as noStore, revalidatePath } from 'next/cache'
 
 export interface ItemSearchResult {
   id: string
@@ -17,6 +18,7 @@ export interface ItemSearchResult {
 export async function searchItemsForAutocomplete(
   query: string,
 ): Promise<ItemSearchResult[]> {
+  noStore()
   if (!query || query.trim().length < 2) return []
 
   const supabase = await createServerClient()
@@ -112,6 +114,7 @@ export async function searchItemsForAutocomplete(
 }
 
 export async function searchCatalogTopItems(): Promise<ItemSearchResult[]> {
+  noStore()
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -195,6 +198,8 @@ export async function createItemQuick(data: {
       },
     })
 
+    revalidatePath('/facturas/nueva')
+    revalidatePath('/productos')
     return {
       ok: true,
       item: {
@@ -257,6 +262,8 @@ export async function createClientQuick(data: {
       select: { id: true, name: true, nif: true, email: true },
     })
 
+    revalidatePath('/facturas/nueva')
+    revalidatePath('/clientes')
     return { ok: true, client: created }
   } catch (err) {
     console.error('[createClientQuick] Prisma error:', err)
@@ -266,6 +273,7 @@ export async function createClientQuick(data: {
 }
 
 export async function searchClientsForAutocomplete(query: string) {
+  noStore()
   if (!query || query.trim().length < 2) return []
 
   const supabase = await createServerClient()

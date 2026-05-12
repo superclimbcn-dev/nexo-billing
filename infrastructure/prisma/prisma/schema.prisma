@@ -889,3 +889,43 @@ model AuditLog {
   @@index([entityType, entityId])
   @@map("audit_logs")
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              BLOG
+// ════════════════════════════════════════════════════════════════════════════
+
+model BlogPost {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String    @unique
+  title     String
+  excerpt   String?
+  content   String
+  category  String
+  image     String?
+  videoUrl  String?   @map("video_url")
+  author    String    @default("Equipo Nexo")
+  published Boolean   @default(false)
+  featured  Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  comments  Comment[]
+
+  @@index([published, createdAt])
+  @@index([category, published])
+  @@index([featured, published])
+  @@map("blog_posts")
+}
+
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  name      String
+  email     String
+  content   String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, approved, createdAt])
+  @@map("blog_comments")
+}

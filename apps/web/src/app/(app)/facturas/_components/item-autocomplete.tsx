@@ -105,6 +105,7 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
     setCreating(false)
 
     if (res.ok) {
+      setResults((prev) => [res.item, ...prev.filter((i) => i.id !== res.item.id)])
       handleSelect(res.item)
     } else {
       setCreateError(res.error)
