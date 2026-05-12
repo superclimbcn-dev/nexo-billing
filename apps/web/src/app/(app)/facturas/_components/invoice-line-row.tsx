@@ -33,7 +33,7 @@ export function InvoiceLineRow({ line, onUpdate, onRemove, canRemove }: Props) {
           value={line.description}
           onItemSelected={(item) =>
             onUpdate({
-              itemId: item.id,
+              itemId: item.source === 'tenant' ? item.id : null,
               description: item.name,
               unit: item.unit ?? '',
               unitPrice: item.unitPrice,

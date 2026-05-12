@@ -215,6 +215,56 @@ export async function createItemQuick(data: {
   }
 }
 
+export async function createClientQuick(data: {
+  name: string
+  nif?: string
+  email?: string
+}): Promise<{ ok: true; client: { id: string; name: string; nif: string; email: string | null } } | { ok: false; error: string }> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'No autenticado' }
+  const tenantId = user.app_metadata?.tenant_id as string | undefined
+  if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+
+  const name = data.name.trim()
+  const nif = (data.nif ?? '').trim().toUpperCase().replace(/[\s-]/g, '')
+  const email = data.email?.trim() || null
+
+  if (!name) return { ok: false, error: 'El nombre es obligatorio' }
+  if (name.length > 200) return { ok: false, error: 'El nombre es demasiado largo' }
+  if (nif && nif.length > 20) return { ok: false, error: 'NIF demasiado largo' }
+  if (email && email.length > 254) return { ok: false, error: 'Email demasiado largo' }
+
+  try {
+    if (nif) {
+      const existing = await prisma.client.findFirst({
+        where: { tenantId, nif, isActive: true },
+        select: { id: true, name: true, nif: true, email: true },
+      })
+      if (existing) return { ok: true, client: existing }
+    }
+
+    const created = await prisma.client.create({
+      data: {
+        tenantId,
+        name,
+        nif: nif || '',
+        email,
+        isActive: true,
+      },
+      select: { id: true, name: true, nif: true, email: true },
+    })
+
+    return { ok: true, client: created }
+  } catch (err) {
+    console.error('[createClientQuick] Prisma error:', err)
+    const message = err instanceof Error ? err.message : 'Error desconocido al crear cliente'
+    return { ok: false, error: message }
+  }
+}
+
 export async function searchClientsForAutocomplete(query: string) {
   if (!query || query.trim().length < 2) return []
 
