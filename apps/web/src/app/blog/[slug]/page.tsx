@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getBlogPostBySlug, getComments, getBlogPosts } from '../_lib/blog-actions'
 import { getCategoryMeta } from '../_lib/blog-categories'
 import { CommentForm } from './_components/comment-form'
+import { BlogContent } from './_components/blog-content'
 import { FileText, ArrowLeft, ThumbsUp, ThumbsDown } from 'lucide-react'
 
 interface Props {
@@ -153,7 +154,7 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* Content */}
-        <div className="mt-10 prose prose-invert prose-lg max-w-none">
+        <div className="mt-10 max-w-none">
           <BlogContent content={post.content} />
         </div>
 
@@ -231,55 +232,4 @@ export default async function BlogPostPage({ params }: Props) {
       </footer>
     </div>
   )
-}
-
-function BlogContent({ content }: { content: string }) {
-  // Simple markdown-like rendering: support headers, lists, bold, paragraphs
-  const lines = content.split('\n')
-  const elements: React.ReactNode[] = []
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (line === undefined) continue
-    const trimmed = line.trim()
-
-    if (trimmed.startsWith('# ')) {
-      elements.push(
-        <h2 key={i} className="text-2xl font-semibold text-[var(--text)] mt-8 mb-4">
-          {trimmed.slice(2)}
-        </h2>,
-      )
-    } else if (trimmed.startsWith('## ')) {
-      elements.push(
-        <h3 key={i} className="text-xl font-semibold text-[var(--text)] mt-6 mb-3">
-          {trimmed.slice(3)}
-        </h3>,
-      )
-    } else if (trimmed.startsWith('### ')) {
-      elements.push(
-        <h4 key={i} className="text-lg font-semibold text-[var(--text)] mt-5 mb-2">
-          {trimmed.slice(4)}
-        </h4>,
-      )
-    } else if (trimmed.startsWith('- ')) {
-      elements.push(
-        <li key={i} className="ml-4 text-[var(--text-dim)] leading-relaxed">
-          {trimmed.slice(2)}
-        </li>,
-      )
-    } else if (trimmed.startsWith('```')) {
-      // Skip code block markers
-      continue
-    } else if (trimmed === '---') {
-      elements.push(<hr key={i} className="my-6 border-[var(--border)]" />)
-    } else if (trimmed) {
-      elements.push(
-        <p key={i} className="text-[var(--text-dim)] leading-relaxed mb-4">
-          {trimmed}
-        </p>,
-      )
-    }
-  }
-
-  return <>{elements}</>
 }
