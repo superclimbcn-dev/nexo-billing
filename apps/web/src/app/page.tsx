@@ -33,6 +33,15 @@ export default function LandingPage() {
             <a href="#faq" className="hover:text-[var(--text)] transition-colors">
               FAQ
             </a>
+            <Link href="/blog" className="hover:text-[var(--text)] transition-colors">
+              Blog
+            </Link>
+            <a href="#about" className="hover:text-[var(--text)] transition-colors">
+              Sobre nosotros
+            </a>
+            <a href="mailto:contacto@nexo-digital.app" className="hover:text-[var(--text)] transition-colors">
+              Contacto
+            </a>
           </nav>
           <Link
             href="/login"
@@ -235,6 +244,31 @@ export default function LandingPage() {
               answer="El pago se realiza mediante domiciliación bancaria SEPA a través de GoCardless. Una vez al mes se carga el importe de tu cuenta. Puedes cancelar la domiciliación desde tu banco en cualquier momento."
             />
           </div>
+        </div>
+      </section>
+
+      {/* ── About ────────────────────────────────────────────────────────── */}
+      <section id="about" className="py-20 sm:py-24 border-t border-[var(--border)] bg-[var(--surface)]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="[font-family:var(--font-serif)] text-3xl sm:text-4xl text-[var(--text)]">
+            Sobre <span className="italic text-[var(--accent)]">Nexo Billing</span>
+          </h2>
+          <p className="mt-6 text-[var(--text-dim)] leading-relaxed">
+            Nexo Billing es un producto de <strong>Nexo Digital Unipersonal</strong>,
+            una empresa española con sede en Barcelona. Nacimos con una misión clara:
+            simplificar la facturación y la gestión fiscal para autónomos y PYMES,
+            eliminando el papeleo innecesario y garantizando el cumplimiento con la AEAT
+            desde el primer día.
+          </p>
+          <p className="mt-4 text-[var(--text-dim)] leading-relaxed">
+            Estamos preparados para <strong>Verifactu 2027</strong> y trabajamos
+            continuamente para que nuestros usuarios no tengan que preocuparse por
+            los cambios normativos. Si tienes dudas, escríbenos a{' '}
+            <a href="mailto:contacto@nexo-digital.app" className="text-[var(--accent)] hover:underline">
+              contacto@nexo-digital.app
+            </a>
+            .
+          </p>
         </div>
       </section>
 
