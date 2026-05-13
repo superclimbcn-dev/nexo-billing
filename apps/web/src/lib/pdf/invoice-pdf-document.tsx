@@ -285,8 +285,8 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           </View>
         )}
 
-        {/* PAYMENT */}
-        <View style={styles.paymentSection}>
+        {/* PAYMENT — minPresenceAhead reserves space for the Verifactu block below */}
+        <View style={styles.paymentSection} minPresenceAhead={120}>
           <Text style={styles.paymentLabel}>Forma de pago</Text>
           <Text style={styles.paymentMethod}>
             {getPaymentMethodLabel()}
@@ -300,8 +300,8 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           )}
         </View>
 
-        {/* VERIFACTU BLOCK */}
-        <View style={styles.verifactuSection}>
+        {/* VERIFACTU BLOCK — wrap={false} keeps it as a single unit; never breaks across pages */}
+        <View style={styles.verifactuSection} wrap={false}>
           <View style={{ flex: 1 }}>
             <View style={styles.verifactuHeader}>
               <View style={styles.verifactuBadge}>

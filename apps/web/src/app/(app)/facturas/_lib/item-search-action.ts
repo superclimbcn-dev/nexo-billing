@@ -167,15 +167,15 @@ export async function createItemQuick(data: {
   unit?: string
   type?: string
 }): Promise<{ ok: true; item: ItemSearchResult } | { ok: false; error: string }> {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'No autenticado' }
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
-
   try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+    const tenantId = user.app_metadata?.tenant_id as string | undefined
+    if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+
     const created = await prisma.item.create({
       data: {
         tenantId,
@@ -214,7 +214,7 @@ export async function createItemQuick(data: {
       },
     }
   } catch (err) {
-    console.error('[createItemQuick] Prisma error:', err)
+    console.error('[createItemQuick] error:', err)
     const message = err instanceof Error ? err.message : 'Error desconocido al crear producto'
     return { ok: false, error: message }
   }
@@ -225,30 +225,38 @@ export async function createClientQuick(data: {
   nif?: string
   email?: string
 }): Promise<{ ok: true; client: { id: string; name: string; nif: string; email: string | null } } | { ok: false; error: string }> {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'No autenticado' }
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
-
-  const name = data.name.trim()
-  const nif = (data.nif ?? '').trim().toUpperCase().replace(/[\s-]/g, '')
-  const email = data.email?.trim() || null
-
-  if (!name) return { ok: false, error: 'El nombre es obligatorio' }
-  if (name.length > 200) return { ok: false, error: 'El nombre es demasiado largo' }
-  if (nif && nif.length > 20) return { ok: false, error: 'NIF demasiado largo' }
-  if (email && email.length > 254) return { ok: false, error: 'Email demasiado largo' }
-
   try {
-    if (nif) {
-      const existing = await prisma.client.findFirst({
-        where: { tenantId, nif, isActive: true },
-        select: { id: true, name: true, nif: true, email: true },
-      })
-      if (existing) return { ok: true, client: existing }
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'No autenticado' }
+    const tenantId = user.app_metadata?.tenant_id as string | undefined
+    if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+
+    const name = data.name.trim()
+    const nif = (data.nif ?? '').trim().toUpperCase().replace(/[\s-]/g, '')
+    const email = data.email?.trim() || null
+
+    if (!name) return { ok: false, error: 'El nombre es obligatorio' }
+    if (name.length > 200) return { ok: false, error: 'El nombre es demasiado largo' }
+    if (nif && nif.length > 20) return { ok: false, error: 'NIF demasiado largo' }
+    if (email && email.length > 254) return { ok: false, error: 'Email demasiado largo' }
+
+    // For non-empty NIF: return existing client if found (idempotent by NIF)
+    // For empty NIF: @@unique([tenantId, nif]) allows only one per tenant — check first
+    const existing = await prisma.client.findFirst({
+      where: { tenantId, nif: nif || '', isActive: true },
+      select: { id: true, name: true, nif: true, email: true },
+    })
+    if (existing) {
+      if (!nif) {
+        return {
+          ok: false,
+          error: 'Ya existe un cliente sin NIF. Añade el NIF para crear uno nuevo, o busca el cliente existente.',
+        }
+      }
+      return { ok: true, client: existing }
     }
 
     const created = await prisma.client.create({
@@ -266,7 +274,7 @@ export async function createClientQuick(data: {
     revalidatePath('/clientes')
     return { ok: true, client: created }
   } catch (err) {
-    console.error('[createClientQuick] Prisma error:', err)
+    console.error('[createClientQuick] error:', err)
     const message = err instanceof Error ? err.message : 'Error desconocido al crear cliente'
     return { ok: false, error: message }
   }

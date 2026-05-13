@@ -95,20 +95,24 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
     }
 
     setCreating(true)
-    const res = await createItemQuick({
-      name: newName.trim(),
-      unitPrice: price,
-      vatRate: parseFloat(newVatRate),
-      unit: newUnit.trim() || 'ud',
-      type: newType,
-    })
-    setCreating(false)
-
-    if (res.ok) {
-      setResults((prev) => [res.item, ...prev.filter((i) => i.id !== res.item.id)])
-      handleSelect(res.item)
-    } else {
-      setCreateError(res.error)
+    try {
+      const res = await createItemQuick({
+        name: newName.trim(),
+        unitPrice: price,
+        vatRate: parseFloat(newVatRate),
+        unit: newUnit.trim() || 'ud',
+        type: newType,
+      })
+      if (res.ok) {
+        setResults((prev) => [res.item, ...prev.filter((i) => i.id !== res.item.id)])
+        handleSelect(res.item)
+      } else {
+        setCreateError(res.error)
+      }
+    } catch {
+      setCreateError('Error al crear el producto. Inténtalo de nuevo.')
+    } finally {
+      setCreating(false)
     }
   }
 

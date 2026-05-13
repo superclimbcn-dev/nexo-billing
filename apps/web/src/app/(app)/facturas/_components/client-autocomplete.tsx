@@ -86,18 +86,22 @@ export function ClientAutocomplete({ value, label, onChange }: Props) {
     }
 
     setCreating(true)
-    const res = await createClientQuick({
-      name,
-      nif: newNif.trim() || undefined,
-      email: newEmail.trim() || undefined,
-    })
-    setCreating(false)
-
-    if (res.ok) {
-      setResults((prev) => [res.client, ...prev.filter((c) => c.id !== res.client.id)])
-      handleSelect(res.client)
-    } else {
-      setCreateError(res.error)
+    try {
+      const res = await createClientQuick({
+        name,
+        nif: newNif.trim() || undefined,
+        email: newEmail.trim() || undefined,
+      })
+      if (res.ok) {
+        setResults((prev) => [res.client, ...prev.filter((c) => c.id !== res.client.id)])
+        handleSelect(res.client)
+      } else {
+        setCreateError(res.error)
+      }
+    } catch {
+      setCreateError('Error al crear el cliente. Inténtalo de nuevo.')
+    } finally {
+      setCreating(false)
     }
   }
 
