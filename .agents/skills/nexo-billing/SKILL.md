@@ -1,6 +1,4 @@
----
-description: "Nexo Billing - Monorepo Turbo com Next.js, Verifactu e GoCardless. Fase final."
----
+
 
 # Nexo Billing — Contexto do Projeto
 
@@ -11,6 +9,7 @@ description: "Nexo Billing - Monorepo Turbo com Next.js, Verifactu e GoCardless.
 - **Decisão:** NÃO lançar beta ainda — preparar PWA primeiro
 
 ## Estrutura do Monorepo
+```
 nexo-billing/
 ├── apps/web/              ← Next.js App (frontend + API)
 ├── packages/
@@ -24,7 +23,7 @@ nexo-billing/
 ├── CLAUDE.md              ← REGRAS DO PROJETO
 ├── turbo.json
 └── pnpm-workspace.yaml
-
+```
 
 ## Stack Técnico
 | Camada | Tecnologia |
@@ -66,7 +65,7 @@ pnpm dev         # Dev mode
 pnpm build       # Build
 pnpm test        # Testes
 pnpm typecheck   # TypeScript
-
+```
 
 ## Decisões do Elias (NUNCA ignorar)
 - Não lançar beta ainda
@@ -75,3 +74,9 @@ pnpm typecheck   # TypeScript
 - Espanhol para erros
 - Strict TypeScript
 - Commits só com autorização
+SKILLFIM
+
+echo "✅ SKILL.md criado!"
+wc -l .agents/skills/nexo-billing/SKILL.md
+tail -10 .agents/skills/nexo-billing/SKILL.md
+```

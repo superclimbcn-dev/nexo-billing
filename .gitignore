@@ -66,3 +66,4 @@ apps/web/public/sw.js
 
 # Blog screenshots (public assets)
 !public/blog/screenshots/*.png
+.vercel
