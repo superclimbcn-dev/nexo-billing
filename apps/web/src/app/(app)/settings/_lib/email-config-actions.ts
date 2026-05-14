@@ -82,8 +82,9 @@ export async function saveEmailConfig(
     revalidatePath('/settings/email')
     return { ok: true, data: { message: 'Configuración guardada' } }
   } catch (err) {
-    console.error('[saveEmailConfig] error:', err)
-    return { ok: false, error: 'Error al guardar la configuración' }
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[saveEmailConfig] error:', msg)
+    return { ok: false, error: `Error al guardar: ${msg}` }
   }
 }
 
