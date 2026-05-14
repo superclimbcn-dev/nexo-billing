@@ -75,8 +75,7 @@ export function ClientAutocomplete({ value, label, onChange }: Props) {
     setShowCreateForm(true)
   }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreate() {
     setCreateError(null)
 
     const name = newName.trim()
@@ -131,7 +130,7 @@ export function ClientAutocomplete({ value, label, onChange }: Props) {
           {isLoading ? (
             <div className="p-3 text-sm text-[var(--text-dim)]">Buscando...</div>
           ) : showCreateForm ? (
-            <form onSubmit={handleCreate} className="p-3 space-y-2">
+            <div className="p-3 space-y-2">
               {createError && (
                 <div className="p-2 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded">
                   <p className="text-xs text-[var(--danger)]">{createError}</p>
@@ -166,7 +165,8 @@ export function ClientAutocomplete({ value, label, onChange }: Props) {
               </div>
               <div className="flex gap-2 pt-1">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleCreate}
                   disabled={creating}
                   className="flex-1 px-3 py-1.5 bg-[var(--accent)] text-[var(--bg)] text-xs font-medium rounded hover:bg-[var(--accent-dim)] disabled:opacity-50"
                 >
@@ -180,7 +180,7 @@ export function ClientAutocomplete({ value, label, onChange }: Props) {
                   Cancelar
                 </button>
               </div>
-            </form>
+            </div>
           ) : results.length === 0 ? (
             <div className="p-2">
               <div className="text-sm text-[var(--text-dim)] mb-2">

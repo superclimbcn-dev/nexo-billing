@@ -85,8 +85,7 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
 
   const [createError, setCreateError] = useState<string | null>(null)
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreate() {
     setCreateError(null)
     const price = parseFloat(newUnitPrice.replace(',', '.'))
     if (!newName.trim() || isNaN(price) || price < 0) {
@@ -138,7 +137,7 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
           {isLoading ? (
             <div className="p-2 text-sm text-[var(--text-dim)]">Buscando...</div>
           ) : showCreateForm ? (
-            <form onSubmit={handleCreate} className="p-3 space-y-2">
+            <div className="p-3 space-y-2">
               {createError && (
                 <div className="p-2 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded">
                   <p className="text-xs text-[var(--danger)]">{createError}</p>
@@ -195,7 +194,8 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
               </div>
               <div className="flex gap-2 pt-1">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleCreate}
                   disabled={creating}
                   className="flex-1 px-3 py-1.5 bg-[var(--accent)] text-[var(--bg)] text-xs font-medium rounded hover:bg-[var(--accent-dim)] disabled:opacity-50"
                 >
@@ -209,7 +209,7 @@ export function ItemAutocomplete({ value, onItemSelected, onTextChange }: Props)
                   Cancelar
                 </button>
               </div>
-            </form>
+            </div>
           ) : results.length === 0 ? (
             <div className="p-2">
               <div className="text-sm text-[var(--text-dim)] mb-2">
