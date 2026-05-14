@@ -1,3 +1,4 @@
+import 'server-only'
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto'
 
 const ENCRYPTION_KEY = process.env.TENANT_SECRET_ENCRYPTION_KEY

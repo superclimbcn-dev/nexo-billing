@@ -4,9 +4,11 @@ import Stripe from 'stripe'
 import { prisma } from '@nexo/prisma'
 import { signInvoiceToken } from '@/lib/public-invoice-token'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-04-22.dahlia',
-})
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('STRIPE_SECRET_KEY not configured')
+  return new Stripe(key, { apiVersion: '2026-04-22.dahlia' })
+}
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
@@ -38,7 +40,7 @@ export async function createCheckoutSession(
     const successUrl = `${APP_URL}/f/${token}?success=1`
     const cancelUrl = `${APP_URL}/f/${token}?canceled=1`
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
