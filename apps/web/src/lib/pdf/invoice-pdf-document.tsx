@@ -285,8 +285,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           </View>
         )}
 
-        {/* PAYMENT + VERIFACTU — grouped so they always travel together to the same page */}
-        <View wrap={false}>
+        {/* PAYMENT */}
         <View style={styles.paymentSection}>
           <Text style={styles.paymentLabel}>Forma de pago</Text>
           <Text style={styles.paymentMethod}>
@@ -301,7 +300,8 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           )}
         </View>
 
-        <View style={styles.verifactuSection}>
+        {/* VERIFACTU FOOTER — fixed: appears on every page at bottom, outside normal flow */}
+        <View style={styles.verifactuFooter} fixed>
           <View style={{ flex: 1 }}>
             <View style={styles.verifactuHeader}>
               <View style={styles.verifactuBadge}>
@@ -387,7 +387,6 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
             </View>
           ) : null}
         </View>
-        </View>{/* end payment+verifactu group */}
 
         {/* FOOTER */}
         <View style={styles.footer} fixed>

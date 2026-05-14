@@ -13,7 +13,7 @@ const WHITE = '#ffffff'
 export const styles = StyleSheet.create({
   page: {
     paddingTop: 36,
-    paddingBottom: 56,
+    paddingBottom: 130,
     paddingHorizontal: 45,
     fontFamily: 'Inter',
     fontSize: 9,
@@ -325,9 +325,12 @@ export const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
 
-  // Verifactu block — normal flow (not absolute), wrap={false} applied in JSX
-  verifactuSection: {
-    marginTop: 12,
+  // Verifactu fixed footer — appears on every page at the bottom (fixed prop in JSX)
+  verifactuFooter: {
+    position: 'absolute',
+    bottom: 24,
+    left: 40,
+    right: 40,
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -415,10 +418,10 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Footer
+  // Footer — thin strip at the very bottom, sits below the verifactuFooter block
   footer: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 4,
     left: 45,
     right: 45,
     flexDirection: 'row',
