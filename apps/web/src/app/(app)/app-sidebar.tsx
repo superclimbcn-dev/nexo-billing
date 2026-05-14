@@ -16,6 +16,9 @@ interface AppSidebarProps {
   tenantVertical: string
   userName: string
   userEmail: string
+  userRole?: string | null
+  verifactuSentCount?: number
+  verifactuLastError?: boolean
 }
 
 function getInitials(name: string): string {
@@ -33,14 +36,21 @@ export function AppSidebar({
   tenantVertical,
   userName,
   userEmail,
+  userRole,
+  verifactuSentCount = 0,
+  verifactuLastError = false,
 }: AppSidebarProps) {
   const pathname = usePathname()
+  const showSettings = userRole !== 'ACCOUNTANT'
 
   return (
     <Sidebar
       footer={
         <div className="flex flex-col gap-3">
-          <ComplianceBadge />
+          <ComplianceBadge
+            sentCount={verifactuSentCount}
+            lastError={verifactuLastError}
+          />
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text)] font-medium truncate">{userName}</span>
             <span className="text-[11px] text-[var(--text-subtle)] truncate">{userEmail}</span>
@@ -77,6 +87,36 @@ export function AppSidebar({
           active={pathname.startsWith('/facturas')}
         />
         <NavItem
+          href="/presupuestos"
+          icon="◫"
+          label="Presupuestos"
+          active={pathname.startsWith('/presupuestos')}
+        />
+        <NavItem
+          href="/recurrentes"
+          icon="↻"
+          label="Recurrentes"
+          active={pathname.startsWith('/recurrentes')}
+        />
+        <NavItem
+          href="/gastos"
+          icon="⊟"
+          label="Gastos"
+          active={pathname.startsWith('/gastos')}
+        />
+        <NavItem
+          href="/tesoreria"
+          icon="📊"
+          label="Tesorería"
+          active={pathname.startsWith('/tesoreria')}
+        />
+        <NavItem
+          href="/impuestos"
+          icon="🧮"
+          label="Impuestos"
+          active={pathname.startsWith('/impuestos')}
+        />
+        <NavItem
           href="/clientes"
           icon="◎"
           label="Clientes"
@@ -90,21 +130,23 @@ export function AppSidebar({
         />
       </div>
 
-      <div className="mt-4 flex flex-col gap-0.5">
-        <NavSectionLabel>Configuración</NavSectionLabel>
-        <NavItem
-          href="/settings/team"
-          icon="⊙"
-          label="Equipo"
-          active={pathname.startsWith('/settings/team')}
-        />
-        <NavItem
-          href="/settings"
-          icon="⚙"
-          label="Ajustes"
-          active={pathname === '/settings'}
-        />
-      </div>
+      {showSettings && (
+        <div className="mt-4 flex flex-col gap-0.5">
+          <NavSectionLabel>Configuración</NavSectionLabel>
+          <NavItem
+            href="/settings/team"
+            icon="⊙"
+            label="Equipo"
+            active={pathname.startsWith('/settings/team')}
+          />
+          <NavItem
+            href="/settings"
+            icon="⚙"
+            label="Ajustes"
+            active={pathname === '/settings'}
+          />
+        </div>
+      )}
     </Sidebar>
   )
 }

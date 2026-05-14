@@ -5,25 +5,25 @@ import { VerticalCard, Button } from '@nexo/core-ui'
 
 const VERTICALS = [
   {
-    value: 'limpieza',
+    value: 'cleaning',
     icon: '🧹',
     title: 'Limpieza',
     description: 'Servicios de limpieza doméstica, industrial y mantenimiento',
   },
   {
-    value: 'construccion',
+    value: 'construction',
     icon: '🏗️',
     title: 'Construcción',
     description: 'Reformas, obra nueva, instalaciones y rehabilitación',
   },
   {
-    value: 'medicos',
+    value: 'medical',
     icon: '⚕️',
     title: 'Salud y médicos',
     description: 'Clínicas, consultas médicas y servicios sanitarios',
   },
   {
-    value: 'servicios_pro',
+    value: 'services_pro',
     icon: '💼',
     title: 'Servicios pro',
     description: 'Consultoría, legal, asesoría, marketing y servicios B2B',

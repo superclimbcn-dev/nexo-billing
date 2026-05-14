@@ -1,0 +1,283 @@
+'use server'
+
+import { prisma, Prisma } from '@nexo/prisma'
+import { createServerClient } from '@nexo/core-auth'
+import { revalidatePath } from 'next/cache'
+import {
+  MockProvider,
+  computeRecordHash,
+  generateAEATQRUrlFromInvoice,
+  type InvoiceRecordData,
+  type VerifactuRecordType,
+  type VerifactuStatus,
+  type InvoiceData,
+} from '@nexo/verifactu'
+
+type ActionResult = { ok: true; csv: string } | { ok: false; error: string }
+
+async function getAuthContext() {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const tenantId = user.app_metadata?.tenant_id as string | undefined
+  if (!tenantId) return null
+  return { tenantId }
+}
+
+function mapPrismaRecord(record: {
+  id: string
+  tenantId: string
+  invoiceId: string
+  type: string
+  hash: string
+  previousHash: string | null
+  canonicalXml: string
+  qrUrl: string | null
+  sentAt: Date | null
+  aeatResponse: Prisma.JsonValue
+  status: string
+  createdAt: Date
+}): InvoiceRecordData {
+  return {
+    id: record.id,
+    tenantId: record.tenantId,
+    invoiceId: record.invoiceId,
+    type: record.type as VerifactuRecordType,
+    hash: record.hash,
+    previousHash: record.previousHash,
+    canonicalXml: record.canonicalXml,
+    qrUrl: record.qrUrl,
+    sentAt: record.sentAt,
+    aeatResponse: record.aeatResponse,
+    status: record.status as VerifactuStatus,
+    createdAt: record.createdAt,
+  }
+}
+
+function mapInvoiceToVerifactuData(invoice: {
+  id: string
+  tenantId: string
+  fullNumber: string
+  issuedAt: Date
+  dueAt: Date | null
+  status: string
+  subtotal: Prisma.Decimal
+  vatAmount: Prisma.Decimal
+  totalAmount: Prisma.Decimal
+  notes: string | null
+  client: { nif: string; name: string }
+  lines: Array<{
+    description: string
+    quantity: Prisma.Decimal
+    unitPrice: Prisma.Decimal
+    vatRate: Prisma.Decimal
+    subtotal: Prisma.Decimal
+    vatAmount: Prisma.Decimal
+    totalAmount: Prisma.Decimal
+  }>
+}): InvoiceData {
+  return {
+    id: invoice.id,
+    tenantId: invoice.tenantId,
+    fullNumber: invoice.fullNumber,
+    issuedAt: invoice.issuedAt,
+    dueAt: invoice.dueAt,
+    status: invoice.status,
+    subtotal: Number(invoice.subtotal),
+    vatAmount: Number(invoice.vatAmount),
+    totalAmount: Number(invoice.totalAmount),
+    notes: invoice.notes,
+    clientNif: invoice.client.nif,
+    clientName: invoice.client.name,
+    lines: invoice.lines.map((line) => ({
+      description: line.description,
+      quantity: Number(line.quantity),
+      unitPrice: Number(line.unitPrice),
+      vatRate: Number(line.vatRate),
+      subtotal: Number(line.subtotal),
+      vatAmount: Number(line.vatAmount),
+      totalAmount: Number(line.totalAmount),
+    })),
+  }
+}
+
+const provider = new MockProvider()
+
+export async function submitToVerifactu(invoiceId: string): Promise<ActionResult> {
+  const ctx = await getAuthContext()
+  if (!ctx) return { ok: false, error: 'No autenticado' }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, tenantId: ctx.tenantId },
+    include: {
+      client: { select: { id: true, name: true, nif: true } },
+      tenant: { select: { nif: true } },
+      lines: {
+        select: {
+          description: true,
+          quantity: true,
+          unitPrice: true,
+          vatRate: true,
+          subtotal: true,
+          vatAmount: true,
+          totalAmount: true,
+        },
+      },
+    },
+  })
+
+  if (!invoice) return { ok: false, error: 'Factura no encontrada' }
+  if (invoice.status === 'draft') {
+    return { ok: false, error: 'No se puede enviar un borrador a la AEAT' }
+  }
+  if (!invoice.client.nif || invoice.client.nif.trim() === '') {
+    return { ok: false, error: 'El cliente debe tener un NIF válido para enviar a la AEAT' }
+  }
+
+  const existing = await prisma.invoiceRecord.findFirst({
+    where: { invoiceId, tenantId: ctx.tenantId },
+  })
+  if (existing) {
+    return { ok: false, error: 'Esta factura ya ha sido enviada a la AEAT' }
+  }
+
+  const invoiceData = mapInvoiceToVerifactuData(invoice)
+
+  // Compute hash with chaining
+  const lastRecord = await prisma.invoiceRecord.findFirst({
+    where: { tenantId: ctx.tenantId },
+    orderBy: { createdAt: 'desc' },
+  })
+  const previousHash = lastRecord?.hash ?? null
+
+  const hashPayload = {
+    invoiceId: invoice.id,
+    fullNumber: invoice.fullNumber,
+    issuedAt: invoice.issuedAt.toISOString(),
+    totalAmount: Number(invoice.totalAmount),
+    clientNif: invoice.client.nif,
+  }
+  const hash = computeRecordHash(hashPayload, previousHash)
+
+  const result = await provider.submitInvoice(invoiceData)
+  if (!result.success) {
+    await prisma.invoiceRecord.create({
+      data: {
+        tenantId: ctx.tenantId,
+        invoiceId: invoice.id,
+        type: 'Alta',
+        hash,
+        previousHash,
+        canonicalXml: '<xml/>',
+        status: 'error',
+        aeatResponse: { error: result.error },
+      },
+    })
+    return { ok: false, error: result.error ?? 'Error al enviar a la AEAT' }
+  }
+
+  const recordData = mapPrismaRecord(
+    await prisma.invoiceRecord.create({
+      data: {
+        tenantId: ctx.tenantId,
+        invoiceId: invoice.id,
+        type: 'Alta',
+        hash,
+        previousHash,
+        canonicalXml: '<xml/>',
+        status: 'accepted',
+        sentAt: new Date(),
+      },
+    }),
+  )
+
+  const qrUrl = generateAEATQRUrlFromInvoice(
+    invoice.tenant.nif,
+    invoice.fullNumber,
+    invoice.issuedAt,
+    Number(invoice.totalAmount),
+    false, // pruebas
+  )
+  await prisma.invoiceRecord.update({
+    where: { id: recordData.id },
+    data: { qrUrl },
+  })
+
+  revalidatePath('/facturas')
+  revalidatePath(`/facturas/${invoiceId}`)
+  return { ok: true, csv: result.csv ?? '' }
+}
+
+export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionResult> {
+  const ctx = await getAuthContext()
+  if (!ctx) return { ok: false, error: 'No autenticado' }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, tenantId: ctx.tenantId },
+    include: {
+      client: { select: { id: true, name: true, nif: true } },
+      lines: {
+        select: {
+          description: true,
+          quantity: true,
+          unitPrice: true,
+          vatRate: true,
+          subtotal: true,
+          vatAmount: true,
+          totalAmount: true,
+        },
+      },
+    },
+  })
+
+  if (!invoice) return { ok: false, error: 'Factura no encontrada' }
+
+  const existing = await prisma.invoiceRecord.findFirst({
+    where: { invoiceId, tenantId: ctx.tenantId, type: 'Alta' },
+  })
+  if (!existing) {
+    return { ok: false, error: 'Esta factura no ha sido enviada a la AEAT' }
+  }
+
+  const invoiceData = mapInvoiceToVerifactuData(invoice)
+  const result = await provider.cancelInvoice(invoiceData)
+
+  if (!result.success) {
+    return { ok: false, error: result.error ?? 'Error al anular en la AEAT' }
+  }
+
+  const lastRecord = await prisma.invoiceRecord.findFirst({
+    where: { tenantId: ctx.tenantId },
+    orderBy: { createdAt: 'desc' },
+  })
+  const previousHash = lastRecord?.hash ?? null
+
+  const hashPayload = {
+    invoiceId: invoice.id,
+    fullNumber: invoice.fullNumber,
+    issuedAt: invoice.issuedAt.toISOString(),
+    totalAmount: Number(invoice.totalAmount),
+    clientNif: invoice.client.nif,
+    operation: 'cancel',
+  }
+  const hash = computeRecordHash(hashPayload, previousHash)
+
+  await prisma.invoiceRecord.create({
+    data: {
+      tenantId: ctx.tenantId,
+      invoiceId: invoice.id,
+      type: 'Anulacion',
+      hash,
+      previousHash,
+      canonicalXml: '<xml/>',
+      status: 'accepted',
+      sentAt: new Date(),
+    },
+  })
+
+  revalidatePath('/facturas')
+  revalidatePath(`/facturas/${invoiceId}`)
+  return { ok: true, csv: result.csv ?? '' }
+}

@@ -25,8 +25,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
+    "@types/qrcode": "^1.5.6",
     "prettier": "^3.3.3",
     "turbo": "^2.2.3",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }

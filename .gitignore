@@ -51,3 +51,19 @@ infrastructure/prisma/*.db
 # Supabase
 supabase/.temp
 supabase/.branches
+
+# Browser-downloaded duplicates (Chrome / Edge add "(N)" suffix on duplicate downloads)
+*\ \(1\).md
+*\ \(2\).md
+*\ \(3\).md
+
+# Playwright MCP snapshots
+.playwright-mcp/
+*.png
+
+# Generated service worker
+apps/web/public/sw.js
+
+# Blog screenshots (public assets)
+!public/blog/screenshots/*.png
+.vercel

@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { refreshSession } from '@nexo/core-auth'
 
 const PUBLIC_PATHS = [
+  '/',
   '/login',
   '/signup',
   '/auth',
   '/check-email',
   '/auth-error',
   '/spoiler',
+  '/terminos',
+  '/privacidad',
+  '/cookies',
+  '/blog',
   '/api/health',
+  '/f',
 ]
 
 function isPublic(pathname: string) {
