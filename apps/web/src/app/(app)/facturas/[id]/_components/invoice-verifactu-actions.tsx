@@ -74,13 +74,19 @@ export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordSt
         </div>
       )}
 
-      {!hasRecord && (
+      {!hasRecord && isDraft && (
+        <p className="text-xs text-[var(--text-subtle)]">
+          Envía la factura primero para poder registrarla en AEAT.
+        </p>
+      )}
+
+      {!hasRecord && !isDraft && (
         <button
           onClick={handleSubmit}
-          disabled={isPending || isDraft}
+          disabled={isPending}
           className={btnPrimary}
         >
-          {isPending ? 'Enviando...' : 'Enviar a AEAT'}
+          {isPending ? 'Enviando...' : 'Registrar en AEAT'}
         </button>
       )}
 

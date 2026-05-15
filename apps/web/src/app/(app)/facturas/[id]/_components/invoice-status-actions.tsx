@@ -27,7 +27,7 @@ interface Props {
   status: string
 }
 
-type Confirm = 'send' | 'pay' | 'cancel' | 'delete' | null
+type Confirm = 'send' | 'markSent' | 'pay' | 'cancel' | 'delete' | null
 
 export function InvoiceStatusActions({ invoiceId, status }: Props) {
   const router = useRouter()
@@ -80,6 +80,13 @@ export function InvoiceStatusActions({ invoiceId, status }: Props) {
             className={btnPrimary}
           >
             {confirmAction === 'send' ? '¿Confirmar envío?' : 'Enviar por email'}
+          </button>
+          <button
+            onClick={() => handleAction('markSent', () => markInvoiceAsSent(invoiceId))}
+            disabled={isPending}
+            className={btnSecondary}
+          >
+            {confirmAction === 'markSent' ? '¿Marcar como enviada?' : 'Marcar como enviada'}
           </button>
           <button
             onClick={() => handleAction('delete', () => deleteDraftInvoice(invoiceId))}
