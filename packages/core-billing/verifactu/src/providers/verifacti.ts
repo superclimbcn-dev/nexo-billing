@@ -220,6 +220,9 @@ export class VerifactiProvider implements IVerifactuProvider {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
 
+    // TODO: remove after confirming API key reaches runtime
+    console.log('[Verifacti] request | key_length:', this.apiKey.length, 'key_prefix:', this.apiKey.substring(0, 8), 'isProduction:', this.isProduction)
+
     let response: Response
     try {
       response = await fetch(url, {
@@ -248,8 +251,10 @@ export class VerifactiProvider implements IVerifactuProvider {
     if (!response.ok) {
       let errorMsg = `HTTP ${response.status}`
       try {
-        const errBody = (await response.json()) as { message?: string; error?: string }
-        errorMsg = errBody.message ?? errBody.error ?? errorMsg
+        const rawText = await response.text()
+        console.log(`[Verifacti] error ${response.status} | body:`, rawText)
+        const errBody = JSON.parse(rawText) as { message?: string; error?: string }
+        errorMsg = errBody.message ?? errBody.error ?? (rawText || errorMsg)
       } catch {
         // ignore JSON parse errors on error responses
       }
