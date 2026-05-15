@@ -3,6 +3,7 @@
 import { prisma } from '@nexo/prisma'
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@nexo/core-auth'
+import { registerEmisorIfEnabled } from '@nexo/verifactu'
 import { fiscalDataSchema, createSeriesSchema, updateSeriesSchema } from './settings-schema'
 
 type ActionResult<T = void> =
@@ -37,10 +38,15 @@ export async function saveFiscalData(raw: unknown): Promise<ActionResult> {
     }
   }
 
-  await prisma.tenant.update({
+  const tenant = await prisma.tenant.update({
     where: { id: ctx.tenantId },
     data: parsed.data,
+    select: { nif: true, legalName: true, name: true },
   })
+
+  // Re-register the NIF in Verifacti in case razon social changed.
+  // Fire-and-forget — never blocks the settings save.
+  void registerEmisorIfEnabled(tenant.nif ?? '', tenant.legalName ?? tenant.name)
 
   revalidatePath('/settings/datos-fiscales')
   return { ok: true, data: undefined }

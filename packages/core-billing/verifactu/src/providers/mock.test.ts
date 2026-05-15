@@ -7,6 +7,9 @@ function makeInvoice(overrides: Partial<InvoiceData> = {}): InvoiceData {
   return {
     id: 'inv-001',
     tenantId: 'tenant-abc',
+    tenantNif: 'B00000001',
+    tenantName: 'Test Emisor S.L.',
+    invoiceType: 'F1',
     fullNumber: 'F-2024-0001',
     issuedAt: new Date('2024-11-29T10:00:00.000Z'),
     dueAt: null,

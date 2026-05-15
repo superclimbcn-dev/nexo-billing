@@ -1,6 +1,7 @@
 import type { IVerifactuProvider } from './interface'
 import { MockProvider } from './mock'
 import { MockProviderV2 } from './mock-v2'
+import { VerifactiProvider } from './verifacti'
 
 export type ProviderName = 'mock' | 'mock-v2' | 'verifacti'
 
@@ -24,6 +25,8 @@ function getEnvVar(name: string): string | undefined {
  * Environment variables:
  *   VERIFACTU_PROVIDER   — 'mock' | 'mock-v2' | 'verifacti'  (default: 'mock')
  *   VERIFACTU_MOCK_MODE  — 'happy' | 'realistic'             (default: 'realistic')
+ *   VERIFACTU_API_KEY    — API key for Verifacti (required when provider=verifacti)
+ *   VERIFACTU_API_URL    — Base URL override (default: https://app.verifactuapi.es)
  */
 export function createProvider(options: FactoryOptions = {}): IVerifactuProvider {
   const providerName = (options.provider ?? getEnvVar('VERIFACTU_PROVIDER') ?? 'mock') as ProviderName
@@ -34,12 +37,18 @@ export function createProvider(options: FactoryOptions = {}): IVerifactuProvider
       return new MockProvider()
     case 'mock-v2':
       return new MockProviderV2(mockMode)
-    case 'verifacti':
-      // TODO: implement real Verifacti provider when API credentials are available
-      throw new Error(
-        'Verifacti provider is not yet implemented. ' +
-          'Set VERIFACTU_PROVIDER=mock or mock-v2 for development.',
-      )
+    case 'verifacti': {
+      const apiKey = getEnvVar('VERIFACTU_API_KEY')
+      if (!apiKey) {
+        throw new Error(
+          'VERIFACTU_API_KEY is required when VERIFACTU_PROVIDER=verifacti. ' +
+            'Add it to your .env.local or Vercel environment variables.',
+        )
+      }
+      const baseUrl = getEnvVar('VERIFACTU_API_URL')
+      const isProduction = getEnvVar('NODE_ENV') === 'production'
+      return new VerifactiProvider(apiKey, { baseUrl, isProduction })
+    }
     default:
       throw new Error(
         `Unknown Verifactu provider "${providerName}". ` +
