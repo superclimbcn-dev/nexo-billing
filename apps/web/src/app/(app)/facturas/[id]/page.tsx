@@ -8,7 +8,7 @@ import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
 import { InvoicePdfActions } from './_components/invoice-pdf-actions'
 import { InvoiceVerifactuActions } from './_components/invoice-verifactu-actions'
-import { RectificativaButton } from './_components/rectificativa-button'
+import { RectificativaButton } from '../_components/rectificativa-button'
 
 interface Props {
   params: Promise<{ id: string }>
