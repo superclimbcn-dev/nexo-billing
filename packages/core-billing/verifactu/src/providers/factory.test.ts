@@ -56,10 +56,16 @@ describe('createProvider', () => {
     expect(provider).toBeInstanceOf(MockProvider)
   })
 
-  it('throws for unimplemented verifacti provider', () => {
-    expect(() => createProvider({ provider: 'verifacti' })).toThrow(
-      'Verifacti provider is not yet implemented',
-    )
+  it('throws when verifacti provider is selected but VERIFACTU_API_KEY is missing', () => {
+    delete process.env.VERIFACTU_API_KEY
+    expect(() => createProvider({ provider: 'verifacti' })).toThrow('VERIFACTU_API_KEY is required')
+  })
+
+  it('returns VerifactiProvider when VERIFACTU_API_KEY is set', () => {
+    process.env.VERIFACTU_API_KEY = 'test-key-123'
+    const provider = createProvider({ provider: 'verifacti' })
+    expect(provider.name).toBe('verifacti')
+    delete process.env.VERIFACTU_API_KEY
   })
 
   it('throws for unknown provider name', () => {

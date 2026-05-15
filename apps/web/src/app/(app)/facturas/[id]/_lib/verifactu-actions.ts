@@ -4,7 +4,7 @@ import { prisma, Prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import {
-  MockProvider,
+  createProvider,
   computeRecordHash,
   generateAEATQRUrlFromInvoice,
   type InvoiceRecordData,
@@ -59,6 +59,7 @@ function mapPrismaRecord(record: {
 function mapInvoiceToVerifactuData(invoice: {
   id: string
   tenantId: string
+  type: string
   fullNumber: string
   issuedAt: Date
   dueAt: Date | null
@@ -67,6 +68,7 @@ function mapInvoiceToVerifactuData(invoice: {
   vatAmount: Prisma.Decimal
   totalAmount: Prisma.Decimal
   notes: string | null
+  tenant: { nif: string | null; legalName: string | null; name: string }
   client: { nif: string; name: string }
   lines: Array<{
     description: string
@@ -81,6 +83,9 @@ function mapInvoiceToVerifactuData(invoice: {
   return {
     id: invoice.id,
     tenantId: invoice.tenantId,
+    tenantNif: invoice.tenant.nif ?? '',
+    tenantName: invoice.tenant.legalName ?? invoice.tenant.name,
+    invoiceType: invoice.type || 'F1',
     fullNumber: invoice.fullNumber,
     issuedAt: invoice.issuedAt,
     dueAt: invoice.dueAt,
@@ -103,7 +108,7 @@ function mapInvoiceToVerifactuData(invoice: {
   }
 }
 
-const provider = new MockProvider()
+const provider = createProvider()
 
 export async function submitToVerifactu(invoiceId: string): Promise<ActionResult> {
   const ctx = await getAuthContext()
@@ -111,9 +116,20 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
-    include: {
+    select: {
+      id: true,
+      tenantId: true,
+      type: true,
+      fullNumber: true,
+      issuedAt: true,
+      dueAt: true,
+      status: true,
+      subtotal: true,
+      vatAmount: true,
+      totalAmount: true,
+      notes: true,
       client: { select: { id: true, name: true, nif: true } },
-      tenant: { select: { nif: true } },
+      tenant: { select: { nif: true, legalName: true, name: true } },
       lines: {
         select: {
           description: true,
@@ -193,13 +209,15 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
     }),
   )
 
-  const qrUrl = generateAEATQRUrlFromInvoice(
-    invoice.tenant.nif,
-    invoice.fullNumber,
-    invoice.issuedAt,
-    Number(invoice.totalAmount),
-    false, // pruebas
-  )
+  const qrUrl =
+    result.qrUrl ??
+    generateAEATQRUrlFromInvoice(
+      invoice.tenant.nif ?? '',
+      invoice.fullNumber,
+      invoice.issuedAt,
+      Number(invoice.totalAmount),
+      false, // pruebas
+    )
   await prisma.invoiceRecord.update({
     where: { id: recordData.id },
     data: { qrUrl },
@@ -216,8 +234,20 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
-    include: {
+    select: {
+      id: true,
+      tenantId: true,
+      type: true,
+      fullNumber: true,
+      issuedAt: true,
+      dueAt: true,
+      status: true,
+      subtotal: true,
+      vatAmount: true,
+      totalAmount: true,
+      notes: true,
       client: { select: { id: true, name: true, nif: true } },
+      tenant: { select: { nif: true, legalName: true, name: true } },
       lines: {
         select: {
           description: true,

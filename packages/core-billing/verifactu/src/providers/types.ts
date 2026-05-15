@@ -11,6 +11,7 @@ export interface VerifactuResult {
   success: boolean
   recordId: string
   csv?: string
+  qrUrl?: string
   error?: string
   previousHash?: string | null
 }
@@ -18,6 +19,9 @@ export interface VerifactuResult {
 export interface InvoiceData {
   id: string
   tenantId: string
+  tenantNif: string
+  tenantName: string
+  invoiceType: string
   fullNumber: string
   issuedAt: Date
   dueAt: Date | null

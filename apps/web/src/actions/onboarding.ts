@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto'
 import { redirect } from 'next/navigation'
 import { createServerClient, createAdminClient } from '@nexo/core-auth'
 import { prisma, UserRole, AuditAction } from '@nexo/prisma'
+import { registerEmisorIfEnabled } from '@nexo/verifactu'
 
 export async function setOnboardingState(partialState: Record<string, unknown>) {
   const supabase = await createServerClient()
@@ -182,6 +183,10 @@ export async function completeOnboarding(formData: FormData) {
       role: UserRole.OWNER,
     },
   })
+
+  // Fire-and-forget: register the tenant NIF in Verifacti.
+  // Never blocks onboarding — errors are logged, not surfaced.
+  void registerEmisorIfEnabled(nif, razonSocial)
 
   await supabase.auth.updateUser({
     data: {
