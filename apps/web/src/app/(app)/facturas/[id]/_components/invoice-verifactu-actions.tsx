@@ -9,9 +9,10 @@ interface Props {
   status: string
   hasRecord: boolean
   recordStatus?: string | null
+  aeatResponse?: unknown
 }
 
-export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordStatus }: Props) {
+export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordStatus, aeatResponse }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +104,11 @@ export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordSt
             <span>⚠</span>
             <span>Error en AEAT — Requiere atención</span>
           </div>
+          {aeatResponse != null && (
+            <pre className="text-[10px] text-[var(--danger)] bg-[var(--danger)]/5 border border-[var(--danger)]/20 rounded p-2 overflow-auto max-h-32 whitespace-pre-wrap break-all">
+              {JSON.stringify(aeatResponse, null, 2)}
+            </pre>
+          )}
           <button onClick={handleSubmit} disabled={isPending} className={btnPrimary}>
             {isPending ? 'Reenviando...' : 'Reenviar a AEAT'}
           </button>

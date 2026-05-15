@@ -32,6 +32,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
   const verifactuRecord = await prisma.invoiceRecord.findFirst({
     where: { invoiceId: id, tenantId },
     orderBy: { createdAt: 'desc' },
+    select: { status: true, aeatResponse: true },
   })
 
   return (
@@ -78,6 +79,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 status={invoice.status}
                 hasRecord={!!verifactuRecord}
                 recordStatus={verifactuRecord?.status ?? null}
+                aeatResponse={verifactuRecord?.aeatResponse ?? null}
               />
             </section>
           </div>
