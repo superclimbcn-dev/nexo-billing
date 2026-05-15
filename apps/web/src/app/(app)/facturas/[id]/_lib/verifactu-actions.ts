@@ -108,8 +108,6 @@ function mapInvoiceToVerifactuData(invoice: {
   }
 }
 
-const provider = createProvider()
-
 export async function submitToVerifactu(invoiceId: string): Promise<ActionResult> {
   const ctx = await getAuthContext()
   if (!ctx) return { ok: false, error: 'No autenticado' }
@@ -160,6 +158,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
+  const provider = createProvider()
 
   // Compute hash with chaining
   const lastRecord = await prisma.invoiceRecord.findFirst({
@@ -272,6 +271,7 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
+  const provider = createProvider()
   const result = await provider.cancelInvoice(invoiceData)
 
   if (!result.success) {
