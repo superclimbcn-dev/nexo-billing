@@ -213,8 +213,8 @@ export class VerifactiProvider implements IVerifactuProvider {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
 
-    // TODO: remove after confirming API key reaches runtime
-    console.log('[Verifacti] request | key_length:', this.apiKey.length, 'key_prefix:', this.apiKey.substring(0, 8), 'isProduction:', this.isProduction)
+    // TODO: remove after diagnosing API key / response issues
+    console.log('[VERIFACTI] API Key (primeros 20 chars):', this.apiKey?.substring(0, 20))
 
     let response: Response
     try {
@@ -241,22 +241,45 @@ export class VerifactiProvider implements IVerifactuProvider {
       clearTimeout(timer)
     }
 
+    const rawText = await response.text()
+
     if (!response.ok) {
       let errorMsg = `HTTP ${response.status}`
       try {
-        const rawText = await response.text()
-        console.log(`[Verifacti] error ${response.status} | body:`, rawText)
         const errBody = JSON.parse(rawText) as { message?: string; error?: string }
         errorMsg = errBody.message ?? errBody.error ?? (rawText || errorMsg)
       } catch {
         // ignore JSON parse errors on error responses
       }
+      console.log(`[VERIFACTI] Response body (${response.status}):`, rawText)
       throw new VerifactuProviderError(
         `Verifacti API error (${response.status}): ${errorMsg}`,
         'verifacti',
       )
     }
 
-    return response.json() as Promise<T>
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(rawText)
+    } catch {
+      throw new VerifactuProviderError(
+        `Verifacti returned non-JSON response: ${rawText.slice(0, 200)}`,
+        'verifacti',
+      )
+    }
+
+    // TODO: remove after diagnosing API key / response issues
+    console.log('[VERIFACTI] Response body:', JSON.stringify(parsed, null, 2))
+
+    // Verifacti returns HTTP 200 even for errors — detect via error field in body
+    const maybeError = parsed as { error?: string; message?: string }
+    if (maybeError.error) {
+      throw new VerifactuProviderError(
+        `Verifacti API error (200): ${maybeError.error}`,
+        'verifacti',
+      )
+    }
+
+    return parsed as T
   }
 }
