@@ -214,6 +214,7 @@ export class VerifactiProvider implements IVerifactuProvider {
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
 
     // TODO: remove after diagnosing API key / response issues
+    console.log('[VERIFACTI] URL completa:', url)
     console.log('[VERIFACTI] API Key (primeros 20 chars):', this.apiKey?.substring(0, 20))
 
     let response: Response
