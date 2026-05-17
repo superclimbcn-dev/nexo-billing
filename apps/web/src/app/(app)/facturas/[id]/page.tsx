@@ -8,7 +8,7 @@ import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
 import { InvoicePdfActions } from './_components/invoice-pdf-actions'
 import { InvoiceVerifactuActions } from './_components/invoice-verifactu-actions'
-import { RectificativaButton } from './_components/rectificativa-button'
+import { RectificativaButton } from '../_components/rectificativa-button'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -32,6 +32,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
   const verifactuRecord = await prisma.invoiceRecord.findFirst({
     where: { invoiceId: id, tenantId },
     orderBy: { createdAt: 'desc' },
+    select: { status: true, aeatResponse: true },
   })
 
   return (
@@ -78,6 +79,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 status={invoice.status}
                 hasRecord={!!verifactuRecord}
                 recordStatus={verifactuRecord?.status ?? null}
+                aeatResponse={verifactuRecord?.aeatResponse ?? null}
               />
             </section>
           </div>

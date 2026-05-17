@@ -7,7 +7,7 @@ import {
 } from '../errors'
 import { generateAEATQRUrlFromInvoice } from '../qr/aeat-qr'
 
-const DEFAULT_BASE_URL = 'https://app.verifactuapi.es'
+const DEFAULT_BASE_URL = 'https://api.verifacti.com'
 const DEFAULT_TIMEOUT_MS = 15_000
 
 /** Minimal shape of Verifacti API responses we care about */
@@ -34,37 +34,28 @@ function formatDateDMY(date: Date): string {
   return `${d}-${m}-${y}`
 }
 
-/** Aggregate invoice lines by VAT rate for Desglose field */
-function buildDesglose(lines: InvoiceData['lines']): object[] {
-  const groups = new Map<number, { tipoImpositivo: number; baseImponible: number; cuotaRepercutida: number }>()
+/** Aggregate invoice lines by VAT rate into Verifacti lineas format (all values as strings) */
+function buildLineas(lines: InvoiceData['lines']): object[] {
+  const groups = new Map<number, { base_imponible: number; tipo_impositivo: number; cuota_repercutida: number }>()
 
   for (const line of lines) {
     const existing = groups.get(line.vatRate)
     if (existing) {
-      existing.baseImponible = parseFloat((existing.baseImponible + line.subtotal).toFixed(2))
-      existing.cuotaRepercutida = parseFloat((existing.cuotaRepercutida + line.vatAmount).toFixed(2))
+      existing.base_imponible = parseFloat((existing.base_imponible + line.subtotal).toFixed(2))
+      existing.cuota_repercutida = parseFloat((existing.cuota_repercutida + line.vatAmount).toFixed(2))
     } else {
       groups.set(line.vatRate, {
-        tipoImpositivo: line.vatRate,
-        baseImponible: parseFloat(line.subtotal.toFixed(2)),
-        cuotaRepercutida: parseFloat(line.vatAmount.toFixed(2)),
+        base_imponible: parseFloat(line.subtotal.toFixed(2)),
+        tipo_impositivo: line.vatRate,
+        cuota_repercutida: parseFloat(line.vatAmount.toFixed(2)),
       })
     }
   }
 
   return Array.from(groups.values()).map((g) => ({
-    Sujeta: {
-      NoExenta: {
-        TipoNoExenta: 'S1',
-        DesgloseIVA: {
-          DetalleIVA: {
-            TipoImpositivo: g.tipoImpositivo,
-            BaseImponible: g.baseImponible,
-            CuotaRepercutida: g.cuotaRepercutida,
-          },
-        },
-      },
-    },
+    base_imponible: g.base_imponible.toFixed(2),
+    tipo_impositivo: String(g.tipo_impositivo),
+    cuota_repercutida: g.cuota_repercutida.toFixed(2),
   }))
 }
 
@@ -101,25 +92,27 @@ export class VerifactiProvider implements IVerifactuProvider {
   }
 
   async submitInvoice(invoice: InvoiceData): Promise<VerifactuResult> {
+    // fullNumber format: "A-2026-0001" → serie="A", numero="2026-0001"
+    const dashIndex = invoice.fullNumber.indexOf('-')
+    const serie = dashIndex !== -1 ? invoice.fullNumber.slice(0, dashIndex) : invoice.fullNumber
+    const numero = dashIndex !== -1 ? invoice.fullNumber.slice(dashIndex + 1) : '1'
+
     const body = {
-      IDEmisorFactura: invoice.tenantNif,
-      NumSerieFactura: invoice.fullNumber,
-      FechaExpedicionFactura: formatDateDMY(invoice.issuedAt),
-      TipoFactura: invoice.invoiceType || 'F1',
-      DescripcionOperacion: invoice.notes?.trim() || 'Prestación de servicios',
-      RefExterna: invoice.id,
-      Destinatarios: [
-        {
-          NIF: invoice.clientNif,
-          NombreRazon: invoice.clientName,
-        },
-      ],
-      Desglose: buildDesglose(invoice.lines),
-      CuotaTotal: parseFloat(invoice.vatAmount.toFixed(2)),
-      ImporteTotal: parseFloat(invoice.totalAmount.toFixed(2)),
+      serie,
+      numero,
+      fecha_expedicion: formatDateDMY(invoice.issuedAt),
+      tipo_factura: invoice.invoiceType || 'F1',
+      descripcion: invoice.notes?.trim() || 'Prestación de servicios',
+      nif: invoice.clientNif,
+      nombre: invoice.clientName,
+      lineas: buildLineas(invoice.lines),
+      importe_total: invoice.totalAmount.toFixed(2),
     }
 
-    const raw = await this.request<VerifactiResponse>('POST', '/api/alta-registro-facturacion', body)
+    // TODO: remove after confirming payload is correct
+    console.log('[VERIFACTI] Payload enviado:', JSON.stringify(body, null, 2))
+
+    const raw = await this.request<VerifactiResponse>('POST', '/verifactu/create', body)
 
     if (
       raw.estado_aeat &&
@@ -220,6 +213,10 @@ export class VerifactiProvider implements IVerifactuProvider {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
 
+    // TODO: remove after diagnosing API key / response issues
+    console.log('[VERIFACTI] URL completa:', url)
+    console.log('[VERIFACTI] API Key (primeros 20 chars):', this.apiKey?.substring(0, 20))
+
     let response: Response
     try {
       response = await fetch(url, {
@@ -245,20 +242,45 @@ export class VerifactiProvider implements IVerifactuProvider {
       clearTimeout(timer)
     }
 
+    const rawText = await response.text()
+
     if (!response.ok) {
       let errorMsg = `HTTP ${response.status}`
       try {
-        const errBody = (await response.json()) as { message?: string; error?: string }
-        errorMsg = errBody.message ?? errBody.error ?? errorMsg
+        const errBody = JSON.parse(rawText) as { message?: string; error?: string }
+        errorMsg = errBody.message ?? errBody.error ?? (rawText || errorMsg)
       } catch {
         // ignore JSON parse errors on error responses
       }
+      console.log(`[VERIFACTI] Response body (${response.status}):`, rawText)
       throw new VerifactuProviderError(
         `Verifacti API error (${response.status}): ${errorMsg}`,
         'verifacti',
       )
     }
 
-    return response.json() as Promise<T>
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(rawText)
+    } catch {
+      throw new VerifactuProviderError(
+        `Verifacti returned non-JSON response: ${rawText.slice(0, 200)}`,
+        'verifacti',
+      )
+    }
+
+    // TODO: remove after diagnosing API key / response issues
+    console.log('[VERIFACTI] Response body:', JSON.stringify(parsed, null, 2))
+
+    // Verifacti returns HTTP 200 even for errors — detect via error field in body
+    const maybeError = parsed as { error?: string; message?: string }
+    if (maybeError.error) {
+      throw new VerifactuProviderError(
+        `Verifacti API error (200): ${maybeError.error}`,
+        'verifacti',
+      )
+    }
+
+    return parsed as T
   }
 }

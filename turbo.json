@@ -25,7 +25,11 @@
         "GOCARDLESS_ACCESS_TOKEN",
         "GOCARDLESS_WEBHOOK_SECRET",
         "GOCARDLESS_ENVIRONMENT",
-        "TENANT_SECRET_ENCRYPTION_KEY"
+        "TENANT_SECRET_ENCRYPTION_KEY",
+        "VERIFACTU_PROVIDER",
+        "VERIFACTU_API_KEY",
+        "VERIFACTU_API_URL",
+        "VERIFACTU_MOCK_MODE"
       ],
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },

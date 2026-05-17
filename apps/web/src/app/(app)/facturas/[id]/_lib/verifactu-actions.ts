@@ -9,6 +9,7 @@ import {
   generateAEATQRUrlFromInvoice,
   type InvoiceRecordData,
   type VerifactuRecordType,
+  type VerifactuResult,
   type VerifactuStatus,
   type InvoiceData,
 } from '@nexo/verifactu'
@@ -108,8 +109,6 @@ function mapInvoiceToVerifactuData(invoice: {
   }
 }
 
-const provider = createProvider()
-
 export async function submitToVerifactu(invoiceId: string): Promise<ActionResult> {
   const ctx = await getAuthContext()
   if (!ctx) return { ok: false, error: 'No autenticado' }
@@ -160,6 +159,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
+  const provider = createProvider()
 
   // Compute hash with chaining
   const lastRecord = await prisma.invoiceRecord.findFirst({
@@ -177,7 +177,26 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
   const hash = computeRecordHash(hashPayload, previousHash)
 
-  const result = await provider.submitInvoice(invoiceData)
+  let result: VerifactuResult
+  try {
+    result = await provider.submitInvoice(invoiceData)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Error desconocido al contactar con AEAT'
+    await prisma.invoiceRecord.create({
+      data: {
+        tenantId: ctx.tenantId,
+        invoiceId: invoice.id,
+        type: 'Alta',
+        hash,
+        previousHash,
+        canonicalXml: '<xml/>',
+        status: 'error',
+        aeatResponse: { error: msg },
+      },
+    })
+    return { ok: false, error: msg }
+  }
+
   if (!result.success) {
     await prisma.invoiceRecord.create({
       data: {
@@ -272,7 +291,15 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
-  const result = await provider.cancelInvoice(invoiceData)
+  const provider = createProvider()
+
+  let result: VerifactuResult
+  try {
+    result = await provider.cancelInvoice(invoiceData)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Error desconocido al contactar con AEAT'
+    return { ok: false, error: msg }
+  }
 
   if (!result.success) {
     return { ok: false, error: result.error ?? 'Error al anular en la AEAT' }
