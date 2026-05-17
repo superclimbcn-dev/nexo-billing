@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getBlogPosts } from './_lib/blog-actions'
+import Image from 'next/image'
+import imageUrlBuilder from '@sanity/image-url'
+import { sanityClient } from '@/lib/sanity/client'
+import { getAllPosts, type SanityPostListItem } from '@/lib/sanity/queries'
 import { getCategoryMeta } from './_lib/blog-categories'
-import { Search, FileText, TrendingUp, Receipt, Calculator, Settings } from 'lucide-react'
+import { FileText } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Blog — Tutoriales y guías de facturación | Nexo Billing',
@@ -15,19 +18,28 @@ export const metadata: Metadata = {
   },
 }
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  empezar: <FileText className="w-4 h-4" />,
-  facturar: <Receipt className="w-4 h-4" />,
-  impuestos: <Calculator className="w-4 h-4" />,
-  verifactu: <TrendingUp className="w-4 h-4" />,
-  avanzado: <Settings className="w-4 h-4" />,
+const builder = imageUrlBuilder(sanityClient)
+function imageUrl(source: SanityPostListItem['coverImage']) {
+  if (!source) return null
+  return builder.image(source).width(800).height(450).fit('crop').auto('format').url()
 }
 
-export default async function BlogPage() {
-  const posts = await getBlogPosts()
-  const featured = posts.filter((p) => p.featured)
-  const regular = posts.filter((p) => !p.featured)
-  const allCategories = Array.from(new Set(posts.map((p) => p.category)))
+const CATEGORIES = [
+  { value: 'all', label: 'Todos' },
+  { value: 'tutorial', label: 'Tutoriales' },
+  { value: 'fiscal', label: 'Fiscal' },
+  { value: 'seo', label: 'Comparativas' },
+] as const
+
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cat?: string }>
+}) {
+  const { cat } = await searchParams
+  const allPosts = await getAllPosts()
+  const filtered =
+    cat && cat !== 'all' ? allPosts.filter((p) => p.category === cat) : allPosts
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -40,15 +52,9 @@ export default async function BlogPage() {
             </span>
           </Link>
           <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--text-dim)]">
-            <Link href="/" className="hover:text-[var(--text)] transition-colors">
-              Inicio
-            </Link>
-            <Link href="/blog" className="text-[var(--text)] transition-colors">
-              Blog
-            </Link>
-            <Link href="/login" className="hover:text-[var(--text)] transition-colors">
-              Acceder
-            </Link>
+            <Link href="/" className="hover:text-[var(--text)] transition-colors">Inicio</Link>
+            <Link href="/blog" className="text-[var(--text)]">Blog</Link>
+            <Link href="/login" className="hover:text-[var(--text)] transition-colors">Acceder</Link>
           </nav>
         </div>
       </header>
@@ -64,72 +70,40 @@ export default async function BlogPage() {
             Desde tu primera factura hasta Verifactu 2027.
           </p>
 
-          {/* Search */}
-          <div className="mt-8 max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-subtle)]" />
-            <input
-              type="text"
-              placeholder="Buscar en tutoriales..."
-              readOnly
-              className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-sm text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] cursor-text"
-            />
+          {/* Category filters */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            {CATEGORIES.map(({ value, label }) => {
+              const isActive = (cat ?? 'all') === value
+              return (
+                <Link
+                  key={value}
+                  href={value === 'all' ? '/blog' : `/blog?cat=${value}`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    isActive
+                      ? 'bg-[var(--accent)] text-[var(--bg)] border-[var(--accent)]'
+                      : 'border-[var(--border)] text-[var(--text-dim)] hover:border-[var(--border-strong)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {label}
+                </Link>
+              )
+            })}
           </div>
-
-          {/* Categories */}
-          {allCategories.length > 0 && (
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-              {allCategories.map((cat) => {
-                const meta = getCategoryMeta(cat)
-                return (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
-                    style={{ borderColor: meta.color + '40', color: meta.color, backgroundColor: meta.color + '10' }}
-                  >
-                    {CATEGORY_ICONS[cat] ?? <FileText className="w-4 h-4" />}
-                    {meta.label}
-                  </span>
-                )
-              })}
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Featured posts */}
-      {featured.length > 0 && (
+      {/* Posts grid */}
+      {filtered.length > 0 ? (
         <section className="py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <p className="text-xs font-medium text-[var(--accent)] uppercase tracking-widest mb-6">
-              Destacados
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featured.map((post) => (
-                <PostCard key={post.id} post={post} featured />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Regular posts */}
-      {regular.length > 0 && (
-        <section className="py-12 sm:py-16 border-t border-[var(--border)]">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <p className="text-xs font-medium text-[var(--text-subtle)] uppercase tracking-widest mb-6">
-              Más artículos
-            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {regular.map((post) => (
-                <PostCard key={post.id} post={post} />
+              {filtered.map((post) => (
+                <PostCard key={post._id} post={post} imageUrl={imageUrl(post.coverImage)} />
               ))}
             </div>
           </div>
         </section>
-      )}
-
-      {/* Empty state */}
-      {posts.length === 0 && (
+      ) : (
         <section className="py-20 text-center">
           <p className="text-[var(--text-dim)]">Próximamente publicaremos los primeros artículos.</p>
         </section>
@@ -146,7 +120,7 @@ export default async function BlogPage() {
           </p>
           <a
             href="mailto:contacto@nexo-digital.app"
-            className="mt-6 inline-block px-6 py-2.5 bg-[var(--accent)] text-[var(--bg)] text-sm font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
+            className="mt-6 inline-block px-6 py-2.5 bg-[var(--accent)] text-[var(--bg)] text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
           >
             Contactar con nosotros
           </a>
@@ -156,9 +130,7 @@ export default async function BlogPage() {
       {/* Footer */}
       <footer className="border-t border-[var(--border)] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between text-xs text-[var(--text-subtle)]">
-          <span>
-            <span className="text-[var(--accent)]">Nexo</span> Billing
-          </span>
+          <span><span className="text-[var(--accent)]">Nexo</span> Billing</span>
           <span>© {new Date().getFullYear()} Nexo Digital Unipersonal</span>
         </div>
       </footer>
@@ -166,15 +138,9 @@ export default async function BlogPage() {
   )
 }
 
-function PostCard({
-  post,
-  featured = false,
-}: {
-  post: Awaited<ReturnType<typeof getBlogPosts>>[number]
-  featured?: boolean
-}) {
+function PostCard({ post, imageUrl: imgUrl }: { post: SanityPostListItem; imageUrl: string | null }) {
   const meta = getCategoryMeta(post.category)
-  const date = new Date(post.createdAt).toLocaleDateString('es-ES', {
+  const date = new Date(post.publishedAt).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -183,41 +149,55 @@ function PostCard({
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className={`group block bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--border-strong)] transition-colors ${
-        featured ? '' : ''
-      }`}
+      className="group block bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--border-strong)] hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20 transition-all duration-200"
     >
-      {post.image ? (
-        <div className={`relative bg-[var(--surface-raised)] ${featured ? 'h-48' : 'h-40'}`}>
-          <img
-            src={post.image}
+      {/* Cover image — fixed 220px height */}
+      <div className="relative h-[220px] bg-[var(--surface-raised)] overflow-hidden">
+        {imgUrl ? (
+          <Image
+            src={imgUrl}
             alt={post.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-        </div>
-      ) : (
-        <div className={`relative bg-[var(--surface-raised)] flex items-center justify-center ${featured ? 'h-48' : 'h-40'}`}>
-          <FileText className="w-8 h-8 text-[var(--text-subtle)]" />
-        </div>
-      )}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <FileText className="w-10 h-10 text-[var(--text-subtle)]" />
+          </div>
+        )}
+      </div>
+
       <div className="p-5">
+        {/* Category + date */}
         <div className="flex items-center gap-2 mb-3">
           <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border"
-            style={{ borderColor: meta.color + '40', color: meta.color, backgroundColor: meta.color + '10' }}
+            className="px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+            style={{
+              borderColor: meta.color + '40',
+              color: meta.color,
+              backgroundColor: meta.color + '15',
+            }}
           >
             {meta.label}
           </span>
           <span className="text-[10px] text-[var(--text-subtle)]">{date}</span>
         </div>
-        <h3 className={`font-medium text-[var(--text)] group-hover:text-[var(--accent)] transition-colors ${featured ? 'text-xl' : 'text-base'}`}>
+
+        {/* Title */}
+        <h3 className="text-base font-medium text-[var(--text)] group-hover:text-[var(--accent)] transition-colors line-clamp-2">
           {post.title}
         </h3>
+
+        {/* Excerpt */}
         {post.excerpt && (
           <p className="mt-2 text-sm text-[var(--text-dim)] line-clamp-2">{post.excerpt}</p>
         )}
-        <div className="mt-3 text-xs text-[var(--text-subtle)]">Por {post.author}</div>
+
+        {/* Read time */}
+        <div className="mt-3 text-xs text-[var(--text-subtle)]">
+          {post.readTime} min de lectura
+        </div>
       </div>
     </Link>
   )

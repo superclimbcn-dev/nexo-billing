@@ -1,4 +1,8 @@
 export const BLOG_CATEGORIES: Record<string, { label: string; color: string }> = {
+  tutorial: { label: 'Tutorial', color: '#4ade80' },
+  fiscal: { label: 'Fiscal', color: '#fbbf24' },
+  seo: { label: 'Comparativas', color: '#60a5fa' },
+  // legacy categories (kept for compatibility)
   empezar: { label: 'Empezar', color: '#4ade80' },
   facturar: { label: 'Facturar', color: '#60a5fa' },
   impuestos: { label: 'Impuestos', color: '#fbbf24' },

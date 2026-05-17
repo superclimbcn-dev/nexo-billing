@@ -1,19 +1,28 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { getBlogPostBySlug, getComments, getBlogPosts } from '../_lib/blog-actions'
+import imageUrlBuilder from '@sanity/image-url'
+import { sanityClient } from '@/lib/sanity/client'
+import { getPostBySlug, getAllPosts, getPostsByCategory } from '@/lib/sanity/queries'
 import { getCategoryMeta } from '../_lib/blog-categories'
-import { CommentForm } from './_components/comment-form'
 import { BlogContent } from './_components/blog-content'
-import { FileText, ArrowLeft, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ArrowLeft, Clock, ChevronRight } from 'lucide-react'
+import type { SanityPostListItem } from '@/lib/sanity/queries'
 
 interface Props {
   params: Promise<{ slug: string }>
 }
 
+const builder = imageUrlBuilder(sanityClient)
+function coverUrl(source: SanityPostListItem['coverImage'], w = 1200, h = 630) {
+  if (!source) return null
+  return builder.image(source).width(w).height(h).fit('crop').auto('format').url()
+}
+
 export async function generateStaticParams() {
   try {
-    const posts = await getBlogPosts()
+    const posts = await getAllPosts()
     return posts.map((p) => ({ slug: p.slug }))
   } catch {
     return []
@@ -22,60 +31,57 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const post = await getBlogPostBySlug(slug)
+  const post = await getPostBySlug(slug)
   if (!post) return { title: 'Artículo no encontrado | Nexo Billing' }
+
+  const ogImage = coverUrl(post.coverImage)
 
   return {
     title: `${post.title} | Nexo Billing Blog`,
-    description: post.excerpt ?? post.title,
+    description: post.excerpt,
     openGraph: {
       title: post.title,
-      description: post.excerpt ?? post.title,
+      description: post.excerpt,
       type: 'article',
-      publishedTime: post.createdAt.toISOString(),
-      authors: [post.author],
+      publishedTime: post.publishedAt,
+      ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630 }] } : {}),
     },
-    alternates: {
-      canonical: `/blog/${post.slug}`,
-    },
+    alternates: { canonical: `/blog/${post.slug}` },
   }
 }
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params
-  const post = await getBlogPostBySlug(slug)
+  const post = await getPostBySlug(slug)
   if (!post) notFound()
 
-  const comments = await getComments(post.id)
+  const related = (await getPostsByCategory(post.category)).filter((p) => p.slug !== post.slug).slice(0, 3)
   const meta = getCategoryMeta(post.category)
-  const date = new Date(post.createdAt).toLocaleDateString('es-ES', {
+  const imgUrl = coverUrl(post.coverImage, 1200, 600)
+
+  const date = new Date(post.publishedAt).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
-  const readTime = Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))
+
+  const whatsappText = encodeURIComponent(`📄 ${post.title}\nhttps://billing.nexo-digital.app/blog/${post.slug}`)
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.excerpt,
-    author: { '@type': 'Organization', name: post.author },
-    datePublished: post.createdAt.toISOString(),
-    dateModified: post.updatedAt.toISOString(),
+    datePublished: post.publishedAt,
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://dev.billing.nexo-digital.app/blog/${post.slug}`,
+      '@id': `https://billing.nexo-digital.app/blog/${post.slug}`,
     },
   }
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      {/* JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Header */}
       <header className="border-b border-[var(--border)]">
@@ -86,39 +92,45 @@ export default async function BlogPostPage({ params }: Props) {
             </span>
           </Link>
           <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--text-dim)]">
-            <Link href="/" className="hover:text-[var(--text)] transition-colors">
-              Inicio
-            </Link>
-            <Link href="/blog" className="text-[var(--text)] transition-colors">
-              Blog
-            </Link>
-            <Link href="/login" className="hover:text-[var(--text)] transition-colors">
-              Acceder
-            </Link>
+            <Link href="/" className="hover:text-[var(--text)] transition-colors">Inicio</Link>
+            <Link href="/blog" className="text-[var(--text)]">Blog</Link>
+            <Link href="/login" className="hover:text-[var(--text)] transition-colors">Acceder</Link>
           </nav>
         </div>
       </header>
 
-      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      {/* Breadcrumb */}
+      <div className="max-w-[720px] mx-auto px-4 sm:px-6 pt-6">
+        <nav className="flex items-center gap-1 text-xs text-[var(--text-subtle)]">
+          <Link href="/" className="hover:text-[var(--text)] transition-colors">Inicio</Link>
+          <ChevronRight className="w-3 h-3" />
+          <Link href="/blog" className="hover:text-[var(--text)] transition-colors">Blog</Link>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[var(--text-dim)] line-clamp-1">{post.title}</span>
+        </nav>
+      </div>
+
+      <article className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Back */}
         <Link
           href="/blog"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--text-dim)] hover:text-[var(--text)] transition-colors mb-8"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--text-dim)] hover:text-[var(--text)] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al blog
         </Link>
 
-        {/* Meta */}
-        <div className="flex items-center gap-2 mb-4">
+        {/* Category + read time */}
+        <div className="flex items-center gap-3 mb-4">
           <span
-            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border"
-            style={{ borderColor: meta.color + '40', color: meta.color, backgroundColor: meta.color + '10' }}
+            className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border"
+            style={{ borderColor: meta.color + '40', color: meta.color, backgroundColor: meta.color + '15' }}
           >
             {meta.label}
           </span>
-          <span className="text-xs text-[var(--text-subtle)]">
-            {readTime} min de lectura
+          <span className="flex items-center gap-1 text-xs text-[var(--text-subtle)]">
+            <Clock className="w-3 h-3" />
+            {post.readTime} min de lectura
           </span>
         </div>
 
@@ -127,110 +139,78 @@ export default async function BlogPostPage({ params }: Props) {
           {post.title}
         </h1>
 
-        <div className="mt-4 flex items-center gap-2 text-sm text-[var(--text-dim)]">
-          <span>Por {post.author}</span>
-          <span>·</span>
-          <time dateTime={post.createdAt.toISOString()}>{date}</time>
+        <div className="mt-4 text-sm text-[var(--text-dim)]">
+          <time dateTime={post.publishedAt}>{date}</time>
+          <span className="mx-2">·</span>
+          <span>Equipo Nexo</span>
         </div>
 
-        {/* Hero image */}
-        {post.image ? (
-          <div className="mt-8 rounded-xl overflow-hidden border border-[var(--border)]">
-            <img src={post.image} alt={post.title} className="w-full h-64 sm:h-80 object-cover" />
-          </div>
-        ) : (
-          <div className="mt-8 h-48 sm:h-64 bg-[var(--surface)] border border-[var(--border)] rounded-xl flex items-center justify-center">
-            <FileText className="w-12 h-12 text-[var(--text-subtle)]" />
+        {/* Cover image */}
+        {imgUrl && (
+          <div className="mt-8 rounded-xl overflow-hidden border border-[var(--border)] aspect-[2/1] relative">
+            <Image src={imgUrl} alt={post.title} fill className="object-cover" priority />
           </div>
         )}
 
-        {/* Video */}
-        {post.videoUrl && (
-          <div className="mt-8 aspect-video rounded-xl overflow-hidden border border-[var(--border)]">
-            <iframe
-              src={post.videoUrl}
-              title={post.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="mt-10 max-w-none">
-          <BlogContent content={post.content} />
+        {/* Body */}
+        <div className="mt-10">
+          <BlogContent body={post.body} />
         </div>
 
-        {/* Feedback */}
+        {/* WhatsApp share */}
         <div className="mt-12 pt-8 border-t border-[var(--border)]">
-          <p className="text-sm font-medium text-[var(--text)] mb-3">
-            ¿Te ayudó este artículo?
-          </p>
-          <div className="flex items-center gap-3">
-            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border)] rounded-md text-sm text-[var(--text-dim)] hover:text-[var(--success)] hover:border-[var(--success)]/30 transition-colors">
-              <ThumbsUp className="w-4 h-4" />
-              Sí
-            </button>
-            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border)] rounded-md text-sm text-[var(--text-dim)] hover:text-[var(--danger)] hover:border-[var(--danger)]/30 transition-colors">
-              <ThumbsDown className="w-4 h-4" />
-              No
-            </button>
-          </div>
-        </div>
-
-        {/* Comments */}
-        <div className="mt-12 pt-8 border-t border-[var(--border)]">
-          <h2 className="text-lg font-medium text-[var(--text)] mb-6">
-            Comentarios {comments.length > 0 && `(${comments.length})`}
-          </h2>
-
-          {comments.length === 0 ? (
-            <p className="text-sm text-[var(--text-dim)] mb-6">
-              Sé el primero en comentar este artículo.
-            </p>
-          ) : (
-            <div className="space-y-4 mb-8">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-[var(--text)]">
-                      {comment.name}
-                    </span>
-                    <time className="text-[10px] text-[var(--text-subtle)]">
-                      {new Date(comment.createdAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </time>
-                  </div>
-                  <p className="text-sm text-[var(--text-dim)] leading-relaxed">
-                    {comment.content}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
-            <h3 className="text-sm font-medium text-[var(--text)] mb-4">
-              Dejar un comentario
-            </h3>
-            <CommentForm postId={post.id} />
-          </div>
+          <p className="text-sm text-[var(--text-dim)] mb-3">¿Te ha resultado útil? Comparte este artículo:</p>
+          <a
+            href={`https://wa.me/?text=${whatsappText}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.564 4.14 1.542 5.873L.057 23.854a.5.5 0 0 0 .609.609l6.053-1.485A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.5-5.18-1.373l-.371-.22-3.854.946.966-3.77-.24-.392A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+            </svg>
+            Compartir en WhatsApp
+          </a>
         </div>
       </article>
+
+      {/* Related articles */}
+      {related.length > 0 && (
+        <aside className="border-t border-[var(--border)] py-12">
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6">
+            <h2 className="text-lg font-semibold text-[var(--text)] mb-6">Artículos relacionados</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {related.map((r) => {
+                const rMeta = getCategoryMeta(r.category)
+                return (
+                  <Link
+                    key={r._id}
+                    href={`/blog/${r.slug}`}
+                    className="block p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:border-[var(--border-strong)] transition-colors"
+                  >
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold border mb-2"
+                      style={{ borderColor: rMeta.color + '40', color: rMeta.color, backgroundColor: rMeta.color + '15' }}
+                    >
+                      {rMeta.label}
+                    </span>
+                    <p className="text-sm font-medium text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)]">
+                      {r.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-subtle)]">{r.readTime} min</p>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </aside>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-[var(--border)] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between text-xs text-[var(--text-subtle)]">
-          <span>
-            <span className="text-[var(--accent)]">Nexo</span> Billing
-          </span>
+          <span><span className="text-[var(--accent)]">Nexo</span> Billing</span>
           <span>© {new Date().getFullYear()} Nexo Digital Unipersonal</span>
         </div>
       </footer>
