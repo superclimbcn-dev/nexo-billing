@@ -110,6 +110,15 @@ export default async function BlogPostPage({ params }: Props) {
         </nav>
       </div>
 
+      {/* Cover image — full-width hero between breadcrumb and article */}
+      {imgUrl && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-6">
+          <div className="relative w-full aspect-[16/9] max-h-[480px] rounded-xl overflow-hidden border border-[var(--border)]">
+            <Image src={imgUrl} alt={post.title} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 896px" />
+          </div>
+        </div>
+      )}
+
       <article className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Back */}
         <Link
@@ -144,13 +153,6 @@ export default async function BlogPostPage({ params }: Props) {
           <span className="mx-2">·</span>
           <span>Equipo Nexo</span>
         </div>
-
-        {/* Cover image */}
-        {imgUrl && (
-          <div className="mt-8 rounded-xl overflow-hidden border border-[var(--border)] aspect-[2/1] relative">
-            <Image src={imgUrl} alt={post.title} fill className="object-cover" priority />
-          </div>
-        )}
 
         {/* Body */}
         <div className="mt-10">
