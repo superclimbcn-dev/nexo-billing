@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createQuoteSchema } from './quote-schema'
 import { calculateInvoiceTotals } from '../../facturas/_lib/invoice-totals'
+import { checkCanCreateInvoice } from '@/lib/subscription-gate'
 
 type QuoteStatusValue = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
 
@@ -48,6 +49,14 @@ const ALLOWED_TRANSITIONS: Partial<Record<QuoteStatusValue, QuoteStatusValue[]>>
 
 export async function createQuoteDraft(raw: unknown): Promise<ActionResult<{ id: string }>> {
   const { tenantId } = await requireAuth()
+
+  const canCreate = await checkCanCreateInvoice(tenantId)
+  if (!canCreate) {
+    return {
+      ok: false,
+      error: 'Tu periodo de prueba ha finalizado. Activa tu suscripción para continuar.',
+    }
+  }
 
   const parsed = createQuoteSchema.safeParse(raw)
   if (!parsed.success) {

@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { createInvoiceSchema } from './invoice-schema'
 import { calculateInvoiceTotals } from './invoice-totals'
 import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
+import { checkCanCreateInvoice } from '@/lib/subscription-gate'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -33,6 +34,14 @@ export async function createInvoiceDraft(
   const auth = await requireOwnerOrAdminAction()
   if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
   const { tenantId } = auth
+
+  const canCreate = await checkCanCreateInvoice(tenantId)
+  if (!canCreate) {
+    return {
+      ok: false,
+      error: 'Tu periodo de prueba ha finalizado. Activa tu suscripción para continuar.',
+    }
+  }
 
   const parsed = createInvoiceSchema.safeParse(raw)
   if (!parsed.success) {
