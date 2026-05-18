@@ -76,6 +76,8 @@ export async function completeOnboarding(formData: FormData) {
           businessType: businessType || null,
           cnae: cnae || null,
           plan: 'free',
+          subscriptionStatus: 'TRIAL',
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           country: 'ES',
           currency: 'EUR',
           ...(isOtherSector ? {} : { vertical: { connect: { slug: verticalSlug! } } }),

@@ -197,7 +197,8 @@ model Tenant {
   websiteUrl      String?   @map("website_url")
 
   // Subscription / billing (GoCardless SEPA)
-  subscriptionStatus       String?   @map("subscription_status") // ACTIVE | PENDING | CANCELLED | EXPIRED
+  trialEndsAt              DateTime? @map("trial_ends_at")
+  subscriptionStatus       String?   @map("subscription_status") // TRIAL | ACTIVE | PENDING | CANCELLED | EXPIRED
   subscriptionExpiresAt    DateTime? @map("subscription_expires_at")
   goCardlessCustomerId     String?   @map("gocardless_customer_id")
   goCardlessMandateId      String?   @map("gocardless_mandate_id")
