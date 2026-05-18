@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
+import { prisma } from '@nexo/prisma'
 import { listSeriesForTenant } from '../_lib/invoice-numbering'
 import { InvoiceForm } from '../_components/invoice-form'
+import { getSubscriptionState } from '@/lib/subscription'
 
 export default async function NuevaFacturaPage() {
   const supabase = await createServerClient()
@@ -12,6 +14,18 @@ export default async function NuevaFacturaPage() {
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   if (!tenantId) redirect('/onboarding/cuenta')
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { plan: true, subscriptionStatus: true, subscriptionExpiresAt: true, trialEndsAt: true },
+  })
+
+  if (tenant) {
+    const subState = getSubscriptionState(tenant)
+    if (subState === 'trial_expired' || subState === 'expired') {
+      redirect('/settings/billing?reason=trial_expired')
+    }
+  }
 
   const series = await listSeriesForTenant(tenantId)
 

@@ -12,6 +12,8 @@ import { RecentInvoices } from './_components/recent-invoices';
 import { syncOverdueInvoices } from '../facturas/[id]/_lib/invoice-status-actions';
 import { emitDueInvoices } from '@/lib/recurring/emit-due-invoices';
 import { countActiveContracts } from '../recurrentes/_lib/recurring-queries';
+import { getSubscriptionState, getTrialDaysLeft } from '@/lib/subscription';
+import { TrialExpiredModal } from './_components/trial-expired-modal';
 
 function firstName(value: string): string {
   const trimmed = value.trim();
@@ -62,7 +64,12 @@ export default async function DashboardPage() {
     getDashboardStats(tenantId),
     prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { subscriptionStatus: true, subscriptionExpiresAt: true },
+      select: {
+        plan: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true,
+        trialEndsAt: true,
+      },
     }),
   ]);
   const activeContracts = await countActiveContracts(tenantId);
@@ -123,44 +130,82 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {canWrite && tenant?.subscriptionStatus !== 'ACTIVE' && (
-        <div className="p-5 bg-[var(--surface)] border border-[var(--accent)]/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">💳</span>
-              <h2 className="text-base font-semibold text-[var(--text)]">
-                Activa tu suscripción Profesional
-              </h2>
-            </div>
-            <p className="text-sm text-[var(--text-dim)] mt-1">
-              39€/mes · Facturas ilimitadas · 1 contable · Sin permanencia
-            </p>
-          </div>
-          <Link
-            href="/settings/billing"
-            className="shrink-0 px-5 py-2.5 bg-[var(--accent)] text-[var(--bg)] text-sm font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-          >
-            Activar SEPA →
-          </Link>
-        </div>
-      )}
+      {/* Subscription banners */}
+      {canWrite && tenant && (() => {
+        const subState = getSubscriptionState(tenant)
+        const daysLeft = getTrialDaysLeft(tenant.trialEndsAt)
 
-      {canWrite && tenant?.subscriptionStatus === 'ACTIVE' && (
-        <div className="flex items-center gap-2 text-xs text-[var(--text-subtle)]">
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--success)]/10 text-[var(--success)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
-            Profesional
-          </span>
-          {tenant.subscriptionExpiresAt && (
-            <span>
-              Próxima: {formatDate(tenant.subscriptionExpiresAt)}
-            </span>
-          )}
-          <Link href="/settings/billing" className="text-[var(--accent)] hover:underline ml-1">
-            Gestionar
-          </Link>
-        </div>
-      )}
+        if (subState === 'trial_expired' || subState === 'expired') {
+          return <TrialExpiredModal />
+        }
+
+        if (subState === 'trial_active' && daysLeft < 3) {
+          return (
+            <div className="p-4 bg-orange-500/10 border border-orange-500/40 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <p className="text-sm font-medium text-orange-400">
+                ⚠️ Tu prueba termina en {daysLeft} {daysLeft === 1 ? 'día' : 'días'} · Activa SEPA para no perder el acceso
+              </p>
+              <Link
+                href="/settings/billing"
+                className="shrink-0 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-md hover:bg-orange-600 transition-colors"
+              >
+                Activar SEPA →
+              </Link>
+            </div>
+          )
+        }
+
+        if (subState === 'trial_active') {
+          return (
+            <div className="p-4 bg-[var(--surface)] border border-[var(--accent)]/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <p className="text-sm text-[var(--text-dim)]">
+                Estás en periodo de prueba · <strong className="text-[var(--text)]">{daysLeft} días restantes</strong>
+              </p>
+              <Link
+                href="/settings/billing"
+                className="shrink-0 px-4 py-2 border border-[var(--border)] text-[var(--text-dim)] text-sm rounded-md hover:border-[var(--border-strong)] hover:text-[var(--text)] transition-colors"
+              >
+                Activar SEPA →
+              </Link>
+            </div>
+          )
+        }
+
+        if (subState === 'cancelled') {
+          return (
+            <div className="p-4 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <p className="text-sm text-[var(--danger)]">
+                Tu suscripción fue cancelada · Acceso hasta {tenant.subscriptionExpiresAt ? formatDate(tenant.subscriptionExpiresAt) : '—'}
+              </p>
+              <Link
+                href="/settings/billing"
+                className="shrink-0 px-4 py-2 bg-[var(--danger)] text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
+              >
+                Reactivar →
+              </Link>
+            </div>
+          )
+        }
+
+        if (subState === 'active') {
+          return (
+            <div className="flex items-center gap-2 text-xs text-[var(--text-subtle)]">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--success)]/10 text-[var(--success)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
+                Profesional
+              </span>
+              {tenant.subscriptionExpiresAt && (
+                <span>Próxima: {formatDate(tenant.subscriptionExpiresAt)}</span>
+              )}
+              <Link href="/settings/billing" className="text-[var(--accent)] hover:underline ml-1">
+                Gestionar
+              </Link>
+            </div>
+          )
+        }
+
+        return null
+      })()}
 
       {/* Mobile quick actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:hidden">
