@@ -20,10 +20,39 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: 'Nexo Billing',
-  description: 'Plataforma SaaS de facturación multi-tenant Verifactu-compliant para España',
+  metadataBase: new URL('https://billing.nexo-digital.app'),
+  title: {
+    default: 'Nexo Billing — Facturación Verifactu para autónomos',
+    template: '%s | Nexo Billing',
+  },
+  description:
+    'Crea facturas en segundos, cumple con Verifactu 2027 y presenta impuestos sin estrés. Diseñado para autónomos y PYMES españolas.',
+  keywords: [
+    'facturación',
+    'verifactu',
+    'autónomos',
+    'PYMES',
+    'España',
+    'AEAT',
+    'facturas online',
+    'modelo 303',
+  ],
+  openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    url: 'https://billing.nexo-digital.app',
+    siteName: 'Nexo Billing',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@nexobilling',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   manifest: '/manifest.json',
-  themeColor: '#0a0a0b',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -34,9 +63,7 @@ export const metadata: Metadata = {
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: [
-      { url: '/icon-192.png', sizes: '192x192' },
-    ],
+    apple: [{ url: '/icon-192.png', sizes: '192x192' }],
   },
 }
 
