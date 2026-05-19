@@ -204,6 +204,10 @@ model Tenant {
   goCardlessMandateId      String?   @map("gocardless_mandate_id")
   goCardlessSubscriptionId String?   @map("gocardless_subscription_id")
 
+  // Verifactu provider settings (per-tenant)
+  verifactuProvider      String  @default("mock") @map("verifactu_provider") // mock | verifacti
+  verifactuNifRegistered Boolean @default(false)  @map("verifactu_nif_registered")
+
   // Email configuration
   emailProvider     String?  @default("resend") @map("email_provider") // resend | sendgrid | smtp
   emailFrom         String?  @map("email_from")
