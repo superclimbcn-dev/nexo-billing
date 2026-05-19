@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { MarketingNav } from '@/components/marketing-nav'
 
 export const metadata: Metadata = {
   title: 'Nexo Billing — Facturación inteligente para autónomos y PYMES',
@@ -16,41 +17,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* ── Navigation ───────────────────────────────────────────────────── */}
-      <header className="border-b border-[var(--border)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-[var(--accent)]">Nexo</span> Billing
-            </span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--text-dim)]">
-            <a href="#funciones" className="hover:text-[var(--text)] transition-colors">
-              Funciones
-            </a>
-            <a href="#precios" className="hover:text-[var(--text)] transition-colors">
-              Precios
-            </a>
-            <a href="#faq" className="hover:text-[var(--text)] transition-colors">
-              FAQ
-            </a>
-            <Link href="/blog" className="hover:text-[var(--text)] transition-colors">
-              Blog
-            </Link>
-            <a href="#about" className="hover:text-[var(--text)] transition-colors">
-              Sobre nosotros
-            </a>
-            <a href="mailto:contacto@nexo-digital.app" className="hover:text-[var(--text)] transition-colors">
-              Contacto
-            </a>
-          </nav>
-          <Link
-            href="/login"
-            className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] text-sm font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-          >
-            Empezar gratis
-          </Link>
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">

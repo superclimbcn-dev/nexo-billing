@@ -166,3 +166,18 @@ body {
   font-style: italic;
   color: var(--text-dim);
 }
+
+@keyframes marketingNavSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.marketing-nav-panel {
+  animation: marketingNavSlideDown 0.18s ease-out both;
+}

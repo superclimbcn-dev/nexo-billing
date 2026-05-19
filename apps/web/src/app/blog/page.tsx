@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { MarketingNav } from '@/components/marketing-nav'
 import imageUrlBuilder from '@sanity/image-url'
 import { sanityClient } from '@/lib/sanity/client'
 import { getAllPosts, type SanityPostListItem } from '@/lib/sanity/queries'
@@ -44,20 +45,7 @@ export default async function BlogPage({
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Header */}
-      <header className="border-b border-[var(--border)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-[var(--accent)]">Nexo</span> Billing
-            </span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6 text-sm text-[var(--text-dim)]">
-            <Link href="/" className="hover:text-[var(--text)] transition-colors">Inicio</Link>
-            <Link href="/blog" className="text-[var(--text)]">Blog</Link>
-            <Link href="/login" className="hover:text-[var(--text)] transition-colors">Acceder</Link>
-          </nav>
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* Hero */}
       <section className="py-16 sm:py-20 border-b border-[var(--border)]">
