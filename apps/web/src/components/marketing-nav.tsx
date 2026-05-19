@@ -41,7 +41,7 @@ export function MarketingNav() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-6 text-sm text-[var(--text-dim)]">
+          <nav className="marketing-nav-desktop-nav items-center gap-6 text-sm text-[var(--text-dim)]">
             <a href="/#funciones" className="hover:text-[var(--text)] transition-colors">
               Funciones
             </a>
@@ -66,7 +66,7 @@ export function MarketingNav() {
           </nav>
 
           {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="marketing-nav-desktop-ctas items-center gap-3">
             <Link
               href="/login"
               className="px-4 py-2 border border-[var(--border)] text-[var(--text-dim)] text-sm rounded-md hover:border-[var(--border-strong)] hover:text-[var(--text)] transition-colors"
@@ -81,19 +81,14 @@ export function MarketingNav() {
             </Link>
           </div>
 
-          {/* Mobile hamburger button */}
+          {/* Mobile hamburger */}
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 text-[var(--text)] rounded-md hover:bg-[var(--surface)] transition-colors"
+            className="marketing-nav-hamburger items-center justify-center w-10 h-10 text-[var(--text)] rounded-md hover:bg-[var(--surface)] transition-colors"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={open}
           >
-            <span
-              className="transition-transform duration-150"
-              style={{ display: 'grid', placeItems: 'center' }}
-            >
-              {open ? <X size={22} /> : <Menu size={22} />}
-            </span>
+            {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </header>

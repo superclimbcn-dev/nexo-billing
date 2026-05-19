@@ -167,6 +167,31 @@ body {
   color: var(--text-dim);
 }
 
+/* ── Marketing nav responsive helpers ─────────────────────────────── */
+/* Defined here (not in component) to guarantee they survive Tailwind scan */
+
+.marketing-nav-desktop-nav {
+  display: none;
+}
+.marketing-nav-desktop-ctas {
+  display: none;
+}
+.marketing-nav-hamburger {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) {
+  .marketing-nav-desktop-nav {
+    display: flex;
+  }
+  .marketing-nav-desktop-ctas {
+    display: flex;
+  }
+  .marketing-nav-hamburger {
+    display: none;
+  }
+}
+
 @keyframes marketingNavSlideDown {
   from {
     opacity: 0;
