@@ -141,32 +141,42 @@ export default async function DashboardPage() {
 
         if (subState === 'trial_active' && daysLeft < 3) {
           return (
-            <div className="p-4 bg-orange-500/10 border border-orange-500/40 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <p className="text-sm font-medium text-orange-400">
-                ⚠️ Tu prueba termina en {daysLeft} {daysLeft === 1 ? 'día' : 'días'} · Activa SEPA para no perder el acceso
+            <div className="space-y-2">
+              <div className="p-4 bg-orange-500/10 border border-orange-500/40 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-sm font-medium text-orange-400">
+                  ⚠️ Tu prueba termina en {daysLeft} {daysLeft === 1 ? 'día' : 'días'} · Activa SEPA para no perder el acceso
+                </p>
+                <Link
+                  href="/settings/billing"
+                  className="shrink-0 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-md hover:bg-orange-600 transition-colors"
+                >
+                  Activar SEPA →
+                </Link>
+              </div>
+              <p className="text-xs text-[var(--text-subtle)]">
+                ℹ️ Durante el periodo de prueba, las facturas no se registran en la AEAT. Verifactu se activará automáticamente al suscribirte.
               </p>
-              <Link
-                href="/settings/billing"
-                className="shrink-0 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-md hover:bg-orange-600 transition-colors"
-              >
-                Activar SEPA →
-              </Link>
             </div>
           )
         }
 
         if (subState === 'trial_active') {
           return (
-            <div className="p-4 bg-[var(--surface)] border border-[var(--accent)]/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <p className="text-sm text-[var(--text-dim)]">
-                Estás en periodo de prueba · <strong className="text-[var(--text)]">{daysLeft} días restantes</strong>
+            <div className="space-y-2">
+              <div className="p-4 bg-[var(--surface)] border border-[var(--accent)]/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-sm text-[var(--text-dim)]">
+                  Estás en periodo de prueba · <strong className="text-[var(--text)]">{daysLeft} días restantes</strong>
+                </p>
+                <Link
+                  href="/settings/billing"
+                  className="shrink-0 px-4 py-2 border border-[var(--border)] text-[var(--text-dim)] text-sm rounded-md hover:border-[var(--border-strong)] hover:text-[var(--text)] transition-colors"
+                >
+                  Activar SEPA →
+                </Link>
+              </div>
+              <p className="text-xs text-[var(--text-subtle)]">
+                ℹ️ Durante el periodo de prueba, las facturas no se registran en la AEAT. Verifactu se activará automáticamente al suscribirte.
               </p>
-              <Link
-                href="/settings/billing"
-                className="shrink-0 px-4 py-2 border border-[var(--border)] text-[var(--text-dim)] text-sm rounded-md hover:border-[var(--border-strong)] hover:text-[var(--text)] transition-colors"
-              >
-                Activar SEPA →
-              </Link>
             </div>
           )
         }

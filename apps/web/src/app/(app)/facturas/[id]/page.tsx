@@ -29,11 +29,17 @@ export default async function InvoiceDetailPage({ params }: Props) {
   const invoice = await getInvoiceById(tenantId, id)
   if (!invoice) notFound()
 
-  const verifactuRecord = await prisma.invoiceRecord.findFirst({
-    where: { invoiceId: id, tenantId },
-    orderBy: { createdAt: 'desc' },
-    select: { status: true, aeatResponse: true },
-  })
+  const [verifactuRecord, tenantSettings] = await Promise.all([
+    prisma.invoiceRecord.findFirst({
+      where: { invoiceId: id, tenantId },
+      orderBy: { createdAt: 'desc' },
+      select: { status: true, aeatResponse: true },
+    }),
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { verifactuProvider: true },
+    }),
+  ])
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
@@ -80,6 +86,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 hasRecord={!!verifactuRecord}
                 recordStatus={verifactuRecord?.status ?? null}
                 aeatResponse={verifactuRecord?.aeatResponse ?? null}
+                verifactuProvider={tenantSettings?.verifactuProvider ?? 'mock'}
               />
             </section>
           </div>

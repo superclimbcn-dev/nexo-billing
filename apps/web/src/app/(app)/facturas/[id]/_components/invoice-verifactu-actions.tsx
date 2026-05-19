@@ -10,9 +10,17 @@ interface Props {
   hasRecord: boolean
   recordStatus?: string | null
   aeatResponse?: unknown
+  verifactuProvider?: string
 }
 
-export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordStatus, aeatResponse }: Props) {
+export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordStatus, aeatResponse, verifactuProvider }: Props) {
+  if (verifactuProvider === 'mock') {
+    return (
+      <p className="text-xs text-[var(--text-subtle)]">
+        🔒 Verifactu se activará cuando actives tu suscripción
+      </p>
+    )
+  }
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
