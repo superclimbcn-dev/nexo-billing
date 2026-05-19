@@ -13,6 +13,10 @@ const PUBLIC_PATHS = [
   '/privacidad',
   '/cookies',
   '/blog',
+  '/precios',
+  '/faq',
+  '/sobre-nosotros',
+  '/contacto',
   '/api/health',
   '/f',
 ]
