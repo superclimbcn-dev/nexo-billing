@@ -66,30 +66,54 @@ export default function PreciosPage() {
           <h2 className="[font-family:var(--font-serif)] text-2xl sm:text-3xl text-center text-[var(--text)] mb-10">
             ¿Qué incluye el plan?
           </h2>
-          <div className="max-w-2xl mx-auto space-y-3">
-            {[
-              ['Facturas y presupuestos', 'Ilimitados'],
-              ['Series de facturación', 'Ilimitadas'],
-              ['Clientes', 'Ilimitados'],
-              ['Rectificativas y anulaciones', 'Incluido'],
-              ['Envío Verifactu a AEAT', 'Automático'],
-              ['QR tributario en PDF', 'Incluido'],
-              ['Link público de factura (PWA)', 'Incluido'],
-              ['Tesorería y flujo de caja', 'Incluido'],
-              ['Modelo 303 y 130 automático', 'Incluido'],
-              ['Exportación ZIP asesoría', 'Incluido'],
-              ['Invitación contable', '1 usuario'],
-              ['Soporte por email', 'Prioritario'],
-            ].map(([feature, value]) => (
-              <div
-                key={feature}
-                className="flex items-center justify-between px-5 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm"
-              >
-                <span className="text-[var(--text-dim)]">{feature}</span>
-                <span className="font-medium text-[var(--accent)]">{value}</span>
-              </div>
-            ))}
+
+          {/* Column headers */}
+          <div className="max-w-2xl mx-auto flex items-center justify-end gap-0 mb-2 px-5">
+            <span className="w-32 text-center text-xs font-medium text-[var(--text-subtle)]">Trial · 7 días</span>
+            <span className="w-32 text-center text-xs font-medium text-[var(--accent)]">Pro · 39€/mes</span>
           </div>
+
+          <div className="max-w-2xl mx-auto space-y-2">
+            {([
+              ['Facturas y presupuestos', 'Ilimitados', 'Ilimitados'],
+              ['Series de facturación', 'Ilimitadas', 'Ilimitadas'],
+              ['Clientes', 'Ilimitados', 'Ilimitados'],
+              ['Rectificativas y anulaciones', 'Incluido', 'Incluido'],
+              ['Verifactu AEAT', 'Práctica', '✅ En tiempo real'],
+              ['QR tributario en PDF', 'Incluido', 'Incluido'],
+              ['Link público de factura (PWA)', 'Incluido', 'Incluido'],
+              ['Tesorería y flujo de caja', 'Incluido', 'Incluido'],
+              ['Modelo 303 y 130 automático', 'Incluido', 'Incluido'],
+              ['Exportación ZIP asesoría', 'Incluido', 'Incluido'],
+              ['Invitación contable', '1 usuario', '1 usuario'],
+              ['Soporte por email', 'Normal', 'Prioritario'],
+            ] as [string, string, string][]).map(([feature, trial, pro]) => {
+              const isDifferent = trial !== pro
+              return (
+                <div
+                  key={feature}
+                  className={`flex items-center px-5 py-3 rounded-lg text-sm border ${
+                    isDifferent
+                      ? 'bg-[var(--accent)]/5 border-[var(--accent)]/20'
+                      : 'bg-[var(--surface)] border-[var(--border)]'
+                  }`}
+                >
+                  <span className="flex-1 text-[var(--text-dim)]">{feature}</span>
+                  <span className={`w-32 text-center text-xs font-medium ${isDifferent ? 'text-[var(--text-subtle)]' : 'text-[var(--accent)]'}`}>
+                    {trial}
+                  </span>
+                  <span className="w-32 text-center text-xs font-medium text-[var(--accent)]">
+                    {pro}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="max-w-2xl mx-auto mt-4 px-1 text-xs text-[var(--text-subtle)]">
+            * Verifactu en modo práctica: las facturas no se registran en la AEAT durante el trial.
+            Al activar tu suscripción, Verifactu se activa automáticamente para todas las nuevas facturas.
+          </p>
         </div>
       </main>
 

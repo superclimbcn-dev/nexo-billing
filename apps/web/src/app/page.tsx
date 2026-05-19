@@ -171,6 +171,13 @@ export default function LandingPage() {
               <p className="mt-3 text-xs text-[var(--text-subtle)]">
                 Sin permanencia. Cancela cuando quieras.
               </p>
+              <div className="mt-4 p-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-left">
+                <p className="text-xs text-[var(--text-dim)] leading-relaxed">
+                  <strong className="text-[var(--text)]">7 días gratis:</strong>{' '}
+                  durante el periodo de prueba puedes crear facturas de práctica.
+                  Verifactu AEAT se activa automáticamente al suscribirte.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -186,6 +193,10 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-4">
+            <FaqItem
+              question="¿Las facturas del periodo de prueba son válidas fiscalmente?"
+              answer="Durante los 7 días de prueba, las facturas se generan en modo práctica y no se registran en la AEAT. Son perfectas para conocer el sistema. Al activar tu suscripción, Verifactu se activa automáticamente y todas tus nuevas facturas quedan registradas en la AEAT en tiempo real."
+            />
             <FaqItem
               question="¿Es obligatorio Verifactu?"
               answer="Sí. A partir de 2027 todos los empresarios y profesionales españoles deben enviar sus facturas a la AEAT en tiempo real. Nexo Billing cumple con el RE-1693/2026 desde el primer día."
