@@ -1,6 +1,9 @@
 // Public API of the Verifactu module.
 // Only these exports are considered stable and safe for external consumption.
 
+import type { IVerifactuProvider } from './providers/interface'
+import { createProvider } from './providers/factory'
+
 export type { IVerifactuProvider } from './providers/interface'
 export type { InvoiceData, InvoiceRecordData, VerifactuResult, VerifactuStatus, VerifactuRecordType } from './providers/types'
 export { MockProvider } from './providers/mock'
@@ -9,6 +12,17 @@ export { VerifactiProvider } from './providers/verifacti'
 export type { VerifactiProviderOptions } from './providers/verifacti'
 export { createProvider } from './providers/factory'
 export type { ProviderName, FactoryOptions } from './providers/factory'
+
+/**
+ * Create a Verifactu provider for a specific tenant, using the tenant's
+ * configured provider (stored in DB). Falls back to mock for unknown values.
+ */
+export function getVerifactuProvider(tenant: { verifactuProvider: string }): IVerifactuProvider {
+  if (tenant.verifactuProvider === 'verifacti') {
+    return createProvider({ tenantProvider: 'verifacti' })
+  }
+  return createProvider({ tenantProvider: 'mock' })
+}
 
 /**
  * Register a tenant NIF as an emitter in Verifacti.

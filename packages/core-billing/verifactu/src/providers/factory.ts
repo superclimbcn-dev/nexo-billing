@@ -8,6 +8,8 @@ export type ProviderName = 'mock' | 'mock-v2' | 'verifacti'
 export interface FactoryOptions {
   /** Override provider selection (defaults to env var VERIFACTU_PROVIDER) */
   provider?: ProviderName
+  /** Per-tenant provider override — takes priority over provider and env var */
+  tenantProvider?: ProviderName
   /** Override mock mode (defaults to env var VERIFACTU_MOCK_MODE) */
   mockMode?: 'happy' | 'realistic'
 }
@@ -29,7 +31,7 @@ function getEnvVar(name: string): string | undefined {
  *   VERIFACTU_API_URL    — Base URL override (default: https://app.verifactuapi.es)
  */
 export function createProvider(options: FactoryOptions = {}): IVerifactuProvider {
-  const providerName = (options.provider ?? getEnvVar('VERIFACTU_PROVIDER') ?? 'mock') as ProviderName
+  const providerName = (options.tenantProvider ?? options.provider ?? getEnvVar('VERIFACTU_PROVIDER') ?? 'mock') as ProviderName
   const mockMode = options.mockMode ?? (getEnvVar('VERIFACTU_MOCK_MODE') as 'happy' | 'realistic') ?? 'realistic'
 
   switch (providerName) {

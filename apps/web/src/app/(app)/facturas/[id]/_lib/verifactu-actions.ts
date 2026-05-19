@@ -4,7 +4,7 @@ import { prisma, Prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import {
-  createProvider,
+  getVerifactuProvider,
   computeRecordHash,
   generateAEATQRUrlFromInvoice,
   type InvoiceRecordData,
@@ -128,7 +128,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
       totalAmount: true,
       notes: true,
       client: { select: { id: true, name: true, nif: true } },
-      tenant: { select: { nif: true, legalName: true, name: true } },
+      tenant: { select: { nif: true, legalName: true, name: true, verifactuProvider: true } },
       lines: {
         select: {
           description: true,
@@ -159,7 +159,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
-  const provider = createProvider()
+  const provider = getVerifactuProvider(invoice.tenant)
 
   // Compute hash with chaining
   const lastRecord = await prisma.invoiceRecord.findFirst({
@@ -266,7 +266,7 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
       totalAmount: true,
       notes: true,
       client: { select: { id: true, name: true, nif: true } },
-      tenant: { select: { nif: true, legalName: true, name: true } },
+      tenant: { select: { nif: true, legalName: true, name: true, verifactuProvider: true } },
       lines: {
         select: {
           description: true,
@@ -291,7 +291,7 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
   }
 
   const invoiceData = mapInvoiceToVerifactuData(invoice)
-  const provider = createProvider()
+  const provider = getVerifactuProvider(invoice.tenant)
 
   let result: VerifactuResult
   try {
