@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { parse } from 'gocardless-nodejs'
 import { prisma } from '@nexo/prisma'
 import type { Event } from 'gocardless-nodejs/types/Types'
+import { activateVerifactuForTenant } from '@/lib/verifactu/activate'
 
 const WEBHOOK_SECRET = process.env.GOCARDLESS_WEBHOOK_SECRET
 
@@ -75,7 +76,7 @@ async function handlePaymentEvent(action: string, event: Event): Promise<void> {
 
   const tenant = await prisma.tenant.findFirst({
     where: { goCardlessMandateId: mandateId },
-    select: { id: true, subscriptionStatus: true },
+    select: { id: true, nif: true, legalName: true, name: true, subscriptionStatus: true, verifactuProvider: true },
   })
   if (!tenant) {
     console.warn(`[gocardless-webhook] Tenant not found for mandate ${mandateId}`)
@@ -90,6 +91,9 @@ async function handlePaymentEvent(action: string, event: Event): Promise<void> {
         subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     })
+    if (tenant.verifactuProvider !== 'verifacti') {
+      await activateVerifactuForTenant({ id: tenant.id, nif: tenant.nif, legalName: tenant.legalName, name: tenant.name })
+    }
     console.log(`[gocardless-webhook] Payment confirmed: ${paymentId}`)
   } else if (action === 'failed') {
     const currentStatus = tenant.subscriptionStatus ?? 'PENDING'
@@ -118,7 +122,7 @@ async function handleSubscriptionEvent(
 
   const tenant = await prisma.tenant.findFirst({
     where: { goCardlessSubscriptionId: subscriptionId },
-    select: { id: true },
+    select: { id: true, nif: true, legalName: true, name: true, verifactuProvider: true },
   })
   if (!tenant) {
     console.warn(
@@ -141,6 +145,9 @@ async function handleSubscriptionEvent(
       where: { id: tenant.id },
       data: { subscriptionStatus: 'ACTIVE' },
     })
+    if (tenant.verifactuProvider !== 'verifacti') {
+      await activateVerifactuForTenant({ id: tenant.id, nif: tenant.nif, legalName: tenant.legalName, name: tenant.name })
+    }
     console.log(`[gocardless-webhook] Subscription payment created: ${subscriptionId}`)
   }
 }
