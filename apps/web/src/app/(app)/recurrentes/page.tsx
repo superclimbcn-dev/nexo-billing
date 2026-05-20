@@ -4,7 +4,6 @@ import { createServerClient } from '@nexo/core-auth'
 import { listContracts } from './_lib/recurring-queries'
 import { ContractList } from './_components/contract-list'
 import { EmitPendingButton } from './_components/emit-pending-button'
-import { emitDueInvoices } from '@/lib/recurring/emit-due-invoices'
 
 interface PageProps {
   searchParams: Promise<{ estado?: string }>
@@ -21,8 +20,6 @@ export default async function RecurrentesPage({ searchParams }: PageProps) {
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { estado } = await searchParams
-
-  await emitDueInvoices(tenantId)
 
   const contracts = await listContracts({ tenantId, status: estado })
 
@@ -48,7 +45,10 @@ export default async function RecurrentesPage({ searchParams }: PageProps) {
         </div>
       </header>
 
-      <ContractList items={contracts.map((c) => ({ ...c, total: Number(c.total) }))} status={estado ?? ''} />
+      <ContractList
+        items={contracts.map((c) => ({ ...c, total: Number(c.total) }))}
+        status={estado ?? ''}
+      />
     </div>
   )
 }

@@ -513,6 +513,7 @@ model Item {
   expenseLines ExpenseLine[]
 
   @@unique([tenantId, sku])
+  @@index([tenantId, isActive])
   @@map("items")
 }
 
@@ -659,6 +660,9 @@ model InvoiceRecord {
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
 
+  @@index([tenantId, createdAt])
+  @@index([tenantId, invoiceId])
+  @@index([invoiceId])
   @@map("invoice_records")
 }
 
@@ -851,6 +855,7 @@ model RecurringContract {
   lines    RecurringLine[]
   invoices Invoice[]       @relation("RecurringInvoices")
 
+  @@index([tenantId, status, nextBillingAt])
   @@map("recurring_contracts")
 }
 

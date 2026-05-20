@@ -9,8 +9,6 @@ import { ExportButton } from '../export/_components/export-button';
 import { formatCurrency, formatDate } from '@nexo/core-utils';
 import { getDashboardStats } from './_lib/dashboard-queries';
 import { RecentInvoices } from './_components/recent-invoices';
-import { syncOverdueInvoices } from '../facturas/[id]/_lib/invoice-status-actions';
-import { emitDueInvoices } from '@/lib/recurring/emit-due-invoices';
 import { countActiveContracts } from '../recurrentes/_lib/recurring-queries';
 import { getSubscriptionState, getTrialDaysLeft } from '@/lib/subscription';
 import { TrialExpiredModal } from './_components/trial-expired-modal';
@@ -57,10 +55,7 @@ export default async function DashboardPage() {
 
   const canWrite = userRole === 'OWNER' || userRole === 'ADMIN';
 
-  // Fire-and-forget background mutations — do NOT block page render
-  void Promise.all([emitDueInvoices(tenantId), syncOverdueInvoices(tenantId)]);
-
-  const [stats, tenant] = await Promise.all([
+  const [stats, tenant, activeContracts] = await Promise.all([
     getDashboardStats(tenantId),
     prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -71,8 +66,8 @@ export default async function DashboardPage() {
         trialEndsAt: true,
       },
     }),
+    countActiveContracts(tenantId),
   ]);
-  const activeContracts = await countActiveContracts(tenantId);
 
   const now = new Date();
   const userLabel =

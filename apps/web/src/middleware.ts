@@ -37,10 +37,11 @@ function isPublic(pathname: string) {
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
-  const { user } = await refreshSession(request, response)
   const { pathname } = request.nextUrl
 
   if (isPublic(pathname)) return response
+
+  const { user } = await refreshSession(request, response)
 
   if (!user) {
     const loginUrl = new URL('/login', request.url)
