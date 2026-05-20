@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@nexo/prisma'
 import { verifyInvoiceToken } from '@/lib/public-invoice-token'
@@ -7,6 +8,13 @@ import { ShareButton, WhatsAppShareButton } from './_components/invoice-actions'
 
 interface Props {
   params: Promise<{ token: string }>
+}
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default async function PublicInvoicePage({ params }: Props) {

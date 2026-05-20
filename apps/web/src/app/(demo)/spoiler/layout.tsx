@@ -1,5 +1,13 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { TopBar, ScreenSwitcher } from '@nexo/core-ui'
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 const SCREENS = [
   { label: 'Dashboard', href: '/spoiler' },

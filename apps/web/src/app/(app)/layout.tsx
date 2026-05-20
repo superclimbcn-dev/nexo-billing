@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@nexo/core-auth'
@@ -6,6 +7,13 @@ import { AppShell, TopBar } from '@nexo/core-ui'
 import { AppSidebar } from './app-sidebar'
 import { MobileHeader } from './_components/mobile-header'
 import { FileText, TrendingUp, Receipt, LayoutDashboard } from 'lucide-react'
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerClient()

@@ -35,9 +35,16 @@ const postFullFields = groq`
   body
 `
 
+const publishedPostFilter = groq`
+  _type == "post" &&
+  !(_id in path("drafts.**")) &&
+  defined(slug.current) &&
+  publishedAt <= dateTime(now())
+`
+
 export async function getAllPosts(): Promise<SanityPostListItem[]> {
   return sanityClient.fetch(
-    groq`*[_type == "post"] | order(publishedAt desc) { ${postListFields} }`,
+    groq`*[${publishedPostFilter}] | order(publishedAt desc) { ${postListFields} }`,
     {},
     { next: { revalidate: REVALIDATE_SECONDS } },
   )
@@ -45,7 +52,7 @@ export async function getAllPosts(): Promise<SanityPostListItem[]> {
 
 export async function getPostBySlug(slug: string): Promise<SanityPost | null> {
   return sanityClient.fetch(
-    groq`*[_type == "post" && slug.current == $slug][0] { ${postFullFields} }`,
+    groq`*[${publishedPostFilter} && slug.current == $slug][0] { ${postFullFields} }`,
     { slug },
     { next: { revalidate: REVALIDATE_SECONDS } },
   )
@@ -55,7 +62,7 @@ export async function getPostsByCategory(
   category: SanityPost['category'],
 ): Promise<SanityPostListItem[]> {
   return sanityClient.fetch(
-    groq`*[_type == "post" && category == $category] | order(publishedAt desc) { ${postListFields} }`,
+    groq`*[${publishedPostFilter} && category == $category] | order(publishedAt desc) { ${postListFields} }`,
     { category },
     { next: { revalidate: REVALIDATE_SECONDS } },
   )

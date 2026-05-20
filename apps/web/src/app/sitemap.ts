@@ -2,14 +2,15 @@ import type { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/sanity/queries'
 
 const BASE = 'https://billing.nexo-digital.app'
+const lastModified = new Date()
 
 const staticPages: MetadataRoute.Sitemap = [
-  { url: BASE, priority: 1.0, changeFrequency: 'monthly' },
-  { url: `${BASE}/precios`, priority: 0.9, changeFrequency: 'monthly' },
-  { url: `${BASE}/blog`, priority: 0.8, changeFrequency: 'weekly' },
-  { url: `${BASE}/faq`, priority: 0.5, changeFrequency: 'monthly' },
-  { url: `${BASE}/sobre-nosotros`, priority: 0.5, changeFrequency: 'monthly' },
-  { url: `${BASE}/contacto`, priority: 0.5, changeFrequency: 'monthly' },
+  { url: BASE, lastModified, priority: 1.0, changeFrequency: 'monthly' },
+  { url: `${BASE}/precios`, lastModified, priority: 0.9, changeFrequency: 'monthly' },
+  { url: `${BASE}/blog`, lastModified, priority: 0.8, changeFrequency: 'weekly' },
+  { url: `${BASE}/faq`, lastModified, priority: 0.5, changeFrequency: 'monthly' },
+  { url: `${BASE}/sobre-nosotros`, lastModified, priority: 0.5, changeFrequency: 'monthly' },
+  { url: `${BASE}/contacto`, lastModified, priority: 0.5, changeFrequency: 'monthly' },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
