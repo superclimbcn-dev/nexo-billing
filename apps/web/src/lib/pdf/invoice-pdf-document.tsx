@@ -1,3 +1,4 @@
+import React from 'react'
 import { Document, Page, View, Text, Image } from '@react-pdf/renderer'
 import { styles } from './invoice-pdf-styles'
 import { registerPdfFonts } from './invoice-pdf-fonts'

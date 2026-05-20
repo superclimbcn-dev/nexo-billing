@@ -145,9 +145,18 @@ export async function GET(
       : undefined,
   }
 
-  const buffer = await renderToBuffer(
-    createElement(InvoicePdfDocument, { data }) as ReactElement<DocumentProps>,
-  )
+  let buffer: Buffer
+  try {
+    buffer = await renderToBuffer(
+      createElement(InvoicePdfDocument, { data }) as ReactElement<DocumentProps>,
+    )
+  } catch (error) {
+    console.error('PDF generation error:', error)
+    return NextResponse.json(
+      { error: 'No hemos podido generar el PDF. Inténtalo de nuevo en unos minutos.' },
+      { status: 500 },
+    )
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
