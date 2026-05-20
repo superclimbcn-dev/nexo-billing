@@ -17,6 +17,13 @@ const PUBLIC_PATHS = [
   '/faq',
   '/sobre-nosotros',
   '/contacto',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/og-image.jpg',
+  '/offline.html',
   '/api/health',
   '/f',
 ]
