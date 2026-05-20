@@ -116,7 +116,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
           <label htmlFor="acceptedTyC" className="text-sm text-[var(--text-dim)] cursor-pointer">
             Acepto los{' '}
             <a
-              href="/legal/terminos"
+              href="/terminos"
               target="_blank"
               className="text-[var(--accent)] hover:underline"
             >
@@ -124,7 +124,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
             </a>{' '}
             y la{' '}
             <a
-              href="/legal/privacidad"
+              href="/privacidad"
               target="_blank"
               className="text-[var(--accent)] hover:underline"
             >

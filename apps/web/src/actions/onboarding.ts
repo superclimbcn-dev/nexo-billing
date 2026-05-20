@@ -3,8 +3,30 @@
 import { randomUUID } from 'crypto'
 import { redirect } from 'next/navigation'
 import { createServerClient, createAdminClient } from '@nexo/core-auth'
-import { prisma, UserRole, AuditAction } from '@nexo/prisma'
+import { prisma, Prisma, UserRole, AuditAction } from '@nexo/prisma'
 import { registerEmisorIfEnabled } from '@nexo/verifactu'
+
+function onboardingError(message: string): never {
+  redirect(`/onboarding/configuracion?error=${encodeURIComponent(message)}`)
+}
+
+function getFriendlyOnboardingError(error: unknown): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2002') {
+      return 'Ya existe una cuenta registrada con esos datos. Revisa el NIF o inicia sesión con tu cuenta.'
+    }
+
+    if (error.code === 'P2025') {
+      return 'No hemos podido completar el registro porque falta una configuración interna. Vuelve a intentarlo en unos minutos.'
+    }
+
+    if (error.code === 'P2022') {
+      return 'Estamos terminando de actualizar el sistema. Vuelve a intentarlo en unos minutos.'
+    }
+  }
+
+  return 'No hemos podido completar el registro. Revisa los datos e inténtalo de nuevo.'
+}
 
 export async function setOnboardingState(partialState: Record<string, unknown>) {
   const supabase = await createServerClient()
@@ -57,6 +79,17 @@ export async function completeOnboarding(formData: FormData) {
 
   if (!nif || !razonSocial) {
     redirect('/onboarding/empresa?error=Faltan+datos+obligatorios')
+  }
+
+  if (!isOtherSector) {
+    const selectedVertical = await prisma.vertical.findUnique({
+      where: { slug: verticalSlug! },
+      select: { id: true },
+    })
+
+    if (!selectedVertical) {
+      onboardingError('Este sector no está disponible temporalmente. Elige Genérico para completar el registro.')
+    }
   }
 
   // Pre-generate tenant ID so we can use the batch form of $transaction.
@@ -173,8 +206,8 @@ export async function completeOnboarding(formData: FormData) {
         : []),
     ])
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    redirect(`/onboarding/configuracion?error=${encodeURIComponent(`Error al crear la cuenta: ${msg}`)}`)
+    console.error('Onboarding completion failed', err)
+    onboardingError(getFriendlyOnboardingError(err))
   }
 
   const adminClient = createAdminClient()
