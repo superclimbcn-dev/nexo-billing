@@ -1,9 +1,18 @@
 import jwt from 'jsonwebtoken'
 
-const SECRET =
-  process.env.PUBLIC_INVOICE_TOKEN_SECRET ??
-  process.env.SUPABASE_JWT_SECRET ??
-  'dev-fallback-only-not-secure'
+function getInvoiceTokenSecret(): string {
+  const secret =
+    process.env.PUBLIC_INVOICE_TOKEN_SECRET?.trim() ||
+    process.env.SUPABASE_JWT_SECRET?.trim()
+
+  if (secret) return secret
+
+  if (process.env.NODE_ENV !== 'production') {
+    return 'dev-fallback-only-not-secure'
+  }
+
+  throw new Error('PUBLIC_INVOICE_TOKEN_SECRET is not configured')
+}
 
 export interface InvoiceTokenPayload {
   invoiceId: string
@@ -11,11 +20,11 @@ export interface InvoiceTokenPayload {
 }
 
 export function signInvoiceToken(payload: InvoiceTokenPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: '30d' })
+  return jwt.sign(payload, getInvoiceTokenSecret(), { expiresIn: '30d' })
 }
 
 export function verifyInvoiceToken(token: string): InvoiceTokenPayload {
-  const decoded = jwt.verify(token, SECRET)
+  const decoded = jwt.verify(token, getInvoiceTokenSecret())
   if (typeof decoded !== 'object' || decoded === null) {
     throw new Error('Invalid token payload')
   }
