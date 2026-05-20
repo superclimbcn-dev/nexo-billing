@@ -1,7 +1,14 @@
 import { z } from 'zod'
 
 export const quarterSchema = z.enum(['Q1', 'Q2', 'Q3', 'Q4'])
-export const yearSchema = z.number().int().min(2024).max(2030)
+export const MIN_TAX_YEAR = 2024
+export const MAX_TAX_YEARS_AHEAD = 5
+
+export const yearSchema = z
+  .number()
+  .int()
+  .min(MIN_TAX_YEAR)
+  .max(new Date().getFullYear() + MAX_TAX_YEARS_AHEAD)
 
 export type Quarter = z.infer<typeof quarterSchema>
 
@@ -41,4 +48,10 @@ export function getCurrentQuarter(): { year: number; quarter: Quarter } {
   const quarters: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4']
   const quarter = quarters[Math.floor(month / 3)]!
   return { year, quarter }
+}
+
+export function getAvailableTaxYears(referenceYear = new Date().getFullYear()): number[] {
+  const start = MIN_TAX_YEAR
+  const end = referenceYear + 1
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
 }

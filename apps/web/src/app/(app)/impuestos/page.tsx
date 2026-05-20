@@ -1,5 +1,5 @@
 import { formatCurrency, formatDate } from '@nexo/core-utils'
-import { getCurrentQuarter, type Quarter } from './_lib/impuestos-schema'
+import { getAvailableTaxYears, getCurrentQuarter, type Quarter } from './_lib/impuestos-schema'
 import type { Vencimiento } from './_lib/impuestos-actions'
 import {
   getModelo303,
@@ -25,6 +25,7 @@ export default async function ImpuestosPage({
   ])
 
   const quarters: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4']
+  const availableYears = getAvailableTaxYears(defaultYear)
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
@@ -45,7 +46,7 @@ export default async function ImpuestosPage({
             defaultValue={year}
             className="px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-md text-sm"
           >
-            {[2024, 2025, 2026, 2027].map((y) => (
+            {availableYears.map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
