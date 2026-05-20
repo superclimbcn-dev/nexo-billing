@@ -13,6 +13,7 @@ import {
   type VerifactuStatus,
   type InvoiceData,
 } from '@nexo/verifactu'
+import { sendInternalAlert } from '@/lib/internal-alerts'
 
 type ActionResult = { ok: true; csv: string } | { ok: false; error: string }
 
@@ -128,7 +129,15 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
       totalAmount: true,
       notes: true,
       client: { select: { id: true, name: true, nif: true } },
-      tenant: { select: { nif: true, legalName: true, name: true, verifactuProvider: true } },
+      tenant: {
+        select: {
+          nif: true,
+          legalName: true,
+          name: true,
+          verifactuProvider: true,
+          verifactuNifRegistered: true,
+        },
+      },
       lines: {
         select: {
           description: true,
@@ -149,6 +158,13 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
   if (!invoice.client.nif || invoice.client.nif.trim() === '') {
     return { ok: false, error: 'El cliente debe tener un NIF válido para enviar a la AEAT' }
+  }
+  if (invoice.tenant.verifactuProvider !== 'verifacti' || !invoice.tenant.verifactuNifRegistered) {
+    return {
+      ok: false,
+      error:
+        'Verifactu todavía no está activo para este NIF. Nuestro equipo revisará la activación.',
+    }
   }
 
   const existing = await prisma.invoiceRecord.findFirst({
@@ -182,6 +198,18 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
     result = await provider.submitInvoice(invoiceData)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error desconocido al contactar con AEAT'
+    await sendInternalAlert({
+      title: 'Error al registrar factura en Verifactu',
+      stage: 'verifactu.submit_invoice.exception',
+      severity: 'critical',
+      tenant: {
+        id: invoice.tenantId,
+        name: invoice.tenant.legalName ?? invoice.tenant.name,
+        nif: invoice.tenant.nif,
+      },
+      event: { invoiceId: invoice.id, fullNumber: invoice.fullNumber },
+      error: err,
+    })
     await prisma.invoiceRecord.create({
       data: {
         tenantId: ctx.tenantId,
@@ -198,6 +226,18 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   }
 
   if (!result.success) {
+    await sendInternalAlert({
+      title: 'Verifactu rechazó una factura',
+      stage: 'verifactu.submit_invoice.rejected',
+      severity: 'critical',
+      tenant: {
+        id: invoice.tenantId,
+        name: invoice.tenant.legalName ?? invoice.tenant.name,
+        nif: invoice.tenant.nif,
+      },
+      event: { invoiceId: invoice.id, fullNumber: invoice.fullNumber },
+      details: { error: result.error, rawResult: result },
+    })
     await prisma.invoiceRecord.create({
       data: {
         tenantId: ctx.tenantId,
@@ -266,7 +306,15 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
       totalAmount: true,
       notes: true,
       client: { select: { id: true, name: true, nif: true } },
-      tenant: { select: { nif: true, legalName: true, name: true, verifactuProvider: true } },
+      tenant: {
+        select: {
+          nif: true,
+          legalName: true,
+          name: true,
+          verifactuProvider: true,
+          verifactuNifRegistered: true,
+        },
+      },
       lines: {
         select: {
           description: true,
@@ -282,6 +330,13 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
   })
 
   if (!invoice) return { ok: false, error: 'Factura no encontrada' }
+  if (invoice.tenant.verifactuProvider !== 'verifacti' || !invoice.tenant.verifactuNifRegistered) {
+    return {
+      ok: false,
+      error:
+        'Verifactu todavía no está activo para este NIF. Nuestro equipo revisará la activación.',
+    }
+  }
 
   const existing = await prisma.invoiceRecord.findFirst({
     where: { invoiceId, tenantId: ctx.tenantId, type: 'Alta' },
@@ -298,10 +353,34 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
     result = await provider.cancelInvoice(invoiceData)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error desconocido al contactar con AEAT'
+    await sendInternalAlert({
+      title: 'Error al anular factura en Verifactu',
+      stage: 'verifactu.cancel_invoice.exception',
+      severity: 'critical',
+      tenant: {
+        id: invoice.tenantId,
+        name: invoice.tenant.legalName ?? invoice.tenant.name,
+        nif: invoice.tenant.nif,
+      },
+      event: { invoiceId: invoice.id, fullNumber: invoice.fullNumber },
+      error: err,
+    })
     return { ok: false, error: msg }
   }
 
   if (!result.success) {
+    await sendInternalAlert({
+      title: 'Verifactu rechazó una anulación',
+      stage: 'verifactu.cancel_invoice.rejected',
+      severity: 'critical',
+      tenant: {
+        id: invoice.tenantId,
+        name: invoice.tenant.legalName ?? invoice.tenant.name,
+        nif: invoice.tenant.nif,
+      },
+      event: { invoiceId: invoice.id, fullNumber: invoice.fullNumber },
+      details: { error: result.error, rawResult: result },
+    })
     return { ok: false, error: result.error ?? 'Error al anular en la AEAT' }
   }
 

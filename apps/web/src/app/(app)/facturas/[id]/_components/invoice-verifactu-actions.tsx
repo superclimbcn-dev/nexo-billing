@@ -11,21 +11,31 @@ interface Props {
   recordStatus?: string | null
   aeatResponse?: unknown
   verifactuProvider?: string
+  verifactuNifRegistered?: boolean
 }
 
-export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordStatus, aeatResponse, verifactuProvider }: Props) {
-  if (verifactuProvider === 'mock') {
-    return (
-      <p className="text-xs text-[var(--text-subtle)]">
-        🔒 Verifactu se activará cuando actives tu suscripción
-      </p>
-    )
-  }
+export function InvoiceVerifactuActions({
+  invoiceId,
+  status,
+  hasRecord,
+  recordStatus,
+  aeatResponse,
+  verifactuProvider,
+  verifactuNifRegistered,
+}: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
+
+  if (verifactuProvider !== 'verifacti' || !verifactuNifRegistered) {
+    return (
+      <p className="text-xs text-[var(--text-subtle)]">
+        🔒 Verifactu se activará cuando confirmemos tu NIF con AEAT.
+      </p>
+    )
+  }
 
   function handleSubmit() {
     setError(null)
@@ -90,11 +100,7 @@ export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordSt
       )}
 
       {!hasRecord && !isDraft && (
-        <button
-          onClick={handleSubmit}
-          disabled={isPending}
-          className={btnPrimary}
-        >
+        <button onClick={handleSubmit} disabled={isPending} className={btnPrimary}>
           {isPending ? 'Enviando...' : 'Registrar en AEAT'}
         </button>
       )}
@@ -124,11 +130,7 @@ export function InvoiceVerifactuActions({ invoiceId, status, hasRecord, recordSt
       )}
 
       {hasRecord && (
-        <button
-          onClick={handleCancel}
-          disabled={isPending}
-          className={btnSecondary}
-        >
+        <button onClick={handleCancel} disabled={isPending} className={btnSecondary}>
           {confirmCancel ? '¿Confirmar anulación AEAT?' : 'Anular en AEAT'}
         </button>
       )}

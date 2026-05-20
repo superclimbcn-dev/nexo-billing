@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
     }),
     prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { verifactuProvider: true },
+      select: { verifactuProvider: true, verifactuNifRegistered: true },
     }),
   ])
 
@@ -87,6 +87,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 recordStatus={verifactuRecord?.status ?? null}
                 aeatResponse={verifactuRecord?.aeatResponse ?? null}
                 verifactuProvider={tenantSettings?.verifactuProvider ?? 'mock'}
+                verifactuNifRegistered={tenantSettings?.verifactuNifRegistered ?? false}
               />
             </section>
           </div>

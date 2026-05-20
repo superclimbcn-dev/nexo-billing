@@ -5,12 +5,12 @@ import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 import { revalidatePath } from 'next/cache'
 import gocardless, { Environments } from 'gocardless-nodejs'
 import { SubscriptionIntervalUnit, PaymentCurrency } from 'gocardless-nodejs/types/Types'
+import { sendInternalAlert } from '@/lib/internal-alerts'
+import { activateVerifactuForTenant } from '@/lib/verifactu/activate'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-type ActionResult<T = void> =
-  | { ok: true; data: T }
-  | { ok: false; error: string }
+type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string }
 
 // ── GoCardless client ───────────────────────────────────────────────────────
 
@@ -18,10 +18,7 @@ function getGoCardlessClient() {
   const token = process.env.GOCARDLESS_ACCESS_TOKEN
   const env = process.env.GOCARDLESS_ENVIRONMENT
   if (!token) throw new Error('GOCARDLESS_ACCESS_TOKEN not configured')
-  return gocardless(
-    token,
-    env === 'live' ? Environments.Live : Environments.Sandbox,
-  )
+  return gocardless(token, env === 'live' ? Environments.Live : Environments.Sandbox)
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -30,9 +27,7 @@ const SUBSCRIPTION_CURRENCY = 'EUR'
 
 // ── Create mandate (RedirectFlow) ───────────────────────────────────────────
 
-export async function createGoCardlessMandate(): Promise<
-  ActionResult<{ redirectUrl: string }>
-> {
+export async function createGoCardlessMandate(): Promise<ActionResult<{ redirectUrl: string }>> {
   const ctx = await requireOwnerOrAdminAction()
   if (!ctx) return { ok: false, error: 'No tienes permiso' }
 
@@ -94,15 +89,20 @@ export async function createGoCardlessMandate(): Promise<
     return { ok: true, data: { redirectUrl } }
   } catch (err) {
     console.error('[createGoCardlessMandate] error:', err)
+    await sendInternalAlert({
+      title: 'Error al iniciar autorización SEPA',
+      stage: 'gocardless.create_mandate',
+      severity: 'error',
+      tenant: { id: tenant.id, name: tenant.name },
+      error: err,
+    })
     return { ok: false, error: 'Error al iniciar autorización SEPA' }
   }
 }
 
 // ── Confirm mandate + create subscription ───────────────────────────────────
 
-export async function confirmGoCardlessMandate(
-  redirectFlowId: string,
-): Promise<ActionResult> {
+export async function confirmGoCardlessMandate(redirectFlowId: string): Promise<ActionResult> {
   const ctx = await requireOwnerOrAdminAction()
   if (!ctx) return { ok: false, error: 'No tienes permiso' }
 
@@ -110,6 +110,9 @@ export async function confirmGoCardlessMandate(
     where: { id: ctx.tenantId },
     select: {
       id: true,
+      name: true,
+      legalName: true,
+      nif: true,
       goCardlessCustomerId: true,
       goCardlessMandateId: true,
     },
@@ -156,10 +159,25 @@ export async function confirmGoCardlessMandate(
       },
     })
 
+    await activateVerifactuForTenant({
+      id: tenant.id,
+      nif: tenant.nif,
+      legalName: tenant.legalName,
+      name: tenant.name,
+    })
+
     revalidatePath('/settings/billing')
     return { ok: true, data: undefined }
   } catch (err) {
     console.error('[confirmGoCardlessMandate] error:', err)
+    await sendInternalAlert({
+      title: 'Error al confirmar autorización SEPA',
+      stage: 'gocardless.confirm_mandate',
+      severity: 'critical',
+      tenant: { id: tenant.id, name: tenant.legalName ?? tenant.name, nif: tenant.nif },
+      event: { redirectFlowId },
+      error: err,
+    })
     return { ok: false, error: 'Error al confirmar autorización SEPA' }
   }
 }
@@ -174,6 +192,9 @@ export async function createGoCardlessPayment(): Promise<ActionResult> {
     where: { id: ctx.tenantId },
     select: {
       id: true,
+      name: true,
+      legalName: true,
+      nif: true,
       goCardlessMandateId: true,
     },
   })
@@ -197,6 +218,13 @@ export async function createGoCardlessPayment(): Promise<ActionResult> {
     return { ok: true, data: undefined }
   } catch (err) {
     console.error('[createGoCardlessPayment] error:', err)
+    await sendInternalAlert({
+      title: 'Error al crear cobro SEPA',
+      stage: 'gocardless.create_payment',
+      severity: 'critical',
+      tenant: { id: tenant.id, name: tenant.legalName ?? tenant.name, nif: tenant.nif },
+      error: err,
+    })
     return { ok: false, error: 'Error al crear cobro SEPA' }
   }
 }
@@ -211,6 +239,9 @@ export async function cancelGoCardlessSubscription(): Promise<ActionResult> {
     where: { id: ctx.tenantId },
     select: {
       id: true,
+      name: true,
+      legalName: true,
+      nif: true,
       goCardlessSubscriptionId: true,
     },
   })
@@ -235,6 +266,13 @@ export async function cancelGoCardlessSubscription(): Promise<ActionResult> {
     return { ok: true, data: undefined }
   } catch (err) {
     console.error('[cancelGoCardlessSubscription] error:', err)
+    await sendInternalAlert({
+      title: 'Error al cancelar suscripción SEPA',
+      stage: 'gocardless.cancel_subscription',
+      severity: 'error',
+      tenant: { id: tenant.id, name: tenant.legalName ?? tenant.name, nif: tenant.nif },
+      error: err,
+    })
     return { ok: false, error: 'Error al cancelar suscripción' }
   }
 }

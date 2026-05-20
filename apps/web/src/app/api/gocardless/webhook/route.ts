@@ -3,12 +3,18 @@ import { parse } from 'gocardless-nodejs'
 import { prisma } from '@nexo/prisma'
 import type { Event } from 'gocardless-nodejs/types/Types'
 import { activateVerifactuForTenant } from '@/lib/verifactu/activate'
+import { sendInternalAlert } from '@/lib/internal-alerts'
 
 const WEBHOOK_SECRET = process.env.GOCARDLESS_WEBHOOK_SECRET
 
 export async function POST(request: Request): Promise<Response> {
   if (!WEBHOOK_SECRET) {
     console.error('[gocardless-webhook] GOCARDLESS_WEBHOOK_SECRET not configured')
+    await sendInternalAlert({
+      title: 'GOCARDLESS_WEBHOOK_SECRET no está configurado',
+      stage: 'gocardless.webhook.missing_secret',
+      severity: 'critical',
+    })
     return NextResponse.json({ error: 'Not configured' }, { status: 500 })
   }
 
@@ -35,9 +41,7 @@ async function processEvents(events: Event[]): Promise<void> {
     const action = event.action ?? ''
     const resourceType = event.resource_type ?? ''
 
-    console.log(
-      `[gocardless-webhook] ${resourceType}.${action} — id=${event.id}`,
-    )
+    console.log(`[gocardless-webhook] ${resourceType}.${action} — id=${event.id}`)
 
     try {
       switch (resourceType) {
@@ -54,10 +58,22 @@ async function processEvents(events: Event[]): Promise<void> {
           console.log(`[gocardless-webhook] Ignored: ${resourceType}.${action}`)
       }
     } catch (err) {
-      console.error(
-        `[gocardless-webhook] Error processing ${resourceType}.${action}:`,
-        err,
-      )
+      console.error(`[gocardless-webhook] Error processing ${resourceType}.${action}:`, err)
+      await sendInternalAlert({
+        title: 'Error procesando evento de GoCardless',
+        stage: 'gocardless.webhook.process_event',
+        severity: 'critical',
+        event: {
+          id: event.id,
+          resourceType,
+          action,
+        },
+        details: {
+          links: event.links,
+          details: event.details,
+        },
+        error: err,
+      })
     }
   }
 }
@@ -71,15 +87,35 @@ async function handlePaymentEvent(action: string, event: Event): Promise<void> {
 
   if (!mandateId) {
     console.warn('[gocardless-webhook] Payment event without mandateId')
+    await sendInternalAlert({
+      title: 'Evento de pago GoCardless sin mandateId',
+      stage: 'gocardless.webhook.payment_without_mandate',
+      severity: 'warning',
+      event: { id: event.id, action },
+      details: { links: event.links },
+    })
     return
   }
 
   const tenant = await prisma.tenant.findFirst({
     where: { goCardlessMandateId: mandateId },
-    select: { id: true, nif: true, legalName: true, name: true, subscriptionStatus: true, verifactuProvider: true },
+    select: {
+      id: true,
+      nif: true,
+      legalName: true,
+      name: true,
+      subscriptionStatus: true,
+      verifactuProvider: true,
+    },
   })
   if (!tenant) {
     console.warn(`[gocardless-webhook] Tenant not found for mandate ${mandateId}`)
+    await sendInternalAlert({
+      title: 'No se encontró tenant para un pago de GoCardless',
+      stage: 'gocardless.webhook.payment_tenant_not_found',
+      severity: 'critical',
+      event: { id: event.id, action, mandateId },
+    })
     return
   }
 
@@ -92,7 +128,12 @@ async function handlePaymentEvent(action: string, event: Event): Promise<void> {
       },
     })
     if (tenant.verifactuProvider !== 'verifacti') {
-      await activateVerifactuForTenant({ id: tenant.id, nif: tenant.nif, legalName: tenant.legalName, name: tenant.name })
+      await activateVerifactuForTenant({
+        id: tenant.id,
+        nif: tenant.nif,
+        legalName: tenant.legalName,
+        name: tenant.name,
+      })
     }
     console.log(`[gocardless-webhook] Payment confirmed: ${paymentId}`)
   } else if (action === 'failed') {
@@ -108,15 +149,20 @@ async function handlePaymentEvent(action: string, event: Event): Promise<void> {
     console.log(
       `[gocardless-webhook] Payment failed: ${paymentId}, cause: ${cause}, status: ${newStatus}`,
     )
+    await sendInternalAlert({
+      title: 'Cobro SEPA fallido',
+      stage: 'gocardless.webhook.payment_failed',
+      severity: 'warning',
+      tenant: { id: tenant.id, name: tenant.legalName ?? tenant.name, nif: tenant.nif },
+      event: { id: event.id, action, paymentId: paymentId ?? null, mandateId, cause, newStatus },
+      details: { eventDetails: event.details },
+    })
   }
 }
 
 // ── Subscription events ─────────────────────────────────────────────────────
 
-async function handleSubscriptionEvent(
-  action: string,
-  event: Event,
-): Promise<void> {
+async function handleSubscriptionEvent(action: string, event: Event): Promise<void> {
   const subscriptionId = event.links?.subscription
   if (!subscriptionId) return
 
@@ -125,9 +171,13 @@ async function handleSubscriptionEvent(
     select: { id: true, nif: true, legalName: true, name: true, verifactuProvider: true },
   })
   if (!tenant) {
-    console.warn(
-      `[gocardless-webhook] Tenant not found for subscription ${subscriptionId}`,
-    )
+    console.warn(`[gocardless-webhook] Tenant not found for subscription ${subscriptionId}`)
+    await sendInternalAlert({
+      title: 'No se encontró tenant para una suscripción de GoCardless',
+      stage: 'gocardless.webhook.subscription_tenant_not_found',
+      severity: 'critical',
+      event: { id: event.id, action, subscriptionId },
+    })
     return
   }
 
@@ -146,7 +196,12 @@ async function handleSubscriptionEvent(
       data: { subscriptionStatus: 'ACTIVE' },
     })
     if (tenant.verifactuProvider !== 'verifacti') {
-      await activateVerifactuForTenant({ id: tenant.id, nif: tenant.nif, legalName: tenant.legalName, name: tenant.name })
+      await activateVerifactuForTenant({
+        id: tenant.id,
+        nif: tenant.nif,
+        legalName: tenant.legalName,
+        name: tenant.name,
+      })
     }
     console.log(`[gocardless-webhook] Subscription payment created: ${subscriptionId}`)
   }
@@ -163,9 +218,13 @@ async function handleMandateEvent(action: string, event: Event): Promise<void> {
     select: { id: true },
   })
   if (!tenant) {
-    console.warn(
-      `[gocardless-webhook] Tenant not found for mandate ${mandateId}`,
-    )
+    console.warn(`[gocardless-webhook] Tenant not found for mandate ${mandateId}`)
+    await sendInternalAlert({
+      title: 'No se encontró tenant para un mandato de GoCardless',
+      stage: 'gocardless.webhook.mandate_tenant_not_found',
+      severity: 'critical',
+      event: { id: event.id, action, mandateId },
+    })
     return
   }
 
