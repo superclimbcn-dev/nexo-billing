@@ -39,7 +39,7 @@ const publishedPostFilter = groq`
   _type == "post" &&
   !(_id in path("drafts.**")) &&
   defined(slug.current) &&
-  publishedAt <= dateTime(now())
+  dateTime(publishedAt) <= dateTime(now())
 `
 
 export async function getAllPosts(): Promise<SanityPostListItem[]> {
