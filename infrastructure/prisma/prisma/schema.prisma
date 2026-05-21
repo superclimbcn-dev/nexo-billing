@@ -346,6 +346,7 @@ model VerticalRequest {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("vertical_requests")
 }
 
@@ -821,6 +822,7 @@ model Payment {
   invoice Invoice? @relation(fields: [invoiceId], references: [id])
   expense Expense? @relation(fields: [expenseId], references: [id])
 
+  @@index([tenantId])
   @@map("payments")
 }
 

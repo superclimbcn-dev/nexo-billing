@@ -46,6 +46,12 @@ export interface Vencimiento {
   status: 'pending' | 'submitted' | 'overdue'
 }
 
+export interface ImpuestosPageData {
+  m303: Modelo303Data
+  m130: Modelo130Data
+  vencimientos: Vencimiento[]
+}
+
 // ── Auth helper ─────────────────────────────────────────────────────────────
 
 async function requireAuth(): Promise<{ tenantId: string }> {
@@ -66,6 +72,14 @@ export async function getModelo303(
   quarter: Quarter,
 ): Promise<Modelo303Data> {
   const { tenantId } = await requireAuth()
+  return getModelo303ForTenant(tenantId, year, quarter)
+}
+
+async function getModelo303ForTenant(
+  tenantId: string,
+  year: number,
+  quarter: Quarter,
+): Promise<Modelo303Data> {
   const { start, end } = getQuarterDates(year, quarter)
 
   const [invoiceAgg, expenseAgg] = await Promise.all([
@@ -115,6 +129,14 @@ export async function getModelo130(
   quarter: Quarter,
 ): Promise<Modelo130Data> {
   const { tenantId } = await requireAuth()
+  return getModelo130ForTenant(tenantId, year, quarter)
+}
+
+async function getModelo130ForTenant(
+  tenantId: string,
+  year: number,
+  quarter: Quarter,
+): Promise<Modelo130Data> {
   const { start, end } = getQuarterDates(year, quarter)
 
   const [invoiceAgg, expenseAgg] = await Promise.all([
@@ -165,6 +187,12 @@ export async function getModelo130(
 
 export async function getProximosVencimientos(): Promise<Vencimiento[]> {
   const { tenantId } = await requireAuth()
+  return getProximosVencimientosForTenant(tenantId)
+}
+
+async function getProximosVencimientosForTenant(
+  tenantId: string,
+): Promise<Vencimiento[]> {
   const { year: currentYear, quarter: currentQuarter } = getCurrentQuarter()
 
   const quarters: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4']
@@ -182,8 +210,8 @@ export async function getProximosVencimientos(): Promise<Vencimiento[]> {
 
   for (const { year, quarter } of toCalc) {
     const [m303, m130] = await Promise.all([
-      getModelo303(year, quarter),
-      getModelo130(year, quarter),
+      getModelo303ForTenant(tenantId, year, quarter),
+      getModelo130ForTenant(tenantId, year, quarter),
     ])
 
     results.push({
@@ -219,14 +247,29 @@ export async function getQuarterlyTaxEstimate(): Promise<{
   totalTaxes: number
   nextDeadline: Date | null
 }> {
+  const { tenantId } = await requireAuth()
   const { year, quarter } = getCurrentQuarter()
   const [m303, m130] = await Promise.all([
-    getModelo303(year, quarter),
-    getModelo130(year, quarter),
+    getModelo303ForTenant(tenantId, year, quarter),
+    getModelo130ForTenant(tenantId, year, quarter),
   ])
 
   const totalTaxes = m303.ivaAPagar + m130.totalAPagar
   const nextDeadline = m303.status === 'pending' ? m303.deadline : null
 
   return { totalTaxes, nextDeadline }
+}
+
+export async function getImpuestosPageData(
+  year: number,
+  quarter: Quarter,
+): Promise<ImpuestosPageData> {
+  const { tenantId } = await requireAuth()
+  const [m303, m130, vencimientos] = await Promise.all([
+    getModelo303ForTenant(tenantId, year, quarter),
+    getModelo130ForTenant(tenantId, year, quarter),
+    getProximosVencimientosForTenant(tenantId),
+  ])
+
+  return { m303, m130, vencimientos }
 }

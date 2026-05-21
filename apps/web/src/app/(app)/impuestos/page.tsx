@@ -1,11 +1,7 @@
 import { formatCurrency, formatDate } from '@nexo/core-utils'
 import { getAvailableTaxYears, getCurrentQuarter, type Quarter } from './_lib/impuestos-schema'
 import type { Vencimiento } from './_lib/impuestos-actions'
-import {
-  getModelo303,
-  getModelo130,
-  getProximosVencimientos as fetchVencimientos,
-} from './_lib/impuestos-actions'
+import { getImpuestosPageData } from './_lib/impuestos-actions'
 
 export default async function ImpuestosPage({
   searchParams,
@@ -18,11 +14,7 @@ export default async function ImpuestosPage({
   const year = params.year ? parseInt(params.year, 10) : defaultYear
   const quarter = (params.quarter as Quarter) || defaultQuarter
 
-  const [m303, m130, vencimientos] = await Promise.all([
-    getModelo303(year, quarter),
-    getModelo130(year, quarter),
-    fetchVencimientos(),
-  ])
+  const { m303, m130, vencimientos } = await getImpuestosPageData(year, quarter)
 
   const quarters: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4']
   const availableYears = getAvailableTaxYears(defaultYear)
