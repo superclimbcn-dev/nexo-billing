@@ -53,6 +53,8 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <InteractiveDemoSection />
+
       {/* ── Features ─────────────────────────────────────────────────────── */}
       <section id="funciones" className="py-20 sm:py-24 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -312,6 +314,48 @@ export default function LandingPage() {
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
+
+function InteractiveDemoSection() {
+  return (
+    <section className="py-16 sm:py-20 border-t border-[var(--border)] bg-[var(--bg)]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-xs text-[var(--text-dim)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          Demo interactiva
+        </div>
+        <h2 className="mt-5 [font-family:var(--font-serif)] text-3xl sm:text-4xl text-[var(--text)]">
+          Mira Nexo Billing en acción
+        </h2>
+        <p className="mt-4 text-[var(--text-dim)] max-w-2xl mx-auto">
+          Explora cómo crear facturas, navegar por los módulos y preparar tu negocio
+          para Verifactu 2027.
+        </p>
+
+        <div className="mt-10 mx-auto max-w-[1100px] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-[0_0_45px_rgba(203,255,77,0.08)]">
+          <div className="aspect-video overflow-hidden rounded-lg bg-[var(--surface-raised)]">
+            <iframe
+              src="https://embed.app.guidde.com/playbooks/imR9yUFW8qNtptnpA749Bn?mode=videoOnly"
+              title="Demo interactiva de Nexo Billing"
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allow="clipboard-write"
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-forms allow-same-origin allow-presentation"
+              allowFullScreen
+              className="h-full w-full border-0"
+            />
+          </div>
+        </div>
+
+        <Link
+          href="/login"
+          className="mt-8 inline-flex px-8 py-3 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors text-base"
+        >
+          Crear cuenta gratis
+        </Link>
+      </div>
+    </section>
+  )
+}
 
 function FeatureCard({
   icon,
