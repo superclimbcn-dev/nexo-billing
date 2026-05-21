@@ -1,15 +1,13 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@nexo/core-auth';
-import { prisma } from '@nexo/prisma';
 import { KpiCard, Panel } from '@nexo/core-ui';
 import { FilePlus, FileText, TrendingUp, Receipt } from 'lucide-react';
 import { CsvImportButton } from './_components/csv-import-button';
 import { ExportButton } from '../export/_components/export-button';
 import { formatCurrency, formatDate } from '@nexo/core-utils';
-import { getDashboardStats } from './_lib/dashboard-queries';
+import { getDashboardPageData } from './_lib/dashboard-queries';
 import { RecentInvoices } from './_components/recent-invoices';
-import { countActiveContracts } from '../recurrentes/_lib/recurring-queries';
 import { getSubscriptionState, getTrialDaysLeft } from '@/lib/subscription';
 import { TrialExpiredModal } from './_components/trial-expired-modal';
 
@@ -55,19 +53,7 @@ export default async function DashboardPage() {
 
   const canWrite = userRole === 'OWNER' || userRole === 'ADMIN';
 
-  const [stats, tenant, activeContracts] = await Promise.all([
-    getDashboardStats(tenantId),
-    prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        plan: true,
-        subscriptionStatus: true,
-        subscriptionExpiresAt: true,
-        trialEndsAt: true,
-      },
-    }),
-    countActiveContracts(tenantId),
-  ]);
+  const { stats, tenant, activeContracts } = await getDashboardPageData(tenantId);
 
   const now = new Date();
   const userLabel =
