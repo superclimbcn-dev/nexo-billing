@@ -17,8 +17,23 @@ type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string
 function getGoCardlessClient() {
   const token = process.env.GOCARDLESS_ACCESS_TOKEN
   const env = process.env.GOCARDLESS_ENVIRONMENT
+  console.log(`[gocardless] environment=${env ?? 'sandbox (default)'} token_set=${!!token}`)
   if (!token) throw new Error('GOCARDLESS_ACCESS_TOKEN not configured')
   return gocardless(token, env === 'live' ? Environments.Live : Environments.Sandbox)
+}
+
+function serializeGcError(err: unknown): string {
+  const detail: Record<string, unknown> = {}
+  if (err instanceof Error) {
+    detail.message = err.message
+    detail.name = err.name
+  }
+  const rec = err as Record<string, unknown>
+  if (rec.response) detail.response = rec.response
+  if (rec.error) detail.error = rec.error
+  if (rec.statusCode) detail.statusCode = rec.statusCode
+  if (!Object.keys(detail).length) detail.raw = String(err)
+  return JSON.stringify(detail, null, 2)
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -48,29 +63,9 @@ export async function createGoCardlessMandate(): Promise<ActionResult<{ redirect
   try {
     const gc = getGoCardlessClient()
 
-    // Create customer
-    const customerRes = await gc.customers.create({
-      email: tenant.email ?? undefined,
-      company_name: tenant.name,
-      country_code: 'ES',
-      language: 'ES',
-    })
-    const customerId = customerRes.id
-    if (!customerId) {
-      return { ok: false, error: 'Error al crear cliente en GoCardless' }
-    }
+    // Deterministic token — must stay stable so confirmGoCardlessMandate can reproduce it
+    const sessionToken = `sess_${tenant.id}`
 
-    // Save customer id
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: {
-        goCardlessCustomerId: customerId,
-        subscriptionStatus: 'PENDING',
-      },
-    })
-
-    // Create redirect flow
-    const sessionToken = `sess_${tenant.id}_${Date.now()}`
     const flowRes = await gc.redirectFlows.create({
       session_token: sessionToken,
       success_redirect_url: `${APP_URL}/settings/billing?gc=success`,
@@ -86,9 +81,14 @@ export async function createGoCardlessMandate(): Promise<ActionResult<{ redirect
       return { ok: false, error: 'Error al crear flujo de autorización' }
     }
 
+    await prisma.tenant.update({
+      where: { id: tenant.id },
+      data: { subscriptionStatus: 'PENDING' },
+    })
+
     return { ok: true, data: { redirectUrl } }
   } catch (err) {
-    console.error('[createGoCardlessMandate] error:', err)
+    console.error('[GOCARDLESS ERROR] createGoCardlessMandate:', serializeGcError(err))
     await sendInternalAlert({
       title: 'Error al iniciar autorización SEPA',
       stage: 'gocardless.create_mandate',
@@ -125,9 +125,9 @@ export async function confirmGoCardlessMandate(redirectFlowId: string): Promise<
   try {
     const gc = getGoCardlessClient()
 
-    // Complete redirect flow
+    // Must use the same deterministic token as createGoCardlessMandate
     const flowRes = await gc.redirectFlows.complete(redirectFlowId, {
-      session_token: `sess_${tenant.id}_${Date.now()}`,
+      session_token: `sess_${tenant.id}`,
     })
 
     const mandateId = flowRes.links?.mandate
@@ -169,7 +169,7 @@ export async function confirmGoCardlessMandate(redirectFlowId: string): Promise<
     revalidatePath('/settings/billing')
     return { ok: true, data: undefined }
   } catch (err) {
-    console.error('[confirmGoCardlessMandate] error:', err)
+    console.error('[GOCARDLESS ERROR] confirmGoCardlessMandate:', serializeGcError(err))
     await sendInternalAlert({
       title: 'Error al confirmar autorización SEPA',
       stage: 'gocardless.confirm_mandate',
@@ -217,7 +217,7 @@ export async function createGoCardlessPayment(): Promise<ActionResult> {
     revalidatePath('/settings/billing')
     return { ok: true, data: undefined }
   } catch (err) {
-    console.error('[createGoCardlessPayment] error:', err)
+    console.error('[GOCARDLESS ERROR] createGoCardlessPayment:', serializeGcError(err))
     await sendInternalAlert({
       title: 'Error al crear cobro SEPA',
       stage: 'gocardless.create_payment',
@@ -265,7 +265,7 @@ export async function cancelGoCardlessSubscription(): Promise<ActionResult> {
     revalidatePath('/settings/billing')
     return { ok: true, data: undefined }
   } catch (err) {
-    console.error('[cancelGoCardlessSubscription] error:', err)
+    console.error('[GOCARDLESS ERROR] cancelGoCardlessSubscription:', serializeGcError(err))
     await sendInternalAlert({
       title: 'Error al cancelar suscripción SEPA',
       stage: 'gocardless.cancel_subscription',
