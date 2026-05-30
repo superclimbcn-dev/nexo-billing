@@ -23,17 +23,23 @@ function getGoCardlessClient() {
 }
 
 function serializeGcError(err: unknown): string {
-  const detail: Record<string, unknown> = {}
-  if (err instanceof Error) {
-    detail.message = err.message
-    detail.name = err.name
+  try {
+    if (err instanceof Error) {
+      return JSON.stringify({
+        message: err.message,
+        name: err.name,
+        // @ts-ignore
+        statusCode: err.statusCode,
+        // @ts-ignore
+        body: err.body ?? err.response?.body ?? null,
+        // @ts-ignore
+        code: err.code ?? null,
+      })
+    }
+    return String(err)
+  } catch {
+    return String(err)
   }
-  const rec = err as Record<string, unknown>
-  if (rec.response) detail.response = rec.response
-  if (rec.error) detail.error = rec.error
-  if (rec.statusCode) detail.statusCode = rec.statusCode
-  if (!Object.keys(detail).length) detail.raw = String(err)
-  return JSON.stringify(detail, null, 2)
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
