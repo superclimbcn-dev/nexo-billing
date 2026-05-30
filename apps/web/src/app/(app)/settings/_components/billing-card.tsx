@@ -131,7 +131,7 @@ export function BillingCard({ tenant }: Props) {
   }
 
   // ── Estado 3: Activo ───────────────────────────────────────────────────────
-  if (isActive && hasMandate) {
+  if (isActive) {
     return (
       <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-lg space-y-4">
         <div className="flex items-center gap-3">
