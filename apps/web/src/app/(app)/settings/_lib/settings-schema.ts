@@ -11,6 +11,20 @@ const optionalString = (max: number) =>
     .or(z.literal('').transform(() => undefined))
 
 export const fiscalDataSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Mínimo 2 caracteres')
+    .max(200)
+    .trim()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  nif: z
+    .string()
+    .min(1, 'El NIF/CIF es obligatorio')
+    .max(20)
+    .trim()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   legalName: z
     .string()
     .min(2, 'Mínimo 2 caracteres')

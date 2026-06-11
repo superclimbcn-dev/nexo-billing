@@ -63,8 +63,7 @@ export function FiscalDataForm({ tenant }: Props) {
             label="Nombre comercial"
             name="name"
             defaultValue={tenant.name}
-            disabled
-            hint="No editable desde aquí"
+            error={fieldErrors.name?.[0]}
           />
           <Field
             label="Razón social"
@@ -79,8 +78,7 @@ export function FiscalDataForm({ tenant }: Props) {
           label="NIF / CIF"
           name="nif"
           defaultValue={tenant.nif}
-          disabled
-          hint="No editable desde aquí"
+          error={fieldErrors.nif?.[0]}
         />
       </section>
 
