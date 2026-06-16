@@ -7,6 +7,7 @@ import { AppShell, TopBar } from '@nexo/core-ui'
 import { AppSidebar } from './app-sidebar'
 import { MobileHeader } from './_components/mobile-header'
 import { FileText, TrendingUp, Receipt, LayoutDashboard } from 'lucide-react'
+import { buildThemeCss } from '@/lib/themes'
 
 export const metadata: Metadata = {
   robots: {
@@ -30,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     prisma.tenant.findUnique({
       where: { id: tenantId },
       include: { vertical: true, branding: true },
+      // theme is a top-level field, always selected
     }),
     prisma.user.findFirst({
       where: { id: user.id },
@@ -54,7 +56,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const lastError =
     lastVerifactuRecord?.status === 'error' || lastVerifactuRecord?.status === 'rejected'
 
+  const themeCss = buildThemeCss(tenant.theme)
+
   return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: themeCss }} />
     <div className="min-h-screen bg-[var(--bg)] pb-16 md:pb-0">
       <TopBar
         brand={
@@ -97,6 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </nav>
     </div>
+    </>
   )
 }
 
