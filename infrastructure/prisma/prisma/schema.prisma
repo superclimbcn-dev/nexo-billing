@@ -220,6 +220,9 @@ model Tenant {
   smtpPass          String?  @map("smtp_pass")       // encrypted
   smtpSecure        Boolean? @default(true) @map("smtp_secure")
 
+  // UI theme
+  theme           String    @default("dark")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
