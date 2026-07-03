@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
 import { getQuoteById } from '../_lib/quote-queries'
 import { QuoteDetailHeader } from '../_components/quote-detail-header'
+import { QuotePdfActions } from '../_components/quote-pdf-actions'
 import { InvoiceDetailClient } from '../../facturas/[id]/_components/invoice-detail-client'
 import { InvoiceDetailLines } from '../../facturas/[id]/_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from '../../facturas/[id]/_components/invoice-detail-totals'
@@ -28,6 +29,13 @@ export default async function QuoteDetailPage({ params }: Props) {
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
       <QuoteDetailHeader quote={quote} />
+
+      <QuotePdfActions
+        quoteId={quote.id}
+        number={quote.number}
+        totalAmount={Number(quote.totalAmount)}
+        clientEmail={quote.client.email ?? null}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
