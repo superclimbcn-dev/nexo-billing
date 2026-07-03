@@ -65,6 +65,12 @@ enum QuoteStatus {
   converted
 }
 
+enum ReceiptStatus {
+  draft
+  issued
+  cancelled
+}
+
 enum ExpenseCategory {
   ALIMENTACION
   TRANSPORTE
@@ -123,6 +129,11 @@ enum AuditAction {
   QUOTE_SENT
   QUOTE_ACCEPTED
   QUOTE_CONVERTED
+
+  // Receipts
+  RECEIPT_CREATED
+  RECEIPT_ISSUED
+  RECEIPT_CANCELLED
 
   // Expenses
   EXPENSE_CREATED
@@ -220,9 +231,6 @@ model Tenant {
   smtpPass          String?  @map("smtp_pass")       // encrypted
   smtpSecure        Boolean? @default(true) @map("smtp_secure")
 
-  // UI theme
-  theme           String    @default("dark")
-
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -237,6 +245,7 @@ model Tenant {
   invoiceSeries      InvoiceSeries[]
   invoices           Invoice[]
   quotes             Quote[]
+  receipts           Receipt[]
   expenses           Expense[]
   payments           Payment[]
   recurringContracts RecurringContract[]
@@ -430,6 +439,7 @@ model Client {
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices           Invoice[]
   quotes             Quote[]
+  receipts           Receipt[]
   recurringContracts RecurringContract[]
 
   @@unique([tenantId, nif])
@@ -514,6 +524,7 @@ model Item {
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoiceLines InvoiceLine[]
   quoteLines   QuoteLine[]
+  receiptLines ReceiptLine[]
   expenseLines ExpenseLine[]
 
   @@unique([tenantId, sku])
@@ -730,6 +741,65 @@ model QuoteLine {
   item  Item? @relation(fields: [itemId], references: [id])
 
   @@map("quote_lines")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                              RECEIPTS (RECIBOS)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Receipt {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  clientId String @map("client_id") @db.Uuid
+
+  number String
+  status ReceiptStatus @default(draft)
+
+  issuedAt DateTime @map("issued_at")
+
+  subtotal    Decimal @default(0) @db.Decimal(12, 2)
+  vatAmount   Decimal @default(0) @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
+  currency    String  @default("EUR")
+
+  notes           String?
+  termsConditions String?   @map("terms_conditions")
+  issuedAtDate    DateTime? @map("issued_at_date")
+  cancelledAt     DateTime? @map("cancelled_at")
+
+  sectorMetadata Json?    @map("sector_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client Client      @relation(fields: [clientId], references: [id])
+  lines  ReceiptLine[]
+
+  @@unique([tenantId, number])
+  @@map("receipts")
+}
+
+model ReceiptLine {
+  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId String @map("receipt_id") @db.Uuid
+  itemId  String? @map("item_id") @db.Uuid
+
+  description     String
+  quantity        Decimal @db.Decimal(10, 3)
+  unitPrice       Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountPercent Decimal @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  vatRate         Decimal @map("vat_rate") @db.Decimal(5, 2)
+
+  subtotal    Decimal @db.Decimal(12, 2)
+  vatAmount   Decimal @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(12, 2)
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  item    Item?   @relation(fields: [itemId], references: [id])
+
+  @@map("receipt_lines")
 }
 
 // ════════════════════════════════════════════════════════════════════════════
