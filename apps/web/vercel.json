@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "buildCommand": "cd ../../infrastructure/prisma && npx prisma generate && cd ../../apps/web && next build",
   "ignoreCommand": "npx turbo-ignore @nexo/web"
 }
