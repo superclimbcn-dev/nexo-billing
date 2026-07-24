@@ -23,7 +23,11 @@ export default async function FacturasPage({ searchParams }: PageProps) {
   const { q, page, estado, clientId } = await searchParams
   const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1
 
-  await syncOverdueInvoices(tenantId)
+  try {
+    await syncOverdueInvoices(tenantId)
+  } catch (e) {
+    console.error('[facturas] syncOverdueInvoices failed:', e)
+  }
 
   const result = await listInvoices({
     tenantId,
