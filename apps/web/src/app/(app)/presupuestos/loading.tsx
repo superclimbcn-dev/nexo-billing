@@ -1,4 +1,4 @@
-import { Skeleton } from '@nexo/core-ui'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function PresupuestosLoading() {
   return (
