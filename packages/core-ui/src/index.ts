@@ -67,6 +67,7 @@ export type { ButtonProps, ButtonVariant } from './primitives/button'
 export { cn } from './primitives/cn'
 export { FormInput } from './primitives/form-input'
 export type { FormInputProps } from './primitives/form-input'
+export { Skeleton } from './primitives/skeleton'
 
 // tokens
 export { colors } from './tokens/colors'
