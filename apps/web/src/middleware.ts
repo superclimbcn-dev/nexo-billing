@@ -65,3 +65,4 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|public/).*)'],
 }
+// force rebuild sáb 25 jul 2026 09:49:52 CEST
