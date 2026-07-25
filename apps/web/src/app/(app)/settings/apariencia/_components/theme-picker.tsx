@@ -51,7 +51,7 @@ export function ThemePicker({ currentTheme }: Props) {
                 className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-offset-[var(--bg)]"
                 style={{
                   backgroundColor: theme.preview,
-                  ringColor: isActive ? theme.preview : 'transparent',
+                  '--tw-ring-color': isActive ? theme.preview : 'transparent',
                 }}
               />
 
