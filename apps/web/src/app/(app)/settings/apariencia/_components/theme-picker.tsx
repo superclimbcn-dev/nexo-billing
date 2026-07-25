@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type CSSProperties } from 'react'
 import { THEMES, type ThemeKey } from '@/lib/themes'
 import { updateTheme } from '../../_actions/update-theme'
 
@@ -52,7 +52,7 @@ export function ThemePicker({ currentTheme }: Props) {
                 style={{
                   backgroundColor: theme.preview,
                   '--tw-ring-color': isActive ? theme.preview : 'transparent',
-                }}
+                } as CSSProperties}
               />
 
               <div className="text-center">
