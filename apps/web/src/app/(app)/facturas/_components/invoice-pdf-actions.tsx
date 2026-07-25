@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { signInvoiceTokenAction } from '../_lib/share-actions'
+import { signInvoiceTokenAction } from '../[id]/_lib/share-actions'
 
 interface Props {
   invoiceId: string

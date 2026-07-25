@@ -7,7 +7,7 @@ import {
   markInvoiceAsPaid,
   cancelInvoice,
   deleteDraftInvoice,
-} from '../_lib/invoice-status-actions'
+} from '../[id]/_lib/invoice-status-actions'
 
 async function sendInvoiceEmail(invoiceId: string): Promise<{ ok: boolean; error?: string }> {
   try {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { submitToVerifactu, cancelVerifactuInvoice } from '../_lib/verifactu-actions'
+import { submitToVerifactu, cancelVerifactuInvoice } from '../[id]/_lib/verifactu-actions'
 
 interface Props {
   invoiceId: string
