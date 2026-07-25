@@ -144,3 +144,4 @@ pnpm prisma:studio    # Abrir Prisma Studio
 - **Q4 2026**: Vertical construcción + OCR + conciliación bancaria + lanzamiento público
 - **Q1 2027**: Vertical médicos + marketing pre-obligatoriedad
 - **Q2 2027**: Pico de conversión previo al 1 julio 2027
+
