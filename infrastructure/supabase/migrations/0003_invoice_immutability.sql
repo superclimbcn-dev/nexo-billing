@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION check_invoice_immutability()
 RETURNS TRIGGER AS $$
 BEGIN
   IF OLD.status != 'draft' THEN
-    IF NEW.series       IS DISTINCT FROM OLD.series       OR
+    IF NEW.series_id    IS DISTINCT FROM OLD.series_id    OR
        NEW.number       IS DISTINCT FROM OLD.number       OR
        NEW.issued_at    IS DISTINCT FROM OLD.issued_at    OR
        NEW.client_id    IS DISTINCT FROM OLD.client_id    OR
