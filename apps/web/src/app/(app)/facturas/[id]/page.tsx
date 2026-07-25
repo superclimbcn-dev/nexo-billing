@@ -6,8 +6,8 @@ import { InvoiceDetailHeader } from './_components/invoice-detail-header'
 import { InvoiceDetailClient } from './_components/invoice-detail-client'
 import { InvoiceDetailLines } from './_components/invoice-detail-lines'
 import { InvoiceDetailTotals } from './_components/invoice-detail-totals'
-import { InvoicePdfActions } from './_components/invoice-pdf-actions'
-import { InvoiceVerifactuActions } from './_components/invoice-verifactu-actions'
+import { InvoicePdfActions } from '../_components/invoice-pdf-actions'
+import { InvoiceVerifactuActions } from '../_components/invoice-verifactu-actions'
 import { RectificativaButton } from '../_components/rectificativa-button'
 
 interface Props {

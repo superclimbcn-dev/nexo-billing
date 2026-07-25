@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { formatDate } from '@nexo/core-utils'
 import { InvoiceStatusBadge } from '../../_components/invoice-status-badge'
-import { InvoiceStatusActions } from './invoice-status-actions'
+import { InvoiceStatusActions } from '../_components/invoice-status-actions'
 
 interface Props {
   invoice: {
