@@ -146,19 +146,19 @@ async function getModelo130ForTenant(
         issuedAt: { gte: start, lte: end },
         status: { notIn: ['draft', 'cancelled'] },
       },
-      _sum: { totalAmount: true },
+      _sum: { subtotal: true },
     }),
     prisma.expense.aggregate({
       where: {
         tenantId,
         issuedAt: { gte: start, lte: end },
       },
-      _sum: { totalAmount: true },
+      _sum: { subtotal: true },
     }),
   ])
 
-  const rendimientoBruto = Number(invoiceAgg._sum.totalAmount ?? 0)
-  const gastosDeducibles = Number(expenseAgg._sum.totalAmount ?? 0)
+  const rendimientoBruto = Number(invoiceAgg._sum.subtotal ?? 0)
+  const gastosDeducibles = Number(expenseAgg._sum.subtotal ?? 0)
   const rendimientoNeto = rendimientoBruto - gastosDeducibles
   const irpfAPagar = rendimientoNeto * 0.2
   const retenciones = 0 // TODO: add retention support when invoice lines have irpfRate
