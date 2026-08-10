@@ -1,12 +1,24 @@
 -- Create receipts storage bucket if it doesn't exist
--- This migration documents the bucket creation.
--- Actual bucket creation should be done via Supabase Dashboard or CLI:
---   supabase storage create receipts --public
---
--- After bucket creation, apply these RLS policies via SQL Editor:
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'receipts',
+  'receipts',
+  true,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'application/pdf']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'application/pdf'];
 
 -- Enable RLS on storage.objects
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies before recreating to avoid duplicate names on re-runs
+DROP POLICY IF EXISTS "receipts_select_tenant" ON storage.objects;
+DROP POLICY IF EXISTS "receipts_insert_tenant" ON storage.objects;
+DROP POLICY IF EXISTS "receipts_delete_tenant" ON storage.objects;
 
 -- Policy: users can only see receipts from their own tenant
 CREATE POLICY "receipts_select_tenant"
