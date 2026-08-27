@@ -826,6 +826,8 @@ model Expense {
   totalAmount   Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
   paidAmount    Decimal @default(0) @map("paid_amount") @db.Decimal(12, 2)
   pendingAmount Decimal @default(0) @map("pending_amount") @db.Decimal(12, 2)
+  vatDeductiblePercent  Decimal? @map("vat_deductible_percent") @db.Decimal(5, 2)
+  irpfDeductiblePercent Decimal? @map("irpf_deductible_percent") @db.Decimal(5, 2)
   currency      String  @default("EUR")
 
   notes         String?

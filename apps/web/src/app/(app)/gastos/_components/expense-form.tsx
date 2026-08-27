@@ -4,6 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createExpense, updateExpense } from '../_lib/expense-actions'
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '../_lib/expense-schema'
+import {
+  calculateExpenseTotals,
+  EXPENSE_VAT_RATES,
+  type ExpenseVatRate,
+} from '../_lib/expense-totals'
 
 interface Props {
   expense?: {
@@ -13,6 +18,12 @@ interface Props {
     category: ExpenseCategory | null
     notes: string | null
     vendor: string | null
+    subtotal: number
+    vatAmount: number
+    vatRate: number | null
+    vatDeductiblePercent: number | null
+    irpfDeductiblePercent: number | null
+    externalNumber: string | null
   }
   onClose: () => void
   onSuccess?: () => void
@@ -36,6 +47,27 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
   )
   const [description, setDescription] = useState(expense?.notes ?? '')
   const [vendor, setVendor] = useState(expense?.vendor ?? '')
+  const [externalNumber, setExternalNumber] = useState(expense?.externalNumber ?? '')
+  const [vatRate, setVatRate] = useState<ExpenseVatRate | null>(
+    expense ? (expense.vatRate as ExpenseVatRate | null) : 21,
+  )
+  const [vatDeductiblePercent, setVatDeductiblePercent] = useState<number | null>(
+    expense?.vatDeductiblePercent ?? null,
+  )
+  const [irpfDeductiblePercent, setIrpfDeductiblePercent] = useState<number | null>(
+    expense?.irpfDeductiblePercent ?? null,
+  )
+
+  const parsedAmount = Number.parseFloat(amount.replace(',', '.'))
+  const totals = vatRate !== null && Number.isFinite(parsedAmount) && parsedAmount > 0
+    ? calculateExpenseTotals(parsedAmount, vatRate)
+    : expense && vatRate === null
+      ? {
+          subtotal: expense.subtotal,
+          vatAmount: expense.vatAmount,
+          totalAmount: expense.totalAmount,
+        }
+      : null
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -47,6 +79,10 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
       category,
       description: description || undefined,
       vendor: vendor || undefined,
+      externalNumber: externalNumber || undefined,
+      vatRate,
+      vatDeductiblePercent,
+      irpfDeductiblePercent,
     }
 
     startTransition(async () => {
@@ -92,16 +128,60 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--text)] mb-1">
-            Fecha *
+            IVA *
+          </label>
+          <select
+            value={vatRate ?? ''}
+            onChange={(e) =>
+              setVatRate(e.target.value === '' ? null : Number(e.target.value) as ExpenseVatRate)
+            }
+            required={!expense}
+            className={inputClass}
+          >
+            {expense?.vatRate === null && <option value="">Sin definir (gasto antiguo)</option>}
+            {EXPENSE_VAT_RATES.map((rate) => (
+              <option key={rate} value={rate}>{rate}%</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-1">
+            Base imponible
           </label>
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-            className={inputClass}
+            type="text"
+            readOnly
+            value={totals ? totals.subtotal.toFixed(2).replace('.', ',') : '—'}
+            className={`${inputClass} text-[var(--text-dim)]`}
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-1">
+            Cuota IVA
+          </label>
+          <input
+            type="text"
+            readOnly
+            value={totals ? totals.vatAmount.toFixed(2).replace('.', ',') : '—'}
+            className={`${inputClass} text-[var(--text-dim)]`}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-[var(--text)] mb-1">
+          Fecha *
+        </label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className={inputClass}
+        />
       </div>
 
       <div>
@@ -152,6 +232,40 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
         />
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-[var(--text)] mb-1">
+          Nº factura / ticket
+        </label>
+        <input
+          type="text"
+          value={externalNumber}
+          onChange={(e) => setExternalNumber(e.target.value)}
+          maxLength={100}
+          placeholder="Ej: F-2026-0042"
+          className={inputClass}
+        />
+      </div>
+
+      <fieldset className="space-y-3 border-t border-[var(--border)] pt-4">
+        <legend className="text-sm font-medium text-[var(--text)] pr-2">
+          Tratamiento fiscal
+        </legend>
+        <div className="grid grid-cols-2 gap-4">
+          <DeductibleSelect
+            label="IVA deducible"
+            value={vatDeductiblePercent}
+            onChange={setVatDeductiblePercent}
+            inputClass={inputClass}
+          />
+          <DeductibleSelect
+            label="Gasto deducible IRPF"
+            value={irpfDeductiblePercent}
+            onChange={setIrpfDeductiblePercent}
+            inputClass={inputClass}
+          />
+        </div>
+      </fieldset>
+
       <div className="flex gap-2 pt-2">
         <button
           type="submit"
@@ -169,5 +283,33 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
         </button>
       </div>
     </form>
+  )
+}
+
+function DeductibleSelect({
+  label,
+  value,
+  onChange,
+  inputClass,
+}: {
+  label: string
+  value: number | null
+  onChange: (value: number | null) => void
+  inputClass: string
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-[var(--text)] mb-1">{label}</label>
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        className={inputClass}
+      >
+        <option value="">Sin definir</option>
+        <option value="100">100%</option>
+        <option value="50">50%</option>
+        <option value="0">0%</option>
+      </select>
+    </div>
   )
 }
