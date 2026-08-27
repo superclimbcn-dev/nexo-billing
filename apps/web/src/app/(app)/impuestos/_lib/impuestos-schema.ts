@@ -36,9 +36,10 @@ export function getQuarterDates(year: number, quarter: Quarter) {
 
 export function getQuarterDeadline(year: number, quarter: Quarter): Date {
   const monthMap: Record<Quarter, number> = { Q1: 3, Q2: 6, Q3: 9, Q4: 0 }
+  const dayMap: Record<Quarter, number> = { Q1: 20, Q2: 20, Q3: 20, Q4: 30 }
   const deadlineYear = quarter === 'Q4' ? year + 1 : year
   const deadlineMonth = monthMap[quarter]
-  return new Date(deadlineYear, deadlineMonth, 20)
+  return new Date(deadlineYear, deadlineMonth, dayMap[quarter], 23, 59, 59, 999)
 }
 
 export function getCurrentQuarter(): { year: number; quarter: Quarter } {
