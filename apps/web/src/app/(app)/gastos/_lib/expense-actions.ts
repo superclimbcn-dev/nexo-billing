@@ -1,10 +1,11 @@
 'use server'
 
-import { prisma, ExpenseCategory } from '@nexo/prisma'
+import { prisma, ExpenseCategory, Prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
-import { expenseSchema, type ExpenseInput } from './expense-schema'
+import { expenseSchema } from './expense-schema'
+import { calculateExpenseTotals, type ExpenseVatRate } from './expense-totals'
 import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export interface ExpenseFilters {
@@ -18,6 +19,14 @@ export interface ExpenseFilters {
 type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string }
+
+function moneyDecimal(value: number): Prisma.Decimal {
+  return new Prisma.Decimal(value.toFixed(2))
+}
+
+function percentDecimal(value: number | null): Prisma.Decimal | null {
+  return value === null ? null : new Prisma.Decimal(value.toFixed(2))
+}
 
 async function getAuthContext() {
   const supabase = await createServerClient()
@@ -46,20 +55,48 @@ export async function createExpense(
 
   const data = parsed.data
 
+  if (data.vatRate === null) {
+    return { ok: false, error: 'Selecciona un tipo de IVA' }
+  }
+
+  const vatRate = data.vatRate as ExpenseVatRate
+  const totals = calculateExpenseTotals(data.amount, vatRate)
+
   try {
-    const created = await prisma.expense.create({
-      data: {
-        tenantId: ctx.tenantId,
-        totalAmount: data.amount,
-        subtotal: data.amount,
-        vatAmount: 0,
-        issuedAt: new Date(data.date),
-        category: data.category,
-        notes: data.description ?? null,
-        vendor: data.vendor ?? null,
-        status: 'paid',
-      },
-      select: { id: true },
+    const created = await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.create({
+        data: {
+          tenantId: ctx.tenantId,
+          totalAmount: moneyDecimal(totals.totalAmount),
+          subtotal: moneyDecimal(totals.subtotal),
+          vatAmount: moneyDecimal(totals.vatAmount),
+          vatDeductiblePercent: percentDecimal(data.vatDeductiblePercent),
+          irpfDeductiblePercent: percentDecimal(data.irpfDeductiblePercent),
+          externalNumber: data.externalNumber ?? null,
+          issuedAt: new Date(data.date),
+          category: data.category,
+          notes: data.description ?? null,
+          vendor: data.vendor ?? null,
+          status: 'paid',
+        },
+        select: { id: true },
+      })
+
+      await tx.expenseLine.create({
+        data: {
+          expenseId: expense.id,
+          description: data.description ?? data.vendor ?? 'Gasto',
+          quantity: new Prisma.Decimal('1.000'),
+          unitPrice: moneyDecimal(totals.subtotal),
+          vatRate: new Prisma.Decimal(vatRate.toFixed(2)),
+          subtotal: moneyDecimal(totals.subtotal),
+          vatAmount: moneyDecimal(totals.vatAmount),
+          totalAmount: moneyDecimal(totals.totalAmount),
+          sortOrder: 0,
+        },
+      })
+
+      return expense
     })
 
     revalidatePath('/gastos')
@@ -86,21 +123,64 @@ export async function updateExpense(
 
   const owned = await prisma.expense.findFirst({
     where: { id, tenantId: ctx.tenantId },
+    include: { lines: { orderBy: { sortOrder: 'asc' }, take: 2 } },
   })
   if (!owned) return { ok: false, error: 'Gasto no encontrado' }
 
   try {
-    const updated = await prisma.expense.update({
-      where: { id },
-      data: {
-        totalAmount: data.amount,
-        subtotal: data.amount,
-        issuedAt: new Date(data.date),
-        category: data.category,
-        notes: data.description ?? null,
-        vendor: data.vendor ?? null,
-      },
-      select: { id: true },
+    if (owned.lines.length > 1) {
+      return {
+        ok: false,
+        error: 'Este gasto contiene varias líneas y no puede editarse en el modo simple',
+      }
+    }
+
+    const totals = data.vatRate === null
+      ? {
+          subtotal: data.amount,
+          vatAmount: 0,
+          totalAmount: data.amount,
+        }
+      : calculateExpenseTotals(data.amount, data.vatRate as ExpenseVatRate)
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.update({
+        where: { id },
+        data: {
+          totalAmount: moneyDecimal(totals.totalAmount),
+          subtotal: moneyDecimal(totals.subtotal),
+          vatAmount: moneyDecimal(totals.vatAmount),
+          vatDeductiblePercent: percentDecimal(data.vatDeductiblePercent),
+          irpfDeductiblePercent: percentDecimal(data.irpfDeductiblePercent),
+          externalNumber: data.externalNumber ?? null,
+          issuedAt: new Date(data.date),
+          category: data.category,
+          notes: data.description ?? null,
+          vendor: data.vendor ?? null,
+        },
+        select: { id: true },
+      })
+
+      if (data.vatRate !== null) {
+        const lineData = {
+          description: data.description ?? data.vendor ?? 'Gasto',
+          quantity: new Prisma.Decimal('1.000'),
+          unitPrice: moneyDecimal(totals.subtotal),
+          vatRate: new Prisma.Decimal(data.vatRate.toFixed(2)),
+          subtotal: moneyDecimal(totals.subtotal),
+          vatAmount: moneyDecimal(totals.vatAmount),
+          totalAmount: moneyDecimal(totals.totalAmount),
+          sortOrder: 0,
+        }
+
+        if (owned.lines[0]) {
+          await tx.expenseLine.update({ where: { id: owned.lines[0].id }, data: lineData })
+        } else {
+          await tx.expenseLine.create({ data: { expenseId: id, ...lineData } })
+        }
+      }
+
+      return expense
     })
 
     revalidatePath('/gastos')
@@ -140,6 +220,12 @@ export async function listExpenses(
   notes: string | null
   vendor: string | null
   attachmentUrl: string | null
+  subtotal: number
+  vatAmount: number
+  vatRate: number | null
+  vatDeductiblePercent: number | null
+  irpfDeductiblePercent: number | null
+  externalNumber: string | null
 }>>> {
   const ctx = await getAuthContext()
   if (!ctx) return { ok: false, error: 'No autenticado' }
@@ -182,14 +268,31 @@ export async function listExpenses(
         notes: true,
         vendor: true,
         attachmentUrl: true,
+        subtotal: true,
+        vatAmount: true,
+        vatDeductiblePercent: true,
+        irpfDeductiblePercent: true,
+        externalNumber: true,
+        lines: {
+          orderBy: { sortOrder: 'asc' },
+          take: 2,
+          select: { vatRate: true },
+        },
       },
     })
 
     return {
       ok: true,
-      data: items.map((it) => ({
+      data: items.map(({ lines, ...it }) => ({
         ...it,
         totalAmount: Number(it.totalAmount),
+        subtotal: Number(it.subtotal),
+        vatAmount: Number(it.vatAmount),
+        vatRate: lines.length === 1 ? Number(lines[0]!.vatRate) : null,
+        vatDeductiblePercent:
+          it.vatDeductiblePercent === null ? null : Number(it.vatDeductiblePercent),
+        irpfDeductiblePercent:
+          it.irpfDeductiblePercent === null ? null : Number(it.irpfDeductiblePercent),
       })),
     }
   } catch (err) {

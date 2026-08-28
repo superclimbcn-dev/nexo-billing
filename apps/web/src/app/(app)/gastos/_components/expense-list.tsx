@@ -14,6 +14,12 @@ interface ExpenseItem {
   notes: string | null
   vendor: string | null
   attachmentUrl: string | null
+  subtotal: number
+  vatAmount: number
+  vatRate: number | null
+  vatDeductiblePercent: number | null
+  irpfDeductiblePercent: number | null
+  externalNumber: string | null
 }
 
 interface Props {

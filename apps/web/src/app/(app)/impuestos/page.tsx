@@ -14,7 +14,11 @@ export default async function ImpuestosPage({
   const year = params.year ? parseInt(params.year, 10) : defaultYear
   const quarter = (params.quarter as Quarter) || defaultQuarter
 
-  const { m303, m130, vencimientos } = await getImpuestosPageData(year, quarter)
+  const { m303, m130, vencimientos, warnings } = await getImpuestosPageData(year, quarter)
+  const reviewExpenseCount = new Set(warnings.map((warning) => warning.documentId)).size
+  const hasModelo303Warnings = warnings.some((warning) =>
+    warning.models.includes('modelo303'),
+  )
 
   const quarters: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4']
   const availableYears = getAvailableTaxYears(defaultYear)
@@ -64,6 +68,17 @@ export default async function ImpuestosPage({
         </form>
       </header>
 
+      {reviewExpenseCount > 0 && (
+        <div className="px-4 py-3 bg-[var(--warning)]/10 border border-[var(--warning)]/30 rounded-lg">
+          <p className="text-sm text-[var(--warning)]">
+            {reviewExpenseCount}{' '}
+            {reviewExpenseCount === 1
+              ? 'gasto requiere revisión fiscal'
+              : 'gastos requieren revisión fiscal'}
+          </p>
+        </div>
+      )}
+
       {/* Vencimientos */}
       <section className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
         <h2 className="text-sm font-medium text-[var(--text-dim)] uppercase tracking-wide mb-4">
@@ -91,13 +106,19 @@ export default async function ImpuestosPage({
             <TaxRow
               label="IVA repercutido"
               value={m303.ivaRepercutido}
-              detail="21% sobre facturas emitidas"
+              detail="Según las facturas emitidas"
             />
             <TaxRow
               label="IVA soportado"
               value={m303.ivaSoportado}
               detail="IVA en gastos y compras"
             />
+            <TaxRow
+              label="IVA deducible"
+              value={m303.ivaDeducible}
+              detail="Según el tratamiento fiscal de cada gasto"
+            />
+            <TaxRow label="IVA no deducible" value={m303.ivaNoDeducible} />
             <div className="border-t border-[var(--border)] pt-3">
               <TaxRow
                 label="A pagar / devolver"
@@ -112,10 +133,15 @@ export default async function ImpuestosPage({
               Resumen
             </p>
             <p className="text-sm text-[var(--text)]">
-              {m303.ivaAPagar > 0
-                ? `Tienes que pagar ${formatCurrency(m303.ivaAPagar)} de IVA por el trimestre ${m303.quarter} ${m303.year}.`
-                : `Te corresponde una devolución de ${formatCurrency(Math.abs(m303.ivaAPagar))} de IVA.`}
+              El resultado estimado de {m303.quarter} {m303.year} es{' '}
+              {formatCurrency(Math.abs(m303.ivaAPagar))}
+              {m303.ivaAPagar > 0 ? ' a ingresar.' : m303.ivaAPagar < 0 ? ' a devolver.' : '.'}
             </p>
+            {hasModelo303Warnings && (
+              <p className="text-xs text-[var(--warning)] mt-2">
+                Puede variar: hay gastos pendientes de revisión fiscal.
+              </p>
+            )}
             <p className="text-xs text-[var(--text-dim)] mt-2">
               Vencimiento: {formatDate(m303.deadline)}
             </p>
@@ -134,16 +160,26 @@ export default async function ImpuestosPage({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <TaxRow label="Rendimiento bruto" value={m130.rendimientoBruto} />
-            <TaxRow label="Gastos deducibles" value={m130.gastosDeducibles} />
-            <TaxRow label="Rendimiento neto" value={m130.rendimientoNeto} />
-            <TaxRow label="IRPF (20%)" value={m130.irpfAPagar} />
-            <TaxRow label="Retenciones" value={m130.retenciones} detail="Por profesionales" />
+            <TaxRow label="Rendimiento bruto acumulado" value={m130.rendimientoBruto} />
+            <TaxRow label="Gastos deducibles acumulados" value={m130.gastosDeducibles} />
+            <TaxRow label="Rendimiento neto acumulado" value={m130.rendimientoNeto} />
+            <TaxRow label="IRPF acumulado teórico (20%)" value={m130.irpfAcumuladoTeorico} />
+            <TaxRow label="Retenciones" value={m130.retenciones} detail="Sin fuente fiable" />
+            <TaxRow
+              label="Pagos anteriores"
+              value={m130.pagosAnteriores}
+              detail="Sin fuente fiable"
+            />
+            <TaxRow
+              label="Resultado estimado del período"
+              value={m130.resultadoEstimadoPeriodo}
+              detail="Pendiente de pagos y retenciones"
+            />
             <div className="border-t border-[var(--border)] pt-3">
               <TaxRow
-                label="A pagar"
-                value={m130.totalAPagar}
-                highlight={m130.totalAPagar > 0 ? 'danger' : 'success'}
+                label="Estimación acumulada antes de ajustes"
+                value={m130.estimacionAcumuladaSinAjustes}
+                highlight={m130.estimacionAcumuladaSinAjustes > 0 ? 'danger' : 'success'}
               />
             </div>
           </div>
@@ -153,9 +189,12 @@ export default async function ImpuestosPage({
               Resumen
             </p>
             <p className="text-sm text-[var(--text)]">
-              {m130.totalAPagar > 0
-                ? `Tienes que pagar ${formatCurrency(m130.totalAPagar)} de IRPF por el trimestre ${m130.quarter} ${m130.year}.`
-                : 'No tienes pago de IRPF pendiente para este trimestre.'}
+              La estimación acumulada hasta {m130.quarter} {m130.year} es{' '}
+              {formatCurrency(m130.estimacionAcumuladaSinAjustes)} antes de descontar pagos
+              anteriores y retenciones.
+            </p>
+            <p className="text-xs text-[var(--text-dim)] mt-2">
+              No es un resultado oficial del período mientras esos datos no estén disponibles.
             </p>
             <p className="text-xs text-[var(--text-dim)] mt-2">
               Vencimiento: {formatDate(m130.deadline)}
@@ -202,7 +241,7 @@ function VencimientoRow({ v }: { v: Vencimiento }) {
           isOverdue ? 'text-[var(--danger)]' : 'text-[var(--text)]'
         }`}
       >
-        {formatCurrency(v.estimatedAmount)}
+        {v.estimatedAmount === null ? 'Sin estimación fiable' : formatCurrency(v.estimatedAmount)}
       </p>
     </div>
   )
@@ -215,7 +254,7 @@ function TaxRow({
   highlight,
 }: {
   label: string
-  value: number
+  value: number | null
   detail?: string
   highlight?: 'danger' | 'success'
 }) {
@@ -233,7 +272,7 @@ function TaxRow({
         {detail && <span className="text-xs text-[var(--text-subtle)] ml-2">({detail})</span>}
       </div>
       <span className={`text-sm font-mono font-medium ${colorClass}`}>
-        {formatCurrency(value)}
+        {value === null ? 'Sin dato fiable' : formatCurrency(value)}
       </span>
     </div>
   )

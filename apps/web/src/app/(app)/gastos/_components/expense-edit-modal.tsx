@@ -14,6 +14,12 @@ interface Props {
     category: ExpenseCategory | null
     notes: string | null
     vendor: string | null
+    subtotal: number
+    vatAmount: number
+    vatRate: number | null
+    vatDeductiblePercent: number | null
+    irpfDeductiblePercent: number | null
+    externalNumber: string | null
   }
   onClose: () => void
   onSuccess?: (action: 'updated' | 'deleted') => void
@@ -43,7 +49,7 @@ export function ExpenseEditModal({ expense, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-6 space-y-4">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-6 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--text)]">
