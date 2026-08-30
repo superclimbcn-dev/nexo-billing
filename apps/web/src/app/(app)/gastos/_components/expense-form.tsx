@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { parseCurrency } from '@nexo/core-utils'
 import { createExpense, updateExpense } from '../_lib/expense-actions'
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '../_lib/expense-schema'
 import {
@@ -58,7 +59,7 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
     expense?.irpfDeductiblePercent ?? null,
   )
 
-  const parsedAmount = Number.parseFloat(amount.replace(',', '.'))
+  const parsedAmount = parseCurrency(amount)
   const totals = vatRate !== null && Number.isFinite(parsedAmount) && parsedAmount > 0
     ? calculateExpenseTotals(parsedAmount, vatRate)
     : expense && vatRate === null
@@ -74,7 +75,7 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
     setError(null)
 
     const raw = {
-      amount: amount.replace(',', '.'),
+      amount,
       date,
       category,
       description: description || undefined,

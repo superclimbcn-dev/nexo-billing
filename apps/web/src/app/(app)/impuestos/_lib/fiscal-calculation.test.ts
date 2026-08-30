@@ -281,6 +281,24 @@ describe('Modelo 303', () => {
     assert.equal(calculation.modelo303.estimatedResult, -3.48)
     assert.ok(calculation.modelo303.deductibleVat <= calculation.modelo303.supportedVat)
   })
+
+  it('keeps a 20 euro expense at its persisted VAT amounts', () => {
+    const calculation = calculate({
+      expenses: [
+        expense({
+          id: 'twenty-euro-expense',
+          issuedAt: date(1),
+          subtotal: 16.53,
+          vatAmount: 3.47,
+          vatDeductiblePercent: 50,
+          irpfDeductiblePercent: 100,
+        }),
+      ],
+    })
+
+    assert.equal(calculation.modelo303.supportedVat, 3.47)
+    assert.equal(calculation.modelo303.deductibleVat, 1.74)
+  })
 })
 
 describe('Modelo 130', () => {
