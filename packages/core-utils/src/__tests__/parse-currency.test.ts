@@ -26,4 +26,16 @@ describe('parseCurrency', () => {
   it('parses without currency symbol', () => {
     expect(parseCurrency('1.000,00')).toBe(1000)
   })
+
+  it.each([
+    ['20', 20],
+    ['20,00', 20],
+    ['20.00', 20],
+    ['2.000,00', 2000],
+    ['1.234,56', 1234.56],
+    ['1234,56', 1234.56],
+    ['1234.56', 1234.56],
+  ])('parses supported user input %s', (input, expected) => {
+    expect(parseCurrency(input)).toBe(expected)
+  })
 })
