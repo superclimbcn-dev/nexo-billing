@@ -6,6 +6,7 @@ import { RectificativaModal } from './rectificativa-modal'
 interface Props {
   invoiceId: string
   fullNumber: string
+  originalType: string
   status: string
   hasRectification: boolean
   originalLines: Array<{
@@ -16,7 +17,7 @@ interface Props {
   }>
 }
 
-export function RectificativaButton({ invoiceId, fullNumber, status, hasRectification, originalLines }: Props) {
+export function RectificativaButton({ invoiceId, fullNumber, originalType, status, hasRectification, originalLines }: Props) {
   const [isOpen, setIsOpen] = useState(false)
 
   // Defensive: ensure originalLines is always an array
@@ -40,6 +41,7 @@ export function RectificativaButton({ invoiceId, fullNumber, status, hasRectific
         <RectificativaModal
           invoiceId={invoiceId}
           fullNumber={fullNumber}
+          simplified={originalType === 'F2'}
           originalLines={safeLines}
           onClose={() => setIsOpen(false)}
         />

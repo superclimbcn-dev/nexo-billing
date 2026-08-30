@@ -113,12 +113,19 @@ async function getFiscalDocumentsForTenant(
     prisma.invoice.findMany({
       where: {
         tenantId,
-        issuedAt: { gte: yearStart, lte: end },
+        OR: [
+          { operationAt: { gte: yearStart, lte: end } },
+          {
+            operationAt: null,
+            issuedAt: { gte: yearStart, lte: end },
+          },
+        ],
       },
       select: {
         id: true,
         tenantId: true,
         issuedAt: true,
+        operationAt: true,
         status: true,
         subtotal: true,
         vatAmount: true,

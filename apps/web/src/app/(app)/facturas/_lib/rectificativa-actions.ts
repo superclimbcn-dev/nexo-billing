@@ -86,6 +86,13 @@ export async function createRectificativa(
     }
   }
 
+  if (original.type === 'F2' && type !== 'R5') {
+    return { ok: false, error: 'Las facturas simplificadas solo admiten rectificativas R5' }
+  }
+  if (original.type !== 'F2' && type === 'R5') {
+    return { ok: false, error: 'El tipo R5 solo puede rectificar una factura simplificada' }
+  }
+
   // 5. Find series "R" for this tenant
   const seriesR = await prisma.invoiceSeries.findFirst({
     where: { tenantId, code: 'R', isActive: true },

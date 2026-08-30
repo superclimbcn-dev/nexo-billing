@@ -8,7 +8,6 @@ import { InvoicePdfDocument } from '@/lib/pdf/invoice-pdf-document'
 import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals'
 import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { signInvoiceToken } from '@/lib/public-invoice-token'
-import { generateAEATQRUrlFromInvoice } from '@nexo/verifactu'
 import QRCode from 'qrcode'
 
 export const runtime = 'nodejs'
@@ -34,6 +33,11 @@ export async function GET(
       include: {
         client: true,
         lines: { orderBy: { sortOrder: 'asc' } },
+        payments: {
+          orderBy: { paidAt: 'desc' },
+          take: 1,
+          select: { method: true, reference: true },
+        },
         rectifiedBy: { select: { fullNumber: true } },
       },
     }),
@@ -98,26 +102,31 @@ export async function GET(
       websiteUrl: tenant.websiteUrl,
       logoUrl: tenant.branding?.logoUrl ?? null,
     },
-    client: {
-      name: invoice.client.name,
-      legalName: invoice.client.legalName,
-      nif: invoice.client.nif,
-      address: invoice.client.address,
-      city: invoice.client.city,
-      postalCode: invoice.client.postalCode,
-      province: invoice.client.province,
-      country: invoice.client.country,
-      email: invoice.client.email,
-    },
+    client: invoice.client
+      ? {
+          name: invoice.client.name,
+          legalName: invoice.client.legalName,
+          nif: invoice.client.nif,
+          address: invoice.client.address,
+          city: invoice.client.city,
+          postalCode: invoice.client.postalCode,
+          province: invoice.client.province,
+          country: invoice.client.country,
+          email: invoice.client.email,
+        }
+      : null,
     invoice: {
       fullNumber: invoice.fullNumber,
       issuedAt: invoice.issuedAt,
+      operationAt: invoice.operationAt,
       dueAt: invoice.dueAt,
       notes: invoice.notes,
       status: invoice.status,
       subtotal: Number(invoice.subtotal),
       vatAmount: Number(invoice.vatAmount),
       totalAmount: Number(invoice.totalAmount),
+      paymentMethod: invoice.paymentMethod,
+      paymentReference: invoice.payments[0]?.reference ?? null,
       type: invoice.type,
       rectificationReason: invoice.rectificationReason,
       rectifiedBy: invoice.rectifiedBy ? { fullNumber: invoice.rectifiedBy.fullNumber } : null,

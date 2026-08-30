@@ -128,6 +128,12 @@ describe('generateRegistroAltaXml', () => {
     expect(xml).not.toContain('<IDReceptor>')
   })
 
+  it('omits IDReceptor for an anonymous R5 rectification', () => {
+    const xml = generateRegistroAltaXml(makeAlta({ idReceptor: undefined, tipoFactura: 'R5' }))
+    expect(xml).not.toContain('<IDReceptor>')
+    expect(xml).toContain('<TipoFactura>R5</TipoFactura>')
+  })
+
   it('includes IDReceptor when provided', () => {
     const xml = generateRegistroAltaXml(makeAlta())
     expect(xml).toContain('<IDReceptor>')

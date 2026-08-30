@@ -185,9 +185,9 @@ export async function getDashboardPageData(tenantId: string): Promise<DashboardP
         inv.issued_at,
         inv.status,
         inv.total_amount,
-        clients.name AS client_name
+        COALESCE(clients.name, 'Consumidor final') AS client_name
       FROM invoices inv
-      INNER JOIN clients ON clients.id = inv.client_id
+      LEFT JOIN clients ON clients.id = inv.client_id
       WHERE inv.tenant_id = ${tenantId}::uuid
       ORDER BY inv.issued_at DESC
       LIMIT 5

@@ -61,11 +61,13 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 invoiceId={invoice.id}
                 fullNumber={invoice.fullNumber}
                 totalAmount={Number(invoice.totalAmount)}
-                clientEmail={invoice.client.email}
+                clientEmail={invoice.client?.email ?? null}
+                isPaid={invoice.status === 'paid'}
               />
               <RectificativaButton
                 invoiceId={invoice.id}
                 fullNumber={invoice.fullNumber}
+                originalType={invoice.type}
                 status={invoice.status}
                 hasRectification={(invoice.rectifications ?? []).length > 0}
                 originalLines={(invoice.lines ?? []).map((l) => ({

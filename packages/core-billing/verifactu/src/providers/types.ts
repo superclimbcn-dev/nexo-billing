@@ -24,14 +24,15 @@ export interface InvoiceData {
   invoiceType: string
   fullNumber: string
   issuedAt: Date
+  operationAt: Date | null
   dueAt: Date | null
   status: string
   subtotal: number
   vatAmount: number
   totalAmount: number
   notes: string | null
-  clientNif: string
-  clientName: string
+  clientNif: string | null
+  clientName: string | null
   lines: Array<{
     description: string
     quantity: number

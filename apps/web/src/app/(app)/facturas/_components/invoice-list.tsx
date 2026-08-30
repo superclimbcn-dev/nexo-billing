@@ -6,6 +6,7 @@ import { InvoiceStatusBadge } from './invoice-status-badge'
 interface InvoiceRow {
   id: string
   fullNumber: string
+  type: string
   issuedAt: Date
   totalAmount: { toString(): string }
   status: string
@@ -72,6 +73,9 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
                     >
                       {inv.fullNumber}
                     </Link>
+                    {inv.type === 'F2' && (
+                      <p className="mt-0.5 text-xs text-[var(--text-dim)]">Factura simplificada</p>
+                    )}
                     {inv.rectifications.length > 0 && (
                       <p className="text-xs text-[var(--text-dim)] mt-0.5">
                         Rectificada por{' '}
@@ -107,7 +111,7 @@ export function InvoiceList({ items, page, totalPages, search, status, clientId 
                         </p>
                       </div>
                     ) : (
-                      <span className="text-[var(--text-dim)]">—</span>
+                      <span className="text-sm text-[var(--text-dim)]">Consumidor final</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm font-mono text-[var(--text)]">

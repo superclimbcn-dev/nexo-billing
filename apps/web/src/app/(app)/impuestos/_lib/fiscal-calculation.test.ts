@@ -16,6 +16,7 @@ function date(month: number, day = 15, year = 2026): Date {
 function invoice({
   id,
   issuedAt,
+  operationAt = null,
   subtotal,
   vatAmount,
   status = 'sent',
@@ -23,12 +24,13 @@ function invoice({
 }: {
   id: string
   issuedAt: Date
+  operationAt?: Date | null
   subtotal: number | string
   vatAmount: number | string
   status?: FiscalInvoiceDocument['status']
   tenantId?: string
 }): FiscalInvoiceDocument {
-  return { id, tenantId, issuedAt, status, subtotal, vatAmount }
+  return { id, tenantId, issuedAt, operationAt, status, subtotal, vatAmount }
 }
 
 function expense({
@@ -129,6 +131,29 @@ describe('Modelo 303', () => {
       assert.equal(undefinedWarning !== undefined, testCase.percentage === null)
     })
   }
+
+  it('uses the operation date as the fiscal date for a simplified invoice', () => {
+    const calculation = calculate({
+      year: 2026,
+      quarter: 'Q4',
+      invoices: [
+        invoice({
+          id: 'f2-operation-date',
+          issuedAt: date(0, 1, 2027),
+          operationAt: date(11, 31, 2026),
+          subtotal: '99.17',
+          vatAmount: '20.83',
+          status: 'paid',
+        }),
+      ],
+    })
+
+    assert.equal(calculation.modelo303.taxableBase, 99.17)
+    assert.equal(calculation.modelo303.outputVat, 20.83)
+    assert.equal(calculation.modelo130.grossIncome, 99.17)
+    assert.deepEqual(calculation.audit.includedInvoiceIds.modelo303, ['f2-operation-date'])
+    assert.deepEqual(calculation.audit.includedInvoiceIds.modelo130, ['f2-operation-date'])
+  })
 
   it('handles multiple expenses, materialized multi-rate invoice totals, and excluded statuses', () => {
     const multiRateLines = [

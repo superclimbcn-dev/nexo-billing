@@ -39,6 +39,7 @@ export interface FiscalInvoiceDocument {
   id: string
   tenantId: string
   issuedAt: Date
+  operationAt: Date | null
   status: 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled' | 'rectified'
   subtotal: DecimalInput
   vatAmount: DecimalInput
@@ -179,7 +180,8 @@ export function calculateFiscalPeriod(input: FiscalCalculationInput): FiscalPeri
   const undefinedIrpfExpenseIds: string[] = []
 
   for (const invoice of invoices) {
-    const models = modelsForDate(invoice.issuedAt, quarterStart, yearStart, end)
+    const fiscalDate = invoice.operationAt ?? invoice.issuedAt
+    const models = modelsForDate(fiscalDate, quarterStart, yearStart, end)
 
     if (invoice.tenantId !== tenantId) {
       ignoredDocuments.push({

@@ -1,11 +1,13 @@
 'use server'
 
-import { prisma } from '@nexo/prisma'
+import { prisma, Prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createInvoiceSchema } from './invoice-schema'
+import { createInvoiceSchema, createSimplifiedInvoiceSchema } from './invoice-schema'
 import { calculateInvoiceTotals } from './invoice-totals'
+import { calculateSimplifiedInvoiceAmounts } from './simplified-invoice-calculation'
+import { reserveInvoiceNumber } from './invoice-numbering'
 import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 import { checkCanCreateInvoice } from '@/lib/subscription-gate'
 
@@ -72,17 +74,23 @@ export async function createInvoiceDraft(
   })
 
   const result = await prisma.$transaction(async (tx) => {
-    const number = series.nextNumber
-    const year = new Date(issuedAt).getFullYear()
-    const fullNumber = `${series.code}-${year}-${String(number).padStart(4, '0')}`
+    const reservation = await reserveInvoiceNumber(
+      () =>
+        tx.invoiceSeries.update({
+          where: { id: seriesId, tenantId, isActive: true },
+          data: { nextNumber: { increment: 1 } },
+          select: { code: true, numberFormat: true, nextNumber: true },
+        }),
+      issuedAt,
+    )
 
     const invoice = await tx.invoice.create({
       data: {
         tenantId,
         clientId,
         seriesId,
-        number,
-        fullNumber,
+        number: reservation.number,
+        fullNumber: reservation.fullNumber,
         issuedAt,
         dueAt: dueAt ?? null,
         status: 'draft',
@@ -109,14 +117,162 @@ export async function createInvoiceDraft(
       })),
     })
 
-    await tx.invoiceSeries.update({
-      where: { id: seriesId },
-      data: { nextNumber: { increment: 1 } },
-    })
-
     return invoice
   })
 
   revalidatePath('/facturas')
   return { ok: true, data: { id: result.id } }
+}
+
+export async function createSimplifiedInvoice(
+  raw: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
+
+  const canCreate = await checkCanCreateInvoice(tenantId)
+  if (!canCreate) {
+    return {
+      ok: false,
+      error: 'Tu periodo de prueba ha finalizado. Activa tu suscripción para continuar.',
+    }
+  }
+
+  const parsed = createSimplifiedInvoiceSchema.safeParse(raw)
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: 'Datos inválidos',
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    }
+  }
+
+  const {
+    issuedAt,
+    operationAt,
+    description,
+    totalVatIncluded,
+    vatRate,
+    paymentMethod,
+    paymentReference,
+    consumerHomeService,
+  } = parsed.data
+
+  const inactiveSeries = await prisma.invoiceSeries.findFirst({
+    where: { tenantId, code: 'FS', isActive: false },
+    select: { id: true },
+  })
+  if (inactiveSeries) {
+    return {
+      ok: false,
+      error: 'La serie FS está desactivada. Actívala en Ajustes antes de emitir.',
+    }
+  }
+
+  const amounts = calculateSimplifiedInvoiceAmounts(totalVatIncluded, vatRate)
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const series = await tx.invoiceSeries.upsert({
+        where: { tenantId_code: { tenantId, code: 'FS' } },
+        update: {},
+        create: {
+          tenantId,
+          code: 'FS',
+          name: 'Facturas simplificadas',
+          prefix: 'FS-',
+          numberFormat: '0000',
+          nextNumber: 1,
+          isDefault: false,
+          isActive: true,
+          resetYearly: false,
+          yearOfNumbering: issuedAt.getFullYear(),
+        },
+        select: { id: true },
+      })
+
+      const reservation = await reserveInvoiceNumber(
+        () =>
+          tx.invoiceSeries.update({
+            where: { id: series.id, tenantId, isActive: true },
+            data: { nextNumber: { increment: 1 } },
+            select: { code: true, numberFormat: true, nextNumber: true },
+          }),
+        issuedAt,
+      )
+
+      const invoice = await tx.invoice.create({
+        data: {
+          tenantId,
+          clientId: null,
+          seriesId: series.id,
+          number: reservation.number,
+          fullNumber: reservation.fullNumber,
+          type: 'F2',
+          status: 'draft',
+          issuedAt,
+          operationAt,
+          dueAt: null,
+          subtotal: amounts.subtotal,
+          vatAmount: amounts.vatAmount,
+          totalAmount: amounts.totalAmount,
+          paidAmount: amounts.totalAmount,
+          pendingAmount: new Prisma.Decimal(0),
+          paymentMethod,
+          sectorMetadata: {
+            simplifiedInvoice: { consumerHomeService },
+          },
+        },
+        select: { id: true },
+      })
+
+      await tx.invoiceLine.create({
+        data: {
+          invoiceId: invoice.id,
+          itemId: null,
+          description,
+          quantity: new Prisma.Decimal('1.000'),
+          unitPrice: amounts.subtotal,
+          vatRate: new Prisma.Decimal(vatRate),
+          subtotal: amounts.subtotal,
+          vatAmount: amounts.vatAmount,
+          totalAmount: amounts.totalAmount,
+          sortOrder: 0,
+        },
+      })
+
+      await tx.payment.create({
+        data: {
+          tenantId,
+          direction: 'inbound',
+          amount: amounts.totalAmount,
+          currency: 'EUR',
+          method: paymentMethod,
+          paidAt: operationAt,
+          invoiceId: invoice.id,
+          reference:
+            paymentMethod === 'card' && paymentReference ? paymentReference : null,
+          notes: 'Cobro registrado al emitir factura simplificada',
+        },
+      })
+
+      return tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: 'paid' },
+        select: { id: true },
+      })
+    })
+
+    revalidatePath('/facturas')
+    revalidatePath('/tesoreria')
+    revalidatePath('/impuestos')
+    return { ok: true, data: { id: result.id } }
+  } catch (error) {
+    console.error('Simplified invoice creation failed:', error)
+    return {
+      ok: false,
+      error: 'No se pudo emitir la factura simplificada. Inténtalo de nuevo.',
+    }
+  }
 }

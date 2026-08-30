@@ -12,6 +12,7 @@ function makeInvoice(overrides: Partial<InvoiceData> = {}): InvoiceData {
     invoiceType: 'F1',
     fullNumber: 'F-2024-0001',
     issuedAt: new Date('2024-11-29T10:00:00.000Z'),
+    operationAt: null,
     dueAt: null,
     status: 'issued',
     subtotal: 100,

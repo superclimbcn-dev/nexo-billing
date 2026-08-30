@@ -8,9 +8,10 @@ interface Props {
   fullNumber: string
   totalAmount: number
   clientEmail: string | null
+  isPaid: boolean
 }
 
-export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEmail }: Props) {
+export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEmail, isPaid }: Props) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emailSent, setEmailSent] = useState(false)
@@ -31,7 +32,7 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-    return `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online, descargar el PDF y pagarla de forma segura aquí:\n${link}\n\nGracias por tu confianza.`
+    return `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online y descargar el PDF${isPaid ? '' : ' o pagarla de forma segura'} aquí:\n${link}\n\nGracias por tu confianza.`
   }
 
   function handleDownload() {
@@ -68,7 +69,7 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
       })
       const subject = encodeURIComponent(`Factura ${fullNumber}`)
       const body = encodeURIComponent(
-        `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online, descargar el PDF y pagarla de forma segura aquí:\n${link}\n\nGracias por tu confianza.`,
+        `Hola, te envío la factura ${fullNumber} por un importe de ${total} €.\n\nPuedes verla online y descargar el PDF${isPaid ? '' : ' o pagarla de forma segura'} aquí:\n${link}\n\nGracias por tu confianza.`,
       )
       const to = clientEmail ? encodeURIComponent(clientEmail) : ''
       window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank')

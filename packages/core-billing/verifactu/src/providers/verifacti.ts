@@ -97,20 +97,30 @@ export class VerifactiProvider implements IVerifactuProvider {
     const serie = dashIndex !== -1 ? invoice.fullNumber.slice(0, dashIndex) : invoice.fullNumber
     const numero = dashIndex !== -1 ? invoice.fullNumber.slice(dashIndex + 1) : '1'
 
+    const hasRecipient = Boolean(invoice.clientNif && invoice.clientName)
+    const mayBeAnonymous = invoice.invoiceType === 'F2' || invoice.invoiceType === 'R5'
+    if (!mayBeAnonymous && !hasRecipient) {
+      throw new VerifactuProviderError(
+        'A recipient is required for complete invoices and R1-R4 rectifications',
+        'verifacti',
+      )
+    }
     const body = {
       serie,
       numero,
       fecha_expedicion: formatDateDMY(invoice.issuedAt),
+      ...(invoice.operationAt
+        ? { fecha_operacion: formatDateDMY(invoice.operationAt) }
+        : {}),
       tipo_factura: invoice.invoiceType || 'F1',
-      descripcion: invoice.notes?.trim() || 'Prestación de servicios',
-      nif: invoice.clientNif,
-      nombre: invoice.clientName,
+      descripcion:
+        invoice.notes?.trim() || invoice.lines[0]?.description.trim() || 'Prestación de servicios',
+      ...(hasRecipient
+        ? { nif: invoice.clientNif, nombre: invoice.clientName }
+        : {}),
       lineas: buildLineas(invoice.lines),
       importe_total: invoice.totalAmount.toFixed(2),
     }
-
-    // TODO: remove after confirming payload is correct
-    console.log('[VERIFACTI] Payload enviado:', JSON.stringify(body, null, 2))
 
     const raw = await this.request<VerifactiResponse>('POST', '/verifactu/create', body)
 
@@ -197,11 +207,11 @@ export class VerifactiProvider implements IVerifactuProvider {
         NIF: nif,
         NombreRazon: razonSocial,
       })
-      console.log(`[Verifacti] registerEmisor OK | nif=${nif}`)
+      console.log('[Verifacti] registerEmisor OK')
     } catch (err) {
       // 409 Conflict means the NIF is already registered — not an error for us
       if (err instanceof VerifactuProviderError && err.message.includes('409')) {
-        console.log(`[Verifacti] registerEmisor already registered | nif=${nif}`)
+        console.log('[Verifacti] registerEmisor already registered')
         return
       }
       throw err
@@ -212,10 +222,6 @@ export class VerifactiProvider implements IVerifactuProvider {
     const url = `${this.baseUrl}${path}`
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
-
-    // TODO: remove after diagnosing API key / response issues
-    console.log('[VERIFACTI] URL completa:', url)
-    console.log('[VERIFACTI] API Key (primeros 20 chars):', this.apiKey?.substring(0, 20))
 
     let response: Response
     try {
@@ -252,7 +258,6 @@ export class VerifactiProvider implements IVerifactuProvider {
       } catch {
         // ignore JSON parse errors on error responses
       }
-      console.log(`[VERIFACTI] Response body (${response.status}):`, rawText)
       throw new VerifactuProviderError(
         `Verifacti API error (${response.status}): ${errorMsg}`,
         'verifacti',
@@ -268,9 +273,6 @@ export class VerifactiProvider implements IVerifactuProvider {
         'verifacti',
       )
     }
-
-    // TODO: remove after diagnosing API key / response issues
-    console.log('[VERIFACTI] Response body:', JSON.stringify(parsed, null, 2))
 
     // Verifacti returns HTTP 200 even for errors — detect via error field in body
     const maybeError = parsed as { error?: string; message?: string }

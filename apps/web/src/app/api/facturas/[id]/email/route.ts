@@ -12,7 +12,6 @@ import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
 import { decryptSecret } from '@/lib/crypto/tenant-secrets'
 import QRCode from 'qrcode'
-import { generateAEATQRUrlFromInvoice } from '@nexo/verifactu'
 
 export const runtime = 'nodejs'
 
@@ -52,6 +51,11 @@ export async function POST(
         include: {
           client: true,
           lines: { orderBy: { sortOrder: 'asc' } },
+          payments: {
+            orderBy: { paidAt: 'desc' },
+            take: 1,
+            select: { method: true, reference: true },
+          },
           rectifiedBy: { select: { fullNumber: true } },
         },
       }),
@@ -70,6 +74,13 @@ export async function POST(
     }
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    }
+
+    if (!invoice.client) {
+      return NextResponse.json(
+        { error: 'La factura simplificada no tiene destinatario ni email asociado' },
+        { status: 400 },
+      )
     }
 
     const clientEmail = invoice.client.email
@@ -143,12 +154,15 @@ export async function POST(
       invoice: {
         fullNumber: invoice.fullNumber,
         issuedAt: invoice.issuedAt,
+        operationAt: invoice.operationAt,
         dueAt: invoice.dueAt,
         notes: invoice.notes,
         status: invoice.status,
         subtotal: Number(invoice.subtotal),
         vatAmount: Number(invoice.vatAmount),
         totalAmount: Number(invoice.totalAmount),
+        paymentMethod: invoice.paymentMethod,
+        paymentReference: invoice.payments[0]?.reference ?? null,
         type: invoice.type,
         rectificationReason: invoice.rectificationReason,
         rectifiedBy: invoice.rectifiedBy ? { fullNumber: invoice.rectifiedBy.fullNumber } : null,

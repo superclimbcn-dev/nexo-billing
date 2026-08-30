@@ -64,6 +64,7 @@ function mapInvoiceToVerifactuData(invoice: {
   type: string
   fullNumber: string
   issuedAt: Date
+  operationAt: Date | null
   dueAt: Date | null
   status: string
   subtotal: Prisma.Decimal
@@ -71,7 +72,7 @@ function mapInvoiceToVerifactuData(invoice: {
   totalAmount: Prisma.Decimal
   notes: string | null
   tenant: { nif: string | null; legalName: string | null; name: string }
-  client: { nif: string; name: string }
+  client: { nif: string; name: string } | null
   lines: Array<{
     description: string
     quantity: Prisma.Decimal
@@ -90,14 +91,15 @@ function mapInvoiceToVerifactuData(invoice: {
     invoiceType: invoice.type || 'F1',
     fullNumber: invoice.fullNumber,
     issuedAt: invoice.issuedAt,
+    operationAt: invoice.operationAt,
     dueAt: invoice.dueAt,
     status: invoice.status,
     subtotal: Number(invoice.subtotal),
     vatAmount: Number(invoice.vatAmount),
     totalAmount: Number(invoice.totalAmount),
     notes: invoice.notes,
-    clientNif: invoice.client.nif,
-    clientName: invoice.client.name,
+    clientNif: invoice.client?.nif ?? null,
+    clientName: invoice.client?.name ?? null,
     lines: invoice.lines.map((line) => ({
       description: line.description,
       quantity: Number(line.quantity),
@@ -122,6 +124,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
       type: true,
       fullNumber: true,
       issuedAt: true,
+      operationAt: true,
       dueAt: true,
       status: true,
       subtotal: true,
@@ -156,7 +159,8 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
   if (invoice.status === 'draft') {
     return { ok: false, error: 'No se puede enviar un borrador a la AEAT' }
   }
-  if (!invoice.client.nif || invoice.client.nif.trim() === '') {
+  const mayBeAnonymous = invoice.type === 'F2' || invoice.type === 'R5'
+  if (!mayBeAnonymous && (!invoice.client?.nif || invoice.client.nif.trim() === '')) {
     return { ok: false, error: 'El cliente debe tener un NIF válido para enviar a la AEAT' }
   }
   if (invoice.tenant.verifactuProvider !== 'verifacti' || !invoice.tenant.verifactuNifRegistered) {
@@ -189,7 +193,7 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
     fullNumber: invoice.fullNumber,
     issuedAt: invoice.issuedAt.toISOString(),
     totalAmount: Number(invoice.totalAmount),
-    clientNif: invoice.client.nif,
+    clientNif: invoice.client?.nif ?? null,
   }
   const hash = computeRecordHash(hashPayload, previousHash)
 
@@ -299,6 +303,7 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
       type: true,
       fullNumber: true,
       issuedAt: true,
+      operationAt: true,
       dueAt: true,
       status: true,
       subtotal: true,
@@ -395,7 +400,7 @@ export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionR
     fullNumber: invoice.fullNumber,
     issuedAt: invoice.issuedAt.toISOString(),
     totalAmount: Number(invoice.totalAmount),
-    clientNif: invoice.client.nif,
+    clientNif: invoice.client?.nif ?? null,
     operation: 'cancel',
   }
   const hash = computeRecordHash(hashPayload, previousHash)

@@ -36,6 +36,10 @@ export async function createCheckoutSession(
       return { ok: false, error: 'No se puede pagar una factura anulada' }
     }
 
+    if (!invoice.client) {
+      return { ok: false, error: 'Esta factura simplificada ya registra su cobro al emitirla' }
+    }
+
     const token = signInvoiceToken({ invoiceId, tenantId })
     const successUrl = `${APP_URL}/f/${token}?success=1`
     const cancelUrl = `${APP_URL}/f/${token}?canceled=1`

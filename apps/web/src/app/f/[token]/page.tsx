@@ -36,6 +36,11 @@ export default async function PublicInvoicePage({ params }: Props) {
         include: { item: { select: { name: true, unit: true } } },
         orderBy: { sortOrder: 'asc' },
       },
+      payments: {
+        orderBy: { paidAt: 'desc' },
+        take: 1,
+        select: { reference: true },
+      },
       tenant: {
         select: {
           name: true,
@@ -64,6 +69,9 @@ export default async function PublicInvoicePage({ params }: Props) {
   const tenant = invoice.tenant
   const client = invoice.client
   const logoUrl = tenant.branding?.logoUrl
+  const isSimplified = invoice.type === 'F2' || invoice.type === 'R5'
+  const paymentMethod = invoice.paymentMethod ?? 'bank_transfer'
+  const paymentReference = invoice.payments[0]?.reference ?? null
 
   const vatBreakdown = invoice.lines.reduce(
     (acc, line) => {
@@ -78,7 +86,7 @@ export default async function PublicInvoicePage({ params }: Props) {
     {} as Record<number, { base: number; vat: number }>,
   )
 
-  const shareTitle = `Factura ${invoice.fullNumber} — ${tenant.name}`
+  const shareTitle = `${isSimplified ? 'Factura simplificada' : 'Factura'} ${invoice.fullNumber} — ${tenant.name}`
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -106,7 +114,7 @@ export default async function PublicInvoicePage({ params }: Props) {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] text-[var(--text-subtle)] uppercase tracking-wider font-medium">
-                  Factura
+                  {isSimplified ? 'Factura simplificada' : 'Factura'}
                 </p>
                 <h1 className="font-mono text-lg font-semibold text-[var(--text)] mt-0.5">
                   {invoice.fullNumber}
@@ -124,7 +132,7 @@ export default async function PublicInvoicePage({ params }: Props) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-[11px] text-[var(--text-subtle)] uppercase tracking-wider">
-                  Fecha
+                  Expedición
                 </p>
                 <p className="text-[var(--text)] font-medium mt-0.5">
                   {formatDate(invoice.issuedAt)}
@@ -132,10 +140,14 @@ export default async function PublicInvoicePage({ params }: Props) {
               </div>
               <div>
                 <p className="text-[11px] text-[var(--text-subtle)] uppercase tracking-wider">
-                  Vencimiento
+                  {invoice.operationAt ? 'Operación' : 'Vencimiento'}
                 </p>
                 <p className="text-[var(--text)] font-medium mt-0.5">
-                  {invoice.dueAt ? formatDate(invoice.dueAt) : '—'}
+                  {invoice.operationAt
+                    ? formatDate(invoice.operationAt)
+                    : invoice.dueAt
+                      ? formatDate(invoice.dueAt)
+                      : '—'}
                 </p>
               </div>
             </div>
@@ -162,24 +174,26 @@ export default async function PublicInvoicePage({ params }: Props) {
               )}
             </div>
 
-            <div className="border-t border-[var(--border)] pt-4">
-              <p className="text-[11px] text-[var(--text-subtle)] uppercase tracking-wider mb-2">
-                Para
-              </p>
-              <p className="font-medium text-[var(--text)]">
-                {client.legalName || client.name}
-              </p>
-              <p className="text-sm text-[var(--text-dim)] font-mono mt-0.5">
-                {formatNif(client.nif)}
-              </p>
-              {client.address && (
-                <p className="text-sm text-[var(--text-dim)] mt-1">
-                  {client.address}
-                  {client.city && `, ${client.city}`}
-                  {client.postalCode && ` ${client.postalCode}`}
+            {client && (
+              <div className="border-t border-[var(--border)] pt-4">
+                <p className="text-[11px] text-[var(--text-subtle)] uppercase tracking-wider mb-2">
+                  Para
                 </p>
-              )}
-            </div>
+                <p className="font-medium text-[var(--text)]">
+                  {client.legalName || client.name}
+                </p>
+                <p className="text-sm text-[var(--text-dim)] font-mono mt-0.5">
+                  {formatNif(client.nif)}
+                </p>
+                {client.address && (
+                  <p className="text-sm text-[var(--text-dim)] mt-1">
+                    {client.address}
+                    {client.city && `, ${client.city}`}
+                    {client.postalCode && ` ${client.postalCode}`}
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Lines */}
@@ -253,17 +267,22 @@ export default async function PublicInvoicePage({ params }: Props) {
 
             <div className="p-4 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl text-center">
               <p className="text-sm font-medium text-[var(--text)]">
-                Pago por transferencia bancaria
+                Pago: {paymentMethodLabel(paymentMethod)}
               </p>
-              {tenant.iban ? (
+              {paymentReference && (
+                <p className="mt-1 text-xs font-mono text-[var(--text-dim)]">
+                  Referencia TPV: {paymentReference}
+                </p>
+              )}
+              {paymentMethod === 'bank_transfer' && tenant.iban ? (
                 <p className="text-sm font-mono text-[var(--accent)] mt-1 tracking-wide">
                   IBAN: {tenant.iban}
                 </p>
-              ) : (
+              ) : paymentMethod === 'bank_transfer' ? (
                 <p className="text-xs text-[var(--text-dim)] mt-1">
                   Consultar datos bancarios con el emisor
                 </p>
-              )}
+              ) : null}
             </div>
 
             <WhatsAppShareButton
@@ -288,6 +307,19 @@ export default async function PublicInvoicePage({ params }: Props) {
       </div>
     </div>
   )
+}
+
+function paymentMethodLabel(method: string): string {
+  const labels: Record<string, string> = {
+    cash: 'Efectivo',
+    bank_transfer: 'Transferencia bancaria',
+    card: 'Tarjeta / TPV',
+    bizum: 'Bizum',
+    direct_debit: 'Domiciliación bancaria',
+    cheque: 'Cheque',
+    other: 'Otro',
+  }
+  return labels[method] ?? method
 }
 
 function StatusBadge({ status }: { status: string }) {

@@ -15,6 +15,7 @@ interface LineItem {
 interface Props {
   invoiceId: string
   fullNumber: string
+  simplified: boolean
   originalLines: Array<{
     description: string
     quantity: number
@@ -29,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
   R2: 'R2 — Devolución de mercancía',
   R3: 'R3 — Descuento posterior',
   R4: 'R4 — Obra por administración',
-  R5: 'R5 — Resolución de contrato',
+  R5: 'R5 — Rectificativa de factura simplificada',
 }
 
 function roundCents(v: number): number {
@@ -52,12 +53,12 @@ function calculateTotals(lines: LineItem[]) {
   }
 }
 
-export function RectificativaModal({ invoiceId, fullNumber, originalLines, onClose }: Props) {
+export function RectificativaModal({ invoiceId, fullNumber, simplified, originalLines, onClose }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const [type, setType] = useState<'R1' | 'R2' | 'R3' | 'R4' | 'R5'>('R1')
+  const [type, setType] = useState<'R1' | 'R2' | 'R3' | 'R4' | 'R5'>(simplified ? 'R5' : 'R1')
   const [reason, setReason] = useState('')
   const [lines, setLines] = useState<LineItem[]>(
     (originalLines ?? []).map((l) => ({
@@ -147,14 +148,22 @@ export function RectificativaModal({ invoiceId, fullNumber, originalLines, onClo
             <select
               value={type}
               onChange={(e) => setType(e.target.value as typeof type)}
+              disabled={simplified}
               className={inputClass}
             >
-              {Object.entries(TYPE_LABELS).map(([key, label]) => (
+              {Object.entries(TYPE_LABELS)
+                .filter(([key]) => (simplified ? key === 'R5' : key !== 'R5'))
+                .map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
                 </option>
-              ))}
+                ))}
             </select>
+            {simplified && (
+              <p className="mt-1 text-xs text-[var(--text-dim)]">
+                Las facturas simplificadas se rectifican mediante tipo R5.
+              </p>
+            )}
           </div>
 
           {/* Motivo */}
