@@ -32,7 +32,7 @@ export function InvoiceHeaderSection({
   const series = seriesOptions.find((s) => s.id === seriesId)
   const year = issuedAt ? new Date(issuedAt).getFullYear() : new Date().getFullYear()
   const previewNumber = series
-    ? `${series.code}-${year}-${String(series.nextNumber).padStart(4, '0')}`
+    ? `${series.code}-${year}-${String(series.nextNumber).padStart(Math.max(1, series.numberFormat.length), '0')}`
     : ''
 
   const inputClass =

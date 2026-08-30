@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
 import { prisma } from '@nexo/prisma'
 import { listSeriesForTenant } from '../_lib/invoice-numbering'
-import { InvoiceForm } from '../_components/invoice-form'
+import { InvoiceCreateForm } from '../_components/invoice-create-form'
 import { getSubscriptionState } from '@/lib/subscription'
 
 export default async function NuevaFacturaPage() {
@@ -28,24 +28,7 @@ export default async function NuevaFacturaPage() {
   }
 
   const series = await listSeriesForTenant(tenantId)
-
-  if (series.length === 0) {
-    return (
-      <div className="flex flex-col gap-6 max-w-4xl">
-        <header>
-          <h1 className="[font-family:var(--font-serif)] text-3xl text-[var(--text)]">
-            Nueva factura
-          </h1>
-        </header>
-        <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
-          <p className="text-[var(--text-dim)]">
-            No hay series de facturación configuradas para este tenant. Contacta con
-            soporte para activar la numeración.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const completeInvoiceSeries = series.filter((item) => item.code !== 'FS')
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
@@ -54,10 +37,10 @@ export default async function NuevaFacturaPage() {
           Nueva factura
         </h1>
         <p className="text-sm text-[var(--text-dim)] mt-1">
-          Selecciona un cliente y añade las líneas. Se guardará como borrador.
+          Elige factura completa o simplificada según la operación.
         </p>
       </header>
-      <InvoiceForm series={series} />
+      <InvoiceCreateForm series={completeInvoiceSeries} />
     </div>
   )
 }

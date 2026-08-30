@@ -151,7 +151,7 @@ export async function getPendingCollections(): Promise<{
     return {
       id: inv.id,
       fullNumber: inv.fullNumber,
-      clientName: inv.client.name,
+      clientName: inv.client?.name ?? 'Consumidor final',
       totalAmount: Number(inv.totalAmount),
       dueAt: inv.dueAt,
       daysOverdue,

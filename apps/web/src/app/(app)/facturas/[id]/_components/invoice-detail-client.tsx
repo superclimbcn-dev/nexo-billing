@@ -11,14 +11,28 @@ interface ClientInfo {
 }
 
 interface Props {
-  client: ClientInfo
+  client: ClientInfo | null
 }
 
 export function InvoiceDetailClient({ client }: Props) {
+  if (!client) {
+    return (
+      <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
+        <h2 className="text-sm font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
+          Destinatario
+        </h2>
+        <div className="font-medium text-lg text-[var(--text)]">Consumidor final</div>
+        <p className="mt-1 text-sm text-[var(--text-dim)]">
+          Factura simplificada sin destinatario identificado.
+        </p>
+      </section>
+    )
+  }
+
   return (
     <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
       <h2 className="text-sm font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
-        Cliente
+        Destinatario
       </h2>
       <div className="space-y-1">
         <div className="font-medium text-lg text-[var(--text)]">{client.name}</div>

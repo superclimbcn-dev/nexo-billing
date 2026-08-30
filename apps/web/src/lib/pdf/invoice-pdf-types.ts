@@ -24,16 +24,19 @@ export interface PdfInvoiceData {
     province: string | null
     country: string
     email: string | null
-  }
+  } | null
   invoice: {
     fullNumber: string
     issuedAt: Date
+    operationAt: Date | null
     dueAt: Date | null
     notes: string | null
     status: string
     subtotal: number
     vatAmount: number
     totalAmount: number
+    paymentMethod: string | null
+    paymentReference: string | null
     type?: string
     rectificationReason?: string | null
     rectifiedBy?: { fullNumber: string } | null

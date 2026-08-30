@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { VerifactiProvider } from './verifacti'
 import { VerifactuProviderError, VerifactuTimeoutError, VerifactuAEATRejectionError } from '../errors'
 import type { InvoiceData, InvoiceRecordData } from './types'
@@ -17,6 +17,7 @@ function makeInvoice(overrides: Partial<InvoiceData> = {}): InvoiceData {
     invoiceType: 'F1',
     fullNumber: 'A-2026-0001',
     issuedAt: new Date('2026-05-15T10:00:00Z'),
+    operationAt: null,
     dueAt: new Date('2026-06-15T10:00:00Z'),
     status: 'sent',
     subtotal: 100,
@@ -66,7 +67,7 @@ function mockFetch(body: unknown, status = 200) {
     vi.fn().mockResolvedValue({
       ok: status >= 200 && status < 300,
       status,
-      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(JSON.stringify(body)),
     }),
   )
 }
@@ -124,7 +125,7 @@ describe('VerifactiProvider', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -139,7 +140,7 @@ describe('VerifactiProvider', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -149,11 +150,12 @@ describe('VerifactiProvider', () => {
 
       const [, opts] = fetchSpy.mock.calls[0] as [string, RequestInit]
       const body = JSON.parse(opts.body as string) as Record<string, unknown>
-      expect(body['IDEmisorFactura']).toBe(invoice.tenantNif)
-      expect(body['NumSerieFactura']).toBe(invoice.fullNumber)
-      expect(body['TipoFactura']).toBe('F1')
-      expect(body['ImporteTotal']).toBe(121)
-      expect(body['CuotaTotal']).toBe(21)
+      expect(body['serie']).toBe('A')
+      expect(body['numero']).toBe('2026-0001')
+      expect(body['tipo_factura']).toBe('F1')
+      expect(body['importe_total']).toBe('121.00')
+      expect(body['nif']).toBe(invoice.clientNif)
+      expect(body['nombre']).toBe(invoice.clientName)
     })
 
     it('throws VerifactuAEATRejectionError when AEAT rejects', async () => {
@@ -188,7 +190,7 @@ describe('VerifactiProvider', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -204,15 +206,15 @@ describe('VerifactiProvider', () => {
       await provider.submitInvoice(invoice)
 
       const [, opts] = fetchSpy.mock.calls[0] as [string, RequestInit]
-      const body = JSON.parse(opts.body as string) as { Desglose: unknown[] }
-      expect(body.Desglose).toHaveLength(2) // two VAT rates: 21% and 10%
+      const body = JSON.parse(opts.body as string) as { lineas: unknown[] }
+      expect(body.lineas).toHaveLength(2) // two VAT rates: 21% and 10%
     })
 
     it('uses fallback description when notes is null', async () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'r1', csv: 'C1', estado_aeat: 'Correcto' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -220,8 +222,38 @@ describe('VerifactiProvider', () => {
       await provider.submitInvoice(makeInvoice({ notes: null }))
 
       const [, opts] = fetchSpy.mock.calls[0] as [string, RequestInit]
-      const body = JSON.parse(opts.body as string) as { DescripcionOperacion: string }
-      expect(body.DescripcionOperacion).toBe('Prestación de servicios')
+      const body = JSON.parse(opts.body as string) as { descripcion: string }
+      expect(body.descripcion).toBe('Limpieza mensual')
+    })
+
+    it('submits an anonymous F2 without recipient and with operation date', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        text: () => Promise.resolve(JSON.stringify({ id: 'f2', csv: 'F2CSV', estado_aeat: 'Correcto' })),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const provider = new VerifactiProvider(TEST_API_KEY)
+      await provider.submitInvoice(
+        makeInvoice({
+          invoiceType: 'F2',
+          fullNumber: 'FS-2026-0001',
+          operationAt: new Date('2026-05-14T10:00:00Z'),
+          clientNif: null,
+          clientName: null,
+          notes: null,
+        }),
+      )
+
+      const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit]
+      const body = JSON.parse(opts.body as string) as Record<string, unknown>
+      expect(url).toContain('/verifactu/create')
+      expect(body['tipo_factura']).toBe('F2')
+      expect(body['fecha_operacion']).toBe('14-05-2026')
+      expect(body).not.toHaveProperty('nif')
+      expect(body).not.toHaveProperty('nombre')
+      expect(body['descripcion']).toBe('Limpieza mensual')
     })
   })
 
@@ -239,7 +271,7 @@ describe('VerifactiProvider', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'c1' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'c1' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -334,7 +366,7 @@ describe('VerifactiProvider', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 'e1', NIF: 'B12345678' }),
+        text: () => Promise.resolve(JSON.stringify({ id: 'e1', NIF: 'B12345678' })),
       })
       vi.stubGlobal('fetch', fetchSpy)
 

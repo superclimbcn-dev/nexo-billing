@@ -121,13 +121,13 @@ export const RegistroAltaSchema = z
   })
   .refine(
     (data) => {
-      // F2 (simplificada): receptor es opcional, pero si se incluye debe ser válido
-      if (data.tipoFactura === 'F2') return true
-      // F1 y rectificativas: receptor es obligatorio
+      // F2 and its rectification type R5 may be issued without an identified recipient.
+      if (data.tipoFactura === 'F2' || data.tipoFactura === 'R5') return true
+      // F1 and non-simplified rectifications require a recipient.
       return data.idReceptor !== undefined
     },
     {
-      message: 'El receptor es obligatorio para facturas completas (F1) y rectificativas (R1-R5)',
+      message: 'El receptor es obligatorio para F1 y rectificativas R1-R4',
       path: ['idReceptor'],
     },
   )

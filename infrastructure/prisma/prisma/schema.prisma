@@ -198,14 +198,14 @@ model Tenant {
   sectorMetadata  Json?     @map("sector_metadata") // metadata custom por vertical
 
   // Contact & fiscal data (used in invoices / PDF)
-  fiscalAddress   String?   @map("fiscal_address")
-  fiscalCity      String?   @map("fiscal_city")
-  fiscalPostal    String?   @map("fiscal_postal")
-  fiscalProvince  String?   @map("fiscal_province")
-  iban            String?
-  email           String?
-  phone           String?
-  websiteUrl      String?   @map("website_url")
+  fiscalAddress  String? @map("fiscal_address")
+  fiscalCity     String? @map("fiscal_city")
+  fiscalPostal   String? @map("fiscal_postal")
+  fiscalProvince String? @map("fiscal_province")
+  iban           String?
+  email          String?
+  phone          String?
+  websiteUrl     String? @map("website_url")
 
   // Subscription / billing (GoCardless SEPA)
   trialEndsAt              DateTime? @map("trial_ends_at")
@@ -217,25 +217,25 @@ model Tenant {
 
   // Verifactu provider settings (per-tenant)
   verifactuProvider      String  @default("mock") @map("verifactu_provider") // mock | verifacti
-  verifactuNifRegistered Boolean @default(false)  @map("verifactu_nif_registered")
+  verifactuNifRegistered Boolean @default(false) @map("verifactu_nif_registered")
 
   // Email configuration
-  emailProvider     String?  @default("resend") @map("email_provider") // resend | sendgrid | smtp
-  emailFrom         String?  @map("email_from")
-  emailFromName     String?  @map("email_from_name")
-  emailReplyTo      String?  @map("email_reply_to")
-  emailApiKey       String?  @map("email_api_key")   // encrypted
-  smtpHost          String?  @map("smtp_host")
-  smtpPort          Int?     @map("smtp_port")
-  smtpUser          String?  @map("smtp_user")
-  smtpPass          String?  @map("smtp_pass")       // encrypted
-  smtpSecure        Boolean? @default(true) @map("smtp_secure")
+  emailProvider String?  @default("resend") @map("email_provider") // resend | sendgrid | smtp
+  emailFrom     String?  @map("email_from")
+  emailFromName String?  @map("email_from_name")
+  emailReplyTo  String?  @map("email_reply_to")
+  emailApiKey   String?  @map("email_api_key") // encrypted
+  smtpHost      String?  @map("smtp_host")
+  smtpPort      Int?     @map("smtp_port")
+  smtpUser      String?  @map("smtp_user")
+  smtpPass      String?  @map("smtp_pass") // encrypted
+  smtpSecure    Boolean? @default(true) @map("smtp_secure")
 
   // UI theme
-  theme           String    @default("dark") @map("theme")
+  theme String @default("dark") @map("theme")
 
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   vertical           Vertical?           @relation(fields: [verticalId], references: [id])
@@ -569,10 +569,10 @@ model InvoiceSeries {
 // ════════════════════════════════════════════════════════════════════════════
 
 model Invoice {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId String @map("tenant_id") @db.Uuid
-  clientId String @map("client_id") @db.Uuid
-  seriesId String @map("series_id") @db.Uuid
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  clientId String? @map("client_id") @db.Uuid
+  seriesId String  @map("series_id") @db.Uuid
 
   number     Int // numérico del contador
   fullNumber String @map("full_number") // "A-2026-0001" formateado
@@ -580,8 +580,9 @@ model Invoice {
   type   InvoiceType   @default(F1)
   status InvoiceStatus @default(draft)
 
-  issuedAt DateTime  @map("issued_at")
-  dueAt    DateTime? @map("due_at")
+  issuedAt    DateTime  @map("issued_at")
+  operationAt DateTime? @map("operation_at")
+  dueAt       DateTime? @map("due_at")
 
   // Importes (calculados, materializados para queries rápidas)
   subtotal      Decimal @default(0) @db.Decimal(12, 2) // suma sin IVA
@@ -617,19 +618,20 @@ model Invoice {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client              Client             @relation(fields: [clientId], references: [id])
-  series              InvoiceSeries      @relation(fields: [seriesId], references: [id])
-  lines               InvoiceLine[]
-  records             InvoiceRecord[]
-  payments            Payment[]
-  rectifiedBy         Invoice?           @relation("Rectification", fields: [rectifiedId], references: [id])
-  rectifications      Invoice[]          @relation("Rectification")
-  fromQuote           Quote?             @relation(fields: [fromQuoteId], references: [id])
-  recurringContract   RecurringContract? @relation("RecurringInvoices", fields: [recurringContractId], references: [id])
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client            Client?            @relation(fields: [clientId], references: [id])
+  series            InvoiceSeries      @relation(fields: [seriesId], references: [id])
+  lines             InvoiceLine[]
+  records           InvoiceRecord[]
+  payments          Payment[]
+  rectifiedBy       Invoice?           @relation("Rectification", fields: [rectifiedId], references: [id])
+  rectifications    Invoice[]          @relation("Rectification")
+  fromQuote         Quote?             @relation(fields: [fromQuoteId], references: [id])
+  recurringContract RecurringContract? @relation("RecurringInvoices", fields: [recurringContractId], references: [id])
 
   @@unique([tenantId, seriesId, number])
   @@index([tenantId, issuedAt])
+  @@index([tenantId, operationAt])
   @@index([tenantId, status])
   @@index([tenantId, dueAt])
   @@map("invoices")
@@ -774,8 +776,8 @@ model Receipt {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client Client      @relation(fields: [clientId], references: [id])
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client Client        @relation(fields: [clientId], references: [id])
   lines  ReceiptLine[]
 
   @@unique([tenantId, number])
@@ -783,9 +785,9 @@ model Receipt {
 }
 
 model ReceiptLine {
-  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  receiptId String @map("receipt_id") @db.Uuid
-  itemId  String? @map("item_id") @db.Uuid
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId String  @map("receipt_id") @db.Uuid
+  itemId    String? @map("item_id") @db.Uuid
 
   description     String
   quantity        Decimal @db.Decimal(10, 3)
@@ -810,25 +812,25 @@ model ReceiptLine {
 // ════════════════════════════════════════════════════════════════════════════
 
 model Expense {
-  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId   String @map("tenant_id") @db.Uuid
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String  @map("tenant_id") @db.Uuid
   supplierId String? @map("supplier_id") @db.Uuid
 
-  externalNumber String?       @map("external_number") // número que viene en la factura del proveedor
-  status         ExpenseStatus @default(pending)
+  externalNumber String?          @map("external_number") // número que viene en la factura del proveedor
+  status         ExpenseStatus    @default(pending)
   category       ExpenseCategory? // categoría estándar para gastos simples
 
   issuedAt DateTime  @map("issued_at")
   dueAt    DateTime? @map("due_at")
 
-  subtotal      Decimal @default(0) @db.Decimal(12, 2)
-  vatAmount     Decimal @default(0) @map("vat_amount") @db.Decimal(12, 2)
-  totalAmount   Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
-  paidAmount    Decimal @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  pendingAmount Decimal @default(0) @map("pending_amount") @db.Decimal(12, 2)
+  subtotal              Decimal  @default(0) @db.Decimal(12, 2)
+  vatAmount             Decimal  @default(0) @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount           Decimal  @default(0) @map("total_amount") @db.Decimal(12, 2)
+  paidAmount            Decimal  @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  pendingAmount         Decimal  @default(0) @map("pending_amount") @db.Decimal(12, 2)
   vatDeductiblePercent  Decimal? @map("vat_deductible_percent") @db.Decimal(5, 2)
   irpfDeductiblePercent Decimal? @map("irpf_deductible_percent") @db.Decimal(5, 2)
-  currency      String  @default("EUR")
+  currency              String   @default("EUR")
 
   notes         String?
   vendor        String? // proveedor libre para gastos sin supplier registrado

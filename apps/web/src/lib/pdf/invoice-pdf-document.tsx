@@ -58,6 +58,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
   const { tenant, client, invoice, lines, vatBreakdown } = data
   const statusMeta = getStatusMeta(invoice.status)
   const isRectificativa = ['R1', 'R2', 'R3', 'R4', 'R5'].includes(invoice.type ?? '')
+  const isSimplified = invoice.type === 'F2' || invoice.type === 'R5'
   const rectTypeLabel =
     invoice.type === 'R1'
       ? 'Error fundado en derecho'
@@ -68,12 +69,20 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           : invoice.type === 'R4'
             ? 'Obra por administración'
             : invoice.type === 'R5'
-              ? 'Resolución de contrato'
+              ? 'Rectificativa de factura simplificada'
               : ''
+  const documentType = isRectificativa
+    ? isSimplified
+      ? 'Factura rectificativa simplificada'
+      : 'Factura rectificativa'
+    : isSimplified
+      ? 'Factura simplificada'
+      : 'Factura'
+  const showsBankDetails = !invoice.paymentMethod || invoice.paymentMethod === 'bank_transfer'
 
   return (
     <Document
-      title={`Factura ${invoice.fullNumber}`}
+      title={`${documentType} ${invoice.fullNumber}`}
       author={tenant.legalName ?? tenant.name}
     >
       <Page size="A4" style={styles.page}>
@@ -103,7 +112,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.docTypeLabel}>
-              {isRectificativa ? 'Rectificativa' : 'Factura'}
+              {documentType}
             </Text>
             <Text style={styles.docNumber}>{invoice.fullNumber}</Text>
             {isRectificativa && invoice.rectifiedBy && (
@@ -117,9 +126,15 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
         {/* META GRID */}
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Fecha de emisión</Text>
+            <Text style={styles.metaLabel}>Fecha de expedición</Text>
             <Text style={styles.metaValue}>{formatDateES(invoice.issuedAt)}</Text>
           </View>
+          {invoice.operationAt && (
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Fecha de operación</Text>
+              <Text style={styles.metaValue}>{formatDateES(invoice.operationAt)}</Text>
+            </View>
+          )}
           {invoice.dueAt && (
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Vencimiento</Text>
@@ -179,25 +194,27 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
             )}
           </View>
 
-          <View style={styles.partyBox}>
-            <Text style={styles.partyLabel}>Facturar a</Text>
-            <Text style={styles.partyName}>{client.legalName || client.name}</Text>
-            <Text style={styles.partyDetailMono}>NIF/CIF: {client.nif}</Text>
-            {client.address && (
-              <Text style={styles.partyDetail}>{client.address}</Text>
-            )}
-            {(client.postalCode || client.city) && (
-              <Text style={styles.partyDetail}>
-                {[client.postalCode, client.city, client.province]
-                  .filter(Boolean)
-                  .join(' · ')}
-                {client.country && client.country !== 'ES' ? ` · ${client.country}` : ''}
-              </Text>
-            )}
-            {client.email && (
-              <Text style={styles.partyDetail}>{client.email}</Text>
-            )}
-          </View>
+          {client && (
+            <View style={styles.partyBox}>
+              <Text style={styles.partyLabel}>Facturar a</Text>
+              <Text style={styles.partyName}>{client.legalName || client.name}</Text>
+              <Text style={styles.partyDetailMono}>NIF/CIF: {client.nif}</Text>
+              {client.address && (
+                <Text style={styles.partyDetail}>{client.address}</Text>
+              )}
+              {(client.postalCode || client.city) && (
+                <Text style={styles.partyDetail}>
+                  {[client.postalCode, client.city, client.province]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  {client.country && client.country !== 'ES' ? ` · ${client.country}` : ''}
+                </Text>
+              )}
+              {client.email && (
+                <Text style={styles.partyDetail}>{client.email}</Text>
+              )}
+            </View>
+          )}
         </View>
 
         {/* TABLE */}
@@ -264,7 +281,7 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
               <Text style={styles.summaryValue}>{formatEuro(invoice.vatAmount)}</Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total a pagar</Text>
+              <Text style={styles.totalLabel}>{isSimplified ? 'Total cobrado' : 'Total a pagar'}</Text>
               <Text style={styles.totalValue}>{formatEuro(invoice.totalAmount)}</Text>
             </View>
           </View>
@@ -290,15 +307,18 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
         <View style={styles.paymentSection}>
           <Text style={styles.paymentLabel}>Forma de pago</Text>
           <Text style={styles.paymentMethod}>
-            {getPaymentMethodLabel()}
+            {getPaymentMethodLabel(invoice.paymentMethod)}
           </Text>
-          {tenant.iban ? (
+          {invoice.paymentReference && (
+            <Text style={styles.iban}>Referencia TPV: {invoice.paymentReference}</Text>
+          )}
+          {showsBankDetails && tenant.iban ? (
             <Text style={styles.iban}>IBAN: {formatIban(tenant.iban)}</Text>
-          ) : (
+          ) : showsBankDetails ? (
             <Text style={styles.paymentMethod}>
               Consultar datos bancarios con el emisor
             </Text>
-          )}
+          ) : null}
         </View>
 
         {/* VERIFACTU FOOTER — fixed: appears on every page at bottom, outside normal flow */}

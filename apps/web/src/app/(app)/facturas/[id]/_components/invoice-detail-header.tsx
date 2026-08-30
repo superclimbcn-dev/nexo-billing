@@ -7,9 +7,12 @@ interface Props {
   invoice: {
     id: string
     fullNumber: string
+    type: string
     status: string
     issuedAt: Date
+    operationAt: Date | null
     dueAt: Date | null
+    paymentMethod: string | null
   }
 }
 
@@ -68,9 +71,19 @@ export function InvoiceDetailHeader({ invoice }: Props) {
           </h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <InvoiceStatusBadge status={effectiveStatus} />
+            {invoice.type === 'F2' && (
+              <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+                Factura simplificada
+              </span>
+            )}
             <span className="text-sm text-[var(--text-dim)]">
-              Emitida el {formatDate(invoice.issuedAt)}
+              Expedida el {formatDate(invoice.issuedAt)}
             </span>
+            {invoice.operationAt && (
+              <span className="text-sm text-[var(--text-dim)]">
+                · Operación el {formatDate(invoice.operationAt)}
+              </span>
+            )}
             {invoice.dueAt && (
               <span className="text-sm text-[var(--text-dim)]">
                 · Vence el {formatDate(invoice.dueAt)}
@@ -79,10 +92,28 @@ export function InvoiceDetailHeader({ invoice }: Props) {
             {dueMeta && (
               <span className={`text-sm ${dueMeta.cls}`}>· {dueMeta.label}</span>
             )}
+            {invoice.type === 'F2' && invoice.paymentMethod && (
+              <span className="text-sm text-[var(--text-dim)]">
+                · Pago: {paymentMethodLabel(invoice.paymentMethod)}
+              </span>
+            )}
           </div>
         </div>
         <InvoiceStatusActions invoiceId={invoice.id} status={effectiveStatus} />
       </div>
     </header>
   )
+}
+
+function paymentMethodLabel(method: string): string {
+  const labels: Record<string, string> = {
+    cash: 'Efectivo',
+    bank_transfer: 'Transferencia',
+    card: 'Tarjeta / TPV',
+    bizum: 'Bizum',
+    direct_debit: 'Domiciliación',
+    cheque: 'Cheque',
+    other: 'Otro',
+  }
+  return labels[method] ?? method
 }

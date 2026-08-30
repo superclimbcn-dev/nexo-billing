@@ -50,13 +50,17 @@ function formatCSV(rows: string[][]): string {
 async function generateInvoicePdf(invoice: {
   id: string
   fullNumber: string
+  type: string
   issuedAt: Date
+  operationAt: Date | null
   dueAt: Date | null
   notes: string | null
   status: string
   subtotal: number
   vatAmount: number
   totalAmount: number
+  paymentMethod: string | null
+  paymentReference: string | null
   client: {
     name: string
     legalName: string | null
@@ -67,7 +71,7 @@ async function generateInvoicePdf(invoice: {
     province: string | null
     country: string
     email: string | null
-  }
+  } | null
   lines: Array<{
     description: string
     quantity: number
@@ -119,26 +123,20 @@ async function generateInvoicePdf(invoice: {
       websiteUrl: tenant.websiteUrl,
       logoUrl: tenant.branding?.logoUrl ?? null,
     },
-    client: {
-      name: invoice.client.name,
-      legalName: invoice.client.legalName,
-      nif: invoice.client.nif,
-      address: invoice.client.address,
-      city: invoice.client.city,
-      postalCode: invoice.client.postalCode,
-      province: invoice.client.province,
-      country: invoice.client.country,
-      email: invoice.client.email,
-    },
+    client: invoice.client,
     invoice: {
       fullNumber: invoice.fullNumber,
       issuedAt: invoice.issuedAt,
+      operationAt: invoice.operationAt,
       dueAt: invoice.dueAt,
       notes: invoice.notes,
       status: invoice.status,
       subtotal: invoice.subtotal,
       vatAmount: invoice.vatAmount,
       totalAmount: invoice.totalAmount,
+      paymentMethod: invoice.paymentMethod,
+      paymentReference: invoice.paymentReference,
+      type: invoice.type,
     },
     lines: invoice.lines,
     vatBreakdown: totals.vatBreakdown,
@@ -225,6 +223,11 @@ export async function exportData(
       include: {
         client: true,
         lines: { orderBy: { sortOrder: 'asc' } },
+        payments: {
+          orderBy: { paidAt: 'desc' },
+          take: 1,
+          select: { reference: true },
+        },
       },
       orderBy: { issuedAt: 'desc' },
       take: 100,
@@ -234,24 +237,30 @@ export async function exportData(
       const invoiceData = {
         id: inv.id,
         fullNumber: inv.fullNumber,
+        type: inv.type,
         issuedAt: inv.issuedAt,
+        operationAt: inv.operationAt,
         dueAt: inv.dueAt,
         notes: inv.notes,
         status: inv.status,
         subtotal: Number(inv.subtotal),
         vatAmount: Number(inv.vatAmount),
         totalAmount: Number(inv.totalAmount),
-        client: {
-          name: inv.client.name,
-          legalName: inv.client.legalName,
-          nif: inv.client.nif,
-          address: inv.client.address,
-          city: inv.client.city,
-          postalCode: inv.client.postalCode,
-          province: inv.client.province,
-          country: inv.client.country,
-          email: inv.client.email,
-        },
+        paymentMethod: inv.paymentMethod,
+        paymentReference: inv.payments[0]?.reference ?? null,
+        client: inv.client
+          ? {
+              name: inv.client.name,
+              legalName: inv.client.legalName,
+              nif: inv.client.nif,
+              address: inv.client.address,
+              city: inv.client.city,
+              postalCode: inv.client.postalCode,
+              province: inv.client.province,
+              country: inv.client.country,
+              email: inv.client.email,
+            }
+          : null,
         lines: inv.lines.map((l) => ({
           description: l.description,
           quantity: Number(l.quantity),
@@ -276,8 +285,8 @@ export async function exportData(
       invoices.push({
         fullNumber: inv.fullNumber,
         issuedAt: inv.issuedAt,
-        clientName: inv.client.name,
-        clientNif: inv.client.nif,
+        clientName: inv.client?.name ?? 'Consumidor final',
+        clientNif: inv.client?.nif ?? '',
         subtotal: Number(inv.subtotal),
         vatAmount: Number(inv.vatAmount),
         totalAmount: Number(inv.totalAmount),
