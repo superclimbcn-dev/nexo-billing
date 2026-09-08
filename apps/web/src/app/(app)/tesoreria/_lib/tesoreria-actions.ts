@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma, InvoiceStatus } from '@nexo/prisma'
+import { prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { redirect } from 'next/navigation'
 
@@ -78,13 +78,14 @@ export async function getCashFlow(
     select: { issuedAt: true, totalAmount: true },
   })
 
-  // Expenses grouped by month
+  // Only realized expenses, grouped by payment date
   const expenses = await prisma.expense.findMany({
     where: {
       tenantId,
-      issuedAt: { gte: start },
+      status: 'paid',
+      paidAt: { gte: start, lte: now },
     },
-    select: { issuedAt: true, totalAmount: true },
+    select: { paidAt: true, totalAmount: true },
   })
 
   // Build monthly buckets
@@ -104,7 +105,8 @@ export async function getCashFlow(
 
     const cashOut = expenses
       .filter((exp) => {
-        const e = new Date(exp.issuedAt)
+        if (!exp.paidAt) return false
+        const e = new Date(exp.paidAt)
         return e.getFullYear() === d.getFullYear() && e.getMonth() === d.getMonth()
       })
       .reduce((sum, exp) => sum + Number(exp.totalAmount), 0)
@@ -162,7 +164,7 @@ export async function getPendingCollections(): Promise<{
   return { items, total }
 }
 
-// ── Pending Payments (expenses this month + future) ─────────────────────────
+// ── Pending Payments (all outstanding expenses) ─────────────────────────
 
 export async function getPendingPayments(): Promise<{
   items: PendingExpense[]
@@ -170,16 +172,12 @@ export async function getPendingPayments(): Promise<{
 }> {
   const { tenantId } = await requireAuth()
 
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-
   const expenses = await prisma.expense.findMany({
     where: {
       tenantId,
-      issuedAt: { gte: monthStart },
+      status: 'pending',
     },
-    orderBy: { issuedAt: 'desc' },
-    take: 50,
+    orderBy: [{ dueAt: 'asc' }, { issuedAt: 'asc' }],
   })
 
   const items = expenses.map((exp) => ({
@@ -200,7 +198,7 @@ export async function getPendingPayments(): Promise<{
 export async function getTreasuryKpis(): Promise<TreasuryKpi> {
   const { tenantId } = await requireAuth()
 
-  const [paidInvoices, pendingInvoices, expensesMonth] = await Promise.all([
+  const [paidInvoices, pendingInvoices, pendingExpenses, paidExpenses] = await Promise.all([
     prisma.invoice.aggregate({
       where: { tenantId, status: 'paid' },
       _sum: { totalAmount: true },
@@ -216,23 +214,27 @@ export async function getTreasuryKpis(): Promise<TreasuryKpi> {
     prisma.expense.aggregate({
       where: {
         tenantId,
-        issuedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        status: 'pending',
       },
       _sum: { totalAmount: true },
       _count: { _all: true },
     }),
+    prisma.expense.aggregate({
+      where: { tenantId, status: 'paid', paidAt: { lte: new Date() } },
+      _sum: { totalAmount: true },
+    }),
   ])
 
-  const currentBalance = Number(paidInvoices._sum.totalAmount ?? 0)
+  const currentBalance = Number(paidInvoices._sum.totalAmount ?? 0) - Number(paidExpenses._sum.totalAmount ?? 0)
   const pendingIn = Number(pendingInvoices._sum.totalAmount ?? 0)
-  const pendingOut = Number(expensesMonth._sum.totalAmount ?? 0)
+  const pendingOut = Number(pendingExpenses._sum.totalAmount ?? 0)
 
   return {
     currentBalance: Math.round(currentBalance * 100) / 100,
     pendingIn: Math.round(pendingIn * 100) / 100,
     pendingOut: Math.round(pendingOut * 100) / 100,
     pendingInCount: pendingInvoices._count._all,
-    pendingOutCount: expensesMonth._count._all,
+    pendingOutCount: pendingExpenses._count._all,
   }
 }
 
@@ -243,7 +245,7 @@ export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
 
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 
-  const [balanceAgg, pendingInvoicesAgg, expensesMonthAgg, incomeMonthAgg] =
+  const [balanceAgg, pendingInvoicesAgg, expensesMonthAgg, incomeMonthAgg, paidExpensesAgg] =
     await Promise.all([
       prisma.invoice.aggregate({
         where: { tenantId, status: 'paid' },
@@ -257,7 +259,7 @@ export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
         _sum: { totalAmount: true },
       }),
       prisma.expense.aggregate({
-        where: { tenantId, issuedAt: { gte: monthStart } },
+        where: { tenantId, status: 'paid', paidAt: { gte: monthStart, lte: new Date() } },
         _sum: { totalAmount: true },
       }),
       prisma.invoice.aggregate({
@@ -268,9 +270,13 @@ export async function getTreasuryAlerts(): Promise<TreasuryAlert[]> {
         },
         _sum: { totalAmount: true },
       }),
+      prisma.expense.aggregate({
+        where: { tenantId, status: 'paid', paidAt: { lte: new Date() } },
+        _sum: { totalAmount: true },
+      }),
     ])
 
-  const balance = Number(balanceAgg._sum.totalAmount ?? 0)
+  const balance = Number(balanceAgg._sum.totalAmount ?? 0) - Number(paidExpensesAgg._sum.totalAmount ?? 0)
   const pendingIn = Number(pendingInvoicesAgg._sum.totalAmount ?? 0)
   const monthlyExpenses = Number(expensesMonthAgg._sum.totalAmount ?? 0)
   const monthlyIncome = Number(incomeMonthAgg._sum.totalAmount ?? 0)

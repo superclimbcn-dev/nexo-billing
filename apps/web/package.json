@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "test:rls": "tsx scripts/test-rls.ts",
-    "postinstall": "cd ../../infrastructure/prisma && npx prisma generate --schema=./prisma/schema.prisma"
+    "postinstall": "cd ../../infrastructure/prisma && npx prisma generate --schema=./prisma/schema.prisma",
+    "test": "vitest run && tsx --test \"src/app/(app)/gastos/_lib/expense-schema.test.ts\" \"src/app/(app)/impuestos/_lib/fiscal-calculation.test.ts\""
   },
   "dependencies": {
     "@nexo/core-auth": "workspace:*",
@@ -51,6 +52,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.4",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "2.1.9"
   }
 }

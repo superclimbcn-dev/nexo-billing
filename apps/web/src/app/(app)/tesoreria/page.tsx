@@ -7,6 +7,7 @@ import {
   getTreasuryAlerts,
 } from './_lib/tesoreria-actions'
 import { getQuarterlyTaxEstimate } from '../impuestos/_lib/impuestos-actions'
+import { ExpensePaymentButton } from '../gastos/_components/expense-payment-button'
 import { CashFlowChart } from './_components/cash-flow-chart'
 
 export default async function TesoreriaPage() {
@@ -43,13 +44,13 @@ export default async function TesoreriaPage() {
           accent="text-[var(--success)]"
         />
         <KpiCard
-          label="Por pagar (mes)"
+          label="Por pagar"
           value={kpis.pendingOut}
           sub={`${kpis.pendingOutCount} gastos`}
           accent="text-[var(--danger)]"
         />
         <KpiCard
-          label="Impuesto próximo trim."
+          label="IVA estimado (Modelo 303)"
           value={tax.totalTaxes}
           sub={tax.nextDeadline ? `Vence ${formatDate(tax.nextDeadline)}` : 'Sin vencimiento pendiente'}
           accent="text-[var(--warning)]"
@@ -154,7 +155,7 @@ export default async function TesoreriaPage() {
           </p>
           <div className="space-y-2">
             {pendingPayments.items.length === 0 ? (
-              <p className="text-sm text-[var(--text-dim)]">No hay gastos registrados este mes.</p>
+              <p className="text-sm text-[var(--text-dim)]">No hay gastos pendientes de pago.</p>
             ) : (
               pendingPayments.items.map((exp) => (
                 <div
@@ -173,6 +174,7 @@ export default async function TesoreriaPage() {
                     <p className="text-sm font-mono text-[var(--text)]">
                       {formatCurrency(exp.totalAmount)}
                     </p>
+                    <ExpensePaymentButton expenseId={exp.id} />
                   </div>
                 </div>
               ))

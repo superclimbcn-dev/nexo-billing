@@ -1,9 +1,11 @@
 'use client'
 
+import type { ExpenseStatus, PaymentMethod } from '@nexo/prisma'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { parseCurrency } from '@nexo/core-utils'
 import { createExpense, updateExpense } from '../_lib/expense-actions'
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from '../_lib/expense-payment'
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '../_lib/expense-schema'
 import {
   calculateExpenseTotals,
@@ -16,6 +18,9 @@ interface Props {
     id: string
     totalAmount: number
     issuedAt: Date
+    status: ExpenseStatus
+    paidAt: Date | null
+    paymentMethod: PaymentMethod | null
     category: ExpenseCategory | null
     notes: string | null
     vendor: string | null
@@ -43,6 +48,9 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
       ? expense.issuedAt.toISOString().slice(0, 10)
       : new Date().toISOString().slice(0, 10),
   )
+  const [status, setStatus] = useState(expense?.status ?? 'paid')
+  const [paidAt, setPaidAt] = useState(expense?.paidAt?.toISOString().slice(0, 10) ?? '')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>(expense?.paymentMethod ?? '')
   const [category, setCategory] = useState<ExpenseCategory>(
     expense?.category ?? 'OTROS',
   )
@@ -78,6 +86,9 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
       amount,
       date,
       category,
+      status,
+      paidAt: status === 'paid' ? paidAt || date : null,
+      paymentMethod: status === 'paid' ? paymentMethod || null : null,
       description: description || undefined,
       vendor: vendor || undefined,
       externalNumber: externalNumber || undefined,
@@ -246,6 +257,37 @@ export function ExpenseForm({ expense, onClose, onSuccess }: Props) {
           className={inputClass}
         />
       </div>
+
+      <fieldset className="space-y-3 border-t border-[var(--border)] pt-4">
+        <legend className="text-sm font-medium text-[var(--text)] pr-2">Pago</legend>
+        <label className="block text-sm">
+          Estado del pago
+          <select value={status} onChange={(e) => setStatus(e.target.value as ExpenseStatus)} className={inputClass}>
+            <option value="paid">Pagado</option>
+            <option value="pending">Pendiente</option>
+            {status !== 'paid' && status !== 'pending' && <option value={status}>{{ partially_paid: 'Pago parcial', overdue: 'Vencido', cancelled: 'Anulado' }[status]}</option>}
+          </select>
+        </label>
+        {status === 'paid' && (
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block text-sm">
+              Fecha de pago *
+              <input type="date" required value={paidAt || date}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setPaidAt(e.target.value)} className={inputClass} />
+            </label>
+            <label className="block text-sm">
+              Forma de pago{expense?.status === 'pending' ? ' *' : ''}
+              <select value={paymentMethod} required={expense?.status === 'pending'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod | '')} className={inputClass}>
+                <option value="">Sin definir</option>
+                {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{PAYMENT_METHOD_LABELS[method]}</option>)}
+              </select>
+            </label>
+          </div>
+        )}
+        <p className="text-xs text-[var(--text-dim)]">El estado del pago solo afecta a tesorería. No modifica la deducción de IVA ni de IRPF.</p>
+      </fieldset>
 
       <fieldset className="space-y-3 border-t border-[var(--border)] pt-4">
         <legend className="text-sm font-medium text-[var(--text)] pr-2">

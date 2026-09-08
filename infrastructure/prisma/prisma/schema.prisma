@@ -817,11 +817,13 @@ model Expense {
   supplierId String? @map("supplier_id") @db.Uuid
 
   externalNumber String?          @map("external_number") // número que viene en la factura del proveedor
-  status         ExpenseStatus    @default(pending)
+  status         ExpenseStatus    @default(paid)
   category       ExpenseCategory? // categoría estándar para gastos simples
 
   issuedAt DateTime  @map("issued_at")
   dueAt    DateTime? @map("due_at")
+  paidAt   DateTime? @map("paid_at")
+  paymentMethod PaymentMethod? @map("payment_method")
 
   subtotal              Decimal  @default(0) @db.Decimal(12, 2)
   vatAmount             Decimal  @default(0) @map("vat_amount") @db.Decimal(12, 2)
@@ -846,6 +848,7 @@ model Expense {
 
   @@index([tenantId, issuedAt])
   @@index([tenantId, category])
+  @@index([tenantId, status, paidAt])
   @@map("expenses")
 }
 

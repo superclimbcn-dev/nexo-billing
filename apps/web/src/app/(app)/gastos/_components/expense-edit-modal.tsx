@@ -1,5 +1,6 @@
 'use client'
 
+import type { ExpenseStatus, PaymentMethod } from '@nexo/prisma'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExpenseForm } from './expense-form'
@@ -11,6 +12,9 @@ interface Props {
     id: string
     totalAmount: number
     issuedAt: Date
+    status: ExpenseStatus
+    paidAt: Date | null
+    paymentMethod: PaymentMethod | null
     category: ExpenseCategory | null
     notes: string | null
     vendor: string | null

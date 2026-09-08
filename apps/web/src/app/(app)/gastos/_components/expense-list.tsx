@@ -1,8 +1,11 @@
 'use client'
 
+import type { ExpenseStatus, PaymentMethod } from '@nexo/prisma'
 import { useState } from 'react'
 import { formatCurrency, formatDate } from '@nexo/core-utils'
 import type { ExpenseCategory } from '../_lib/expense-schema'
+import { ExpensePaymentButton } from './expense-payment-button'
+import { PAYMENT_METHOD_LABELS } from '../_lib/expense-payment'
 import { ExpenseReceiptUpload } from './expense-receipt-upload'
 import { ExpenseEditModal } from './expense-edit-modal'
 
@@ -10,6 +13,9 @@ interface ExpenseItem {
   id: string
   totalAmount: number
   issuedAt: Date
+  status: ExpenseStatus
+  paidAt: Date | null
+  paymentMethod: PaymentMethod | null
   category: ExpenseCategory | null
   notes: string | null
   vendor: string | null
@@ -86,6 +92,9 @@ export function ExpenseList({ items }: Props) {
                 Importe
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
+                Pago
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-dim)] uppercase tracking-wider">
                 Recibo
               </th>
               <th className="px-4 py-3" />
@@ -116,6 +125,15 @@ export function ExpenseList({ items }: Props) {
                 </td>
                 <td className="px-4 py-3 text-sm font-mono text-[var(--text)]">
                   {formatCurrency(expense.totalAmount)}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={expense.status === 'paid' ? 'text-sm text-[var(--success)]' : 'text-sm text-[var(--warning)]'}>
+                    {{ paid: 'Pagado', pending: 'Pendiente', partially_paid: 'Pago parcial', overdue: 'Vencido', cancelled: 'Anulado' }[expense.status]}
+                  </span>
+                  {expense.status === 'paid' && expense.paidAt && (
+                    <p className="text-xs text-[var(--text-dim)]">{formatDate(expense.paidAt)}{expense.paymentMethod ? ` · ${PAYMENT_METHOD_LABELS[expense.paymentMethod]}` : ''}</p>
+                  )}
+                  {expense.status === 'pending' && <ExpensePaymentButton expenseId={expense.id} />}
                 </td>
                 <td className="px-4 py-3">
                   {expense.attachmentUrl ? (

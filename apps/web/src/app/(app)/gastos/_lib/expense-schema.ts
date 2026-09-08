@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { parseCurrency } from '@nexo/core-utils'
 import { EXPENSE_VAT_RATES } from './expense-totals'
+import { EXPENSE_PAYMENT_STATUSES, PAYMENT_METHODS, paymentDateSchema } from './expense-payment'
 
 export const EXPENSE_CATEGORIES = [
   'ALIMENTACION',
@@ -21,6 +22,9 @@ const deductiblePercentSchema = z
   .transform((value) => value ?? null)
 
 export const expenseSchema = z.object({
+  status: z.enum(EXPENSE_PAYMENT_STATUSES).default('paid'),
+  paidAt: paymentDateSchema.nullish(),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullish(),
   amount: z
     .string()
     .transform((v) => parseCurrency(v))

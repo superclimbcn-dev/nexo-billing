@@ -1,10 +1,11 @@
 'use server'
 
-import { prisma, ExpenseCategory, Prisma } from '@nexo/prisma'
+import { prisma, ExpenseCategory, ExpenseStatus, PaymentMethod, Prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import { expenseSchema } from './expense-schema'
+import { expensePaymentData, markExpensePaidSchema } from './expense-payment'
 import { calculateExpenseTotals, type ExpenseVatRate } from './expense-totals'
 import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
@@ -77,7 +78,7 @@ export async function createExpense(
           category: data.category,
           notes: data.description ?? null,
           vendor: data.vendor ?? null,
-          status: 'paid',
+          ...expensePaymentData(data),
         },
         select: { id: true },
       })
@@ -100,6 +101,7 @@ export async function createExpense(
     })
 
     revalidatePath('/gastos')
+    revalidatePath('/tesoreria')
     return { ok: true, data: { id: created.id } }
   } catch (err) {
     console.error('[createExpense] error:', err)
@@ -126,6 +128,13 @@ export async function updateExpense(
     include: { lines: { orderBy: { sortOrder: 'asc' }, take: 2 } },
   })
   if (!owned) return { ok: false, error: 'Gasto no encontrado' }
+  if (owned.status !== 'paid' && owned.status !== 'pending') {
+    return { ok: false, error: 'Este estado de gasto no puede editarse en el modo simple' }
+  }
+  if (owned.status === 'pending' && data.status === 'paid') {
+    const payment = markExpensePaidSchema.safeParse(data)
+    if (!payment.success) return { ok: false, error: payment.error.issues[0]!.message }
+  }
 
   try {
     if (owned.lines.length > 1) {
@@ -135,7 +144,17 @@ export async function updateExpense(
       }
     }
 
-    const totals = data.vatRate === null
+    // Editing payment details must preserve the persisted fiscal breakdown,
+    // including legacy expenses whose VAT rate is unknown.
+    const amountsChanged = data.amount !== Number(owned.totalAmount)
+      || data.vatRate !== (owned.lines[0] ? Number(owned.lines[0].vatRate) : null)
+    const totals = !amountsChanged
+      ? {
+          subtotal: Number(owned.subtotal),
+          vatAmount: Number(owned.vatAmount),
+          totalAmount: Number(owned.totalAmount),
+        }
+      : data.vatRate === null
       ? {
           subtotal: data.amount,
           vatAmount: 0,
@@ -145,8 +164,9 @@ export async function updateExpense(
 
     const updated = await prisma.$transaction(async (tx) => {
       const expense = await tx.expense.update({
-        where: { id },
+        where: { id, tenantId: ctx.tenantId, status: owned.status },
         data: {
+          ...expensePaymentData(data),
           totalAmount: moneyDecimal(totals.totalAmount),
           subtotal: moneyDecimal(totals.subtotal),
           vatAmount: moneyDecimal(totals.vatAmount),
@@ -184,10 +204,39 @@ export async function updateExpense(
     })
 
     revalidatePath('/gastos')
+    revalidatePath('/tesoreria')
     return { ok: true, data: { id: updated.id } }
   } catch (err) {
     console.error('[updateExpense] error:', err)
     return { ok: false, error: 'Error al actualizar el gasto' }
+  }
+}
+
+// Payment-only mutation: never recalculate fiscal amounts or expense lines.
+export async function markExpensePaid(id: string, raw: unknown): Promise<ActionResult> {
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const parsed = markExpensePaidSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
+
+  try {
+    const result = await prisma.expense.updateMany({
+      where: { id, tenantId: ctx.tenantId, status: 'pending' },
+      data: {
+        status: 'paid',
+        paidAt: new Date(parsed.data.paidAt),
+        paymentMethod: parsed.data.paymentMethod,
+      },
+    })
+    if (result.count === 0) {
+      return { ok: false, error: 'Gasto no encontrado o ya no está pendiente' }
+    }
+    revalidatePath('/gastos')
+    revalidatePath('/tesoreria')
+    return { ok: true, data: undefined }
+  } catch (err) {
+    console.error('[markExpensePaid] error:', err)
+    return { ok: false, error: 'Error al registrar el pago' }
   }
 }
 
@@ -203,6 +252,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   try {
     await prisma.expense.delete({ where: { id } })
     revalidatePath('/gastos')
+    revalidatePath('/tesoreria')
     return { ok: true, data: undefined }
   } catch (err) {
     console.error('[deleteExpense] error:', err)
@@ -216,6 +266,9 @@ export async function listExpenses(
   id: string
   totalAmount: number
   issuedAt: Date
+  status: ExpenseStatus
+  paidAt: Date | null
+  paymentMethod: PaymentMethod | null
   category: ExpenseCategory | null
   notes: string | null
   vendor: string | null
@@ -264,6 +317,9 @@ export async function listExpenses(
         id: true,
         totalAmount: true,
         issuedAt: true,
+        status: true,
+        paidAt: true,
+        paymentMethod: true,
         category: true,
         notes: true,
         vendor: true,
@@ -389,6 +445,7 @@ export async function uploadReceipt(formData: FormData): Promise<ActionResult<st
     })
 
     revalidatePath('/gastos')
+    revalidatePath('/tesoreria')
     return { ok: true, data: publicUrl.publicUrl }
   } catch (err) {
     console.error('[uploadReceipt] error:', err)

@@ -637,3 +637,17 @@ describe('Fiscal warnings and deadlines', () => {
     )
   })
 })
+
+describe('payment status does not change fiscal deductions', () => {
+  for (const percentage of [0, 50, 100, null]) {
+    it(`preserves both tax models at ${percentage}% when a pending expense is paid`, () => {
+      const document = expense({
+        id: 'payment-transition', issuedAt: date(0), subtotal: 100, vatAmount: 21,
+        vatDeductiblePercent: percentage, irpfDeductiblePercent: percentage, status: 'pending',
+      })
+      const pending = calculate({ expenses: [document] })
+      const paid = calculate({ expenses: [{ ...document, status: 'paid' }] })
+      assert.deepEqual(paid, pending)
+    })
+  }
+})
