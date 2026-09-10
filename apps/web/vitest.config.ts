@@ -2,10 +2,11 @@ import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  esbuild: { jsx: 'automatic' },
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: {
     environment: 'node',
-    include: ['src/**/*.actions.test.ts'],
+    include: ['src/**/*.actions.test.{ts,tsx}'],
     clearMocks: true,
   },
 })

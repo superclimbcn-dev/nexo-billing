@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { ReportDownloadButtons } from '../informes/_components/report-controls'
+import { REPORT_NOTICE } from '@/lib/reports/report-types'
 import { formatCurrency, formatDate } from '@nexo/core-utils'
 import { getAvailableTaxYears, getCurrentQuarter, type Quarter } from './_lib/impuestos-schema'
 import type { Vencimiento } from './_lib/impuestos-actions'
@@ -67,6 +70,12 @@ export default async function ImpuestosPage({
           </button>
         </form>
       </header>
+
+      <div className="space-y-3">
+        <ReportDownloadButtons request={{ report: 'tax', format: 'pdf', period: 'quarter', year, quarter }} />
+        <Link href={`/informes?period=quarter&year=${year}&quarter=${quarter}`} className="inline-block px-4 py-2 rounded-md border border-[var(--border)] text-sm">Informe para gestor</Link>
+        <p className="text-sm text-[var(--text-dim)]">{REPORT_NOTICE}</p>
+      </div>
 
       {reviewExpenseCount > 0 && (
         <div className="px-4 py-3 bg-[var(--warning)]/10 border border-[var(--warning)]/30 rounded-lg">

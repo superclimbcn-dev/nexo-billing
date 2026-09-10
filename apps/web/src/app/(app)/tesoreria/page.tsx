@@ -1,3 +1,8 @@
+import Link from 'next/link'
+import { getAccountingReport } from '@/lib/reports/report-data'
+import { defaultReportRequest, reportRequestSchema } from '@/lib/reports/report-period'
+import { ReportControls } from '../informes/_components/report-controls'
+import { ReportPreview } from '../informes/_components/report-preview'
 import { formatCurrency, formatDate } from '@nexo/core-utils'
 import {
   getCashFlow,
@@ -10,7 +15,11 @@ import { getQuarterlyTaxEstimate } from '../impuestos/_lib/impuestos-actions'
 import { ExpensePaymentButton } from '../gastos/_components/expense-payment-button'
 import { CashFlowChart } from './_components/cash-flow-chart'
 
-export default async function TesoreriaPage() {
+export default async function TesoreriaPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams
+  const parsed = reportRequestSchema.safeParse({ ...defaultReportRequest(), ...params, report: 'treasury', format: 'pdf' })
+  if (!parsed.success) return <p role="alert">Período no válido. <Link href="/tesoreria" className="underline">Volver a Tesorería</Link></p>
+  const report = await getAccountingReport(parsed.data)
   const [{ points, totalIn, totalOut }, pendingCollections, pendingPayments, kpis, alerts, tax] =
     await Promise.all([
       getCashFlow(6),
@@ -29,6 +38,18 @@ export default async function TesoreriaPage() {
           Flujo de caja, previsiones y alertas
         </p>
       </header>
+
+      <section className="space-y-4 rounded-lg border border-[var(--border)] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-medium">Informe de tesorería · {report.period.label}</h2>
+          <Link href="/informes" className="px-4 py-2 rounded-md border border-[var(--border)] text-sm">Informe para gestor</Link>
+        </div>
+        <ReportControls key={JSON.stringify(parsed.data)} request={parsed.data} />
+        <details>
+          <summary className="cursor-pointer text-sm font-medium">Ver resumen y detalle que se exportarán</summary>
+          <div className="mt-4"><ReportPreview report={report} /></div>
+        </details>
+      </section>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test:rls": "tsx scripts/test-rls.ts",
     "postinstall": "cd ../../infrastructure/prisma && npx prisma generate --schema=./prisma/schema.prisma",
     "test": "vitest run && tsx --test \"src/app/(app)/gastos/_lib/expense-schema.test.ts\" \"src/app/(app)/impuestos/_lib/fiscal-calculation.test.ts\""
@@ -41,18 +41,22 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "15.5.15",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^10.10.0",
     "jsonwebtoken": "^9.0.3",
     "postcss": "^8.4.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.4",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
+    "typescript-eslint": "8",
     "vitest": "2.1.9"
   }
 }
