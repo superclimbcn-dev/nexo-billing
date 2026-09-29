@@ -18,6 +18,7 @@ if (process.env.NODE_ENV !== 'production') {
 export {
   Prisma,
   UserRole,
+  InvitationStatus,
   AuditAction,
   ItemType,
   InvoiceStatus,

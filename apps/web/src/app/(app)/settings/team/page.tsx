@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@nexo/core-auth'
-import { prisma } from '@nexo/prisma'
+import { InvitationStatus, prisma } from '@nexo/prisma'
 import { Panel, Button, FormInput } from '@nexo/core-ui'
 import { inviteUser, revokeInvitation, removeTeamMember } from '@/actions/team'
 
@@ -45,7 +45,7 @@ export default async function TeamPage({ searchParams }: PageProps) {
       orderBy: { createdAt: 'asc' },
     }),
     prisma.invitation.findMany({
-      where: { tenantId, expiresAt: { gte: new Date() } },
+      where: { tenantId, status: InvitationStatus.PENDING, expiresAt: { gte: new Date() } },
       orderBy: { createdAt: 'desc' },
     }),
   ])

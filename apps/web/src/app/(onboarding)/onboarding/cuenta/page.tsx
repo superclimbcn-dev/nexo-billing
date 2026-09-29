@@ -4,7 +4,7 @@ import { createServerClient } from '@nexo/core-auth'
 import { setOnboardingState } from '@/actions/onboarding'
 
 interface PageProps {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; invite?: string }>
 }
 
 async function saveAndContinue(formData: FormData) {
@@ -17,7 +17,8 @@ async function saveAndContinue(formData: FormData) {
 }
 
 export default async function CuentaPage({ searchParams }: PageProps) {
-  const { error } = await searchParams
+  const { error, invite } = await searchParams
+  if (invite) redirect("/invite/" + encodeURIComponent(invite))
 
   const supabase = await createServerClient()
   const {

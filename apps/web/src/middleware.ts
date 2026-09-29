@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   '/auth',
   '/check-email',
   '/auth-error',
+  '/invite',
   '/spoiler',
   '/terminos',
   '/privacidad',
