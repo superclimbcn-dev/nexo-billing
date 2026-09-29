@@ -52,7 +52,8 @@ export function canRead(user: AuthUser | null): boolean {
     role === UserRole.OWNER ||
     role === UserRole.ADMIN ||
     role === UserRole.ACCOUNTANT ||
-    role === UserRole.MEMBER
+    role === UserRole.MEMBER ||
+    role === UserRole.VIEWER
   )
 }
 

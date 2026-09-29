@@ -1,101 +1,149 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient, createAdminClient } from '@nexo/core-auth'
-import { prisma, UserRole } from '@nexo/prisma'
+import { InvitationStatus, prisma, UserRole } from '@nexo/prisma'
+import { z } from 'zod'
+import { getCanonicalAppUrl } from '@/lib/auth/app-url'
 
-async function getOrigin(): Promise<string> {
-  const h = await headers()
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  return `${proto}://${host}`
-}
+const INVITABLE_ROLES = [
+  UserRole.ADMIN,
+  UserRole.MEMBER,
+  UserRole.VIEWER,
+  UserRole.ACCOUNTANT,
+] as const
+
+const invitationInputSchema = z.object({
+  email: z.string().trim().email().transform((email) => email.toLowerCase()),
+  role: z.enum(INVITABLE_ROLES),
+})
 
 async function requireOwnerOrAdmin() {
   const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const tenantId = user.app_metadata?.tenant_id as string | undefined
   const role = user.app_metadata?.role as string | undefined
-
   if (!tenantId) redirect('/onboarding/cuenta')
-  if (role !== UserRole.OWNER && role !== UserRole.ADMIN) {
-    redirect('/dashboard')
-  }
+  if (role !== UserRole.OWNER && role !== UserRole.ADMIN) redirect('/dashboard')
 
   return { user, tenantId }
 }
 
+async function authUserExists(email: string): Promise<boolean> {
+  const adminClient = createAdminClient()
+  const perPage = 200
+
+  for (let page = 1; page <= 50; page += 1) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage })
+    if (error) throw error
+    if (data.users.some((user) => user.email?.toLowerCase() === email)) return true
+    if (data.users.length < perPage) return false
+  }
+
+  throw new Error('No se pudo verificar el usuario de autenticación')
+}
+
+async function sendInvitationEmail(email: string, acceptanceUrl: string): Promise<void> {
+  if (await authUserExists(email)) {
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+    const { error } = await authClient.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: acceptanceUrl },
+    })
+    if (error) throw error
+    return
+  }
+
+  const adminClient = createAdminClient()
+  const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    redirectTo: acceptanceUrl,
+  })
+  if (error) throw error
+}
+
 export async function inviteUser(formData: FormData) {
-  const { tenantId } = await requireOwnerOrAdmin()
-
-  const email = (formData.get('email') as string | null)?.trim()
-  const role = (formData.get('role') as UserRole | null) ?? UserRole.MEMBER
-
-  if (!email) {
-    redirect('/settings/team?error=El+correo+es+requerido')
-  }
-
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-
-  const existing = await prisma.invitation.findUnique({
-    where: { tenantId_email: { tenantId, email } },
+  const { user, tenantId } = await requireOwnerOrAdmin()
+  const parsed = invitationInputSchema.safeParse({
+    email: formData.get('email'),
+    role: formData.get('role'),
   })
-  if (existing) {
-    redirect('/settings/team?error=Ya+existe+una+invitaci%C3%B3n+para+ese+correo')
-  }
+  if (!parsed.success) redirect('/settings/team?error=Correo+o+rol+no+válido')
 
-  const isMember = await prisma.user.findUnique({
-    where: { tenantId_email: { tenantId, email } },
+  const { email, role } = parsed.data
+  const existingMember = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    select: { tenantId: true },
   })
-  if (isMember) {
+  if (existingMember?.tenantId === tenantId) {
     redirect('/settings/team?error=Ese+usuario+ya+pertenece+a+tu+equipo')
   }
+  if (existingMember) {
+    redirect('/settings/team?error=Ese+correo+ya+pertenece+a+otra+empresa')
+  }
 
+  await prisma.invitation.updateMany({
+    where: { tenantId, email: { equals: email, mode: 'insensitive' }, status: InvitationStatus.PENDING, expiresAt: { lte: new Date() } },
+    data: { status: InvitationStatus.REVOKED, revokedAt: new Date() },
+  })
+
+  const existing = await prisma.invitation.findFirst({
+    where: { tenantId, email: { equals: email, mode: 'insensitive' }, status: InvitationStatus.PENDING },
+    select: { id: true },
+  })
+  if (existing) redirect('/settings/team?error=Ya+existe+una+invitación+para+ese+correo')
+
+  // The initial expiry makes the row unusable until email delivery succeeds.
   const invitation = await prisma.invitation.create({
-    data: { tenantId, email, role, expiresAt },
+    data: { tenantId, email, role, invitedBy: user.id, expiresAt: new Date(0) },
   })
 
-  const origin = await getOrigin()
-  const adminClient = createAdminClient()
-
-  await adminClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${origin}/auth/callback?invite_token=${invitation.token}`,
-    data: { invited_to_tenant: tenantId },
-  })
+  try {
+    const acceptanceUrl = `${getCanonicalAppUrl()}/invite/${invitation.token}`
+    await sendInvitationEmail(email, acceptanceUrl)
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    })
+  } catch (error) {
+    await prisma.invitation.updateMany({
+      where: { id: invitation.id, tenantId, status: InvitationStatus.PENDING },
+      data: { status: InvitationStatus.REVOKED, revokedAt: new Date() },
+    })
+    console.error('Invitation delivery failed', error instanceof Error ? error.message : 'unknown error')
+    redirect('/settings/team?error=No+se+pudo+enviar+la+invitación')
+  }
 
   revalidatePath('/settings/team')
+  redirect('/settings/team?success=Invitación+enviada')
 }
 
 export async function revokeInvitation(formData: FormData) {
   const { tenantId } = await requireOwnerOrAdmin()
+  const invitationId = formData.get('invitationId')
+  if (typeof invitationId !== 'string' || !invitationId) return
 
-  const invitationId = formData.get('invitationId') as string
-  if (!invitationId) return
-
-  await prisma.invitation.deleteMany({
-    where: { id: invitationId, tenantId },
+  await prisma.invitation.updateMany({
+    where: { id: invitationId, tenantId, status: InvitationStatus.PENDING },
+    data: { status: InvitationStatus.REVOKED, revokedAt: new Date() },
   })
-
   revalidatePath('/settings/team')
 }
 
 export async function removeTeamMember(formData: FormData) {
   const { user, tenantId } = await requireOwnerOrAdmin()
-
-  const userId = formData.get('userId') as string
-  if (!userId || userId === user.id) {
+  const userId = formData.get('userId')
+  if (typeof userId !== 'string' || !userId || userId === user.id) {
     redirect('/settings/team?error=No+puedes+eliminarte+a+ti+mismo')
   }
 
-  await prisma.user.deleteMany({
-    where: { id: userId, tenantId, role: { not: UserRole.OWNER } },
-  })
-
+  await prisma.user.deleteMany({ where: { id: userId, tenantId, role: { not: UserRole.OWNER } } })
   revalidatePath('/settings/team')
 }
