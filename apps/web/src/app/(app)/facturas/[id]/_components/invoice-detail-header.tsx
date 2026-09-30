@@ -4,6 +4,7 @@ import { InvoiceStatusBadge } from '../../_components/invoice-status-badge'
 import { InvoiceStatusActions } from '../../_components/invoice-status-actions'
 
 interface Props {
+  canWrite: boolean
   invoice: {
     id: string
     fullNumber: string
@@ -52,7 +53,7 @@ function dueDateMeta(
   return null
 }
 
-export function InvoiceDetailHeader({ invoice }: Props) {
+export function InvoiceDetailHeader({ invoice, canWrite }: Props) {
   const effectiveStatus = computeEffectiveStatus(invoice.status, invoice.dueAt)
   const dueMeta = dueDateMeta(invoice.dueAt, effectiveStatus)
 
@@ -99,7 +100,7 @@ export function InvoiceDetailHeader({ invoice }: Props) {
             )}
           </div>
         </div>
-        <InvoiceStatusActions invoiceId={invoice.id} status={effectiveStatus} />
+        {canWrite && <InvoiceStatusActions invoiceId={invoice.id} status={effectiveStatus} />}
       </div>
     </header>
   )

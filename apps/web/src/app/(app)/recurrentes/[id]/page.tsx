@@ -19,6 +19,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { id } = await params
@@ -49,7 +50,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
               </span>
             </div>
           </div>
-          <ContractDetailActions contractId={contract.id} status={contract.status} />
+          {canWrite && <ContractDetailActions contractId={contract.id} status={contract.status} />}
         </div>
       </header>
 

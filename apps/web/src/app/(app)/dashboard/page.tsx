@@ -102,12 +102,14 @@ export default async function DashboardPage() {
               <ExportButton />
             </>
           )}
-          <Link
-            href="/facturas/nueva"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--accent)] text-[var(--bg)] text-sm font-semibold hover:bg-[var(--accent-dim)] transition-colors"
-          >
-            + Nueva factura
-          </Link>
+          {canWrite && (
+            <Link
+              href="/facturas/nueva"
+              className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--accent)] text-[var(--bg)] text-sm font-semibold hover:bg-[var(--accent-dim)] transition-colors"
+            >
+              + Nueva factura
+            </Link>
+          )}
         </div>
       </div>
 
@@ -200,10 +202,10 @@ export default async function DashboardPage() {
 
       {/* Mobile quick actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:hidden">
-        <MobileQuickAction href="/facturas/nueva" icon={<FilePlus size={24} />} label="Nueva factura" accent />
+        {canWrite && <MobileQuickAction href="/facturas/nueva" icon={<FilePlus size={24} />} label="Nueva factura" accent />}
         <MobileQuickAction href="/facturas" icon={<FileText size={24} />} label="Facturas" />
         <MobileQuickAction href="/tesoreria" icon={<TrendingUp size={24} />} label="Tesorería" />
-        <MobileQuickAction href="/gastos" icon={<Receipt size={24} />} label="Nuevo gasto" />
+        <MobileQuickAction href="/gastos" icon={<Receipt size={24} />} label={canWrite ? 'Nuevo gasto' : 'Gastos'} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -246,7 +248,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
-        <RecentInvoices invoices={stats.recentInvoices} />
+        <RecentInvoices invoices={stats.recentInvoices} canWrite={canWrite} />
 
         <div className="space-y-4">
           <section className="rounded-lg border border-[var(--border)] bg-gradient-to-br from-[var(--success)] to-teal-600 p-6 text-white overflow-hidden relative">
@@ -268,20 +270,20 @@ export default async function DashboardPage() {
 
           <Panel title="Acciones rápidas">
             <div className="px-5 py-4 border-b border-[var(--border)] space-y-2">
-              <QuickAction
+              {canWrite && <QuickAction
                 href="/facturas/nueva"
                 icon="□"
                 title="Crear factura"
                 desc="Alta manual con cliente, líneas e IVA"
-              />
-              <QuickAction
+              />}
+              {canWrite && <QuickAction
                 href="/recurrentes"
                 icon="↻"
                 title="Emitir recurrentes"
                 desc={`${activeContracts} ${
                   activeContracts === 1 ? 'contrato activo' : 'contratos activos'
                 }`}
-              />
+              />}
               <QuickAction
                 href="/facturas?estado=overdue"
                 icon="◎"

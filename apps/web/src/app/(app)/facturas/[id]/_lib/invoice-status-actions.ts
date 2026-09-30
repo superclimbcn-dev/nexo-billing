@@ -1,15 +1,16 @@
 'use server'
 
 import { prisma, InvoiceStatus } from '@nexo/prisma'
-import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
-export async function syncOverdueInvoices(tenantId: string): Promise<void> {
+export async function syncOverdueInvoices(): Promise<void> {
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return
   await prisma.invoice.updateMany({
     where: {
-      tenantId,
+      tenantId: auth.tenantId,
       status: InvoiceStatus.sent,
       dueAt: { lt: new Date() },
     },
@@ -18,17 +19,6 @@ export async function syncOverdueInvoices(tenantId: string): Promise<void> {
 }
 
 type ActionResult = { ok: true } | { ok: false; error: string }
-
-async function getAuthContext() {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return null
-  return { tenantId }
-}
 
 export async function markInvoiceAsSent(invoiceId: string): Promise<ActionResult> {
   const auth = await requireOwnerOrAdminAction()

@@ -4,6 +4,7 @@ import { QuoteStatusBadge } from './quote-status-badge'
 import { QuoteActions } from './quote-actions'
 
 interface Props {
+  canWrite: boolean
   quote: {
     id: string
     number: string
@@ -14,7 +15,7 @@ interface Props {
   }
 }
 
-export function QuoteDetailHeader({ quote }: Props) {
+export function QuoteDetailHeader({ quote, canWrite }: Props) {
   const linkedInvoice = quote.invoices[0] ?? null
 
   return (
@@ -50,7 +51,7 @@ export function QuoteDetailHeader({ quote }: Props) {
             </div>
           )}
         </div>
-        <QuoteActions quoteId={quote.id} status={quote.status} invoiceId={linkedInvoice?.id} />
+        {canWrite && <QuoteActions quoteId={quote.id} status={quote.status} invoiceId={linkedInvoice?.id} />}
       </div>
     </header>
   )

@@ -389,8 +389,8 @@ const ALLOWED_TYPES = [
 const MAX_SIZE_MB = 5
 
 export async function uploadReceipt(formData: FormData): Promise<ActionResult<string>> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const file = formData.get('file') as File | null
   const expenseId = formData.get('expenseId') as string | null

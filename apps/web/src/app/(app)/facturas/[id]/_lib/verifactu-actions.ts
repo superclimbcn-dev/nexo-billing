@@ -1,7 +1,6 @@
 'use server'
 
 import { prisma, Prisma } from '@nexo/prisma'
-import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
 import {
   getVerifactuProvider,
@@ -14,19 +13,9 @@ import {
   type InvoiceData,
 } from '@nexo/verifactu'
 import { sendInternalAlert } from '@/lib/internal-alerts'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type ActionResult = { ok: true; csv: string } | { ok: false; error: string }
-
-async function getAuthContext() {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return null
-  return { tenantId }
-}
 
 function mapPrismaRecord(record: {
   id: string
@@ -113,8 +102,8 @@ function mapInvoiceToVerifactuData(invoice: {
 }
 
 export async function submitToVerifactu(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },
@@ -292,8 +281,8 @@ export async function submitToVerifactu(invoiceId: string): Promise<ActionResult
 }
 
 export async function cancelVerifactuInvoice(invoiceId: string): Promise<ActionResult> {
-  const ctx = await getAuthContext()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  const ctx = await requireOwnerOrAdminAction()
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId: ctx.tenantId },

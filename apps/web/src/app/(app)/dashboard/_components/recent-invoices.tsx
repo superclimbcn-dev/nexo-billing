@@ -12,7 +12,7 @@ interface RecentInvoice {
   clientName: string;
 }
 
-export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
+export function RecentInvoices({ invoices, canWrite }: { invoices: RecentInvoice[]; canWrite: boolean }) {
   return (
     <Panel
       title="Facturas recientes"
@@ -25,12 +25,12 @@ export function RecentInvoices({ invoices }: { invoices: RecentInvoice[] }) {
       {invoices.length === 0 ? (
         <div className="px-6 py-8 text-center">
           <p className="text-sm text-[var(--text-dim)]">No hay facturas todavía.</p>
-          <Link
+          {canWrite && <Link
             href="/facturas/nueva"
             className="inline-block mt-3 text-sm text-[var(--accent)] hover:underline"
           >
             Crear primera factura →
-          </Link>
+          </Link>}
         </div>
       ) : (
         <div className="divide-y divide-[var(--border)]">

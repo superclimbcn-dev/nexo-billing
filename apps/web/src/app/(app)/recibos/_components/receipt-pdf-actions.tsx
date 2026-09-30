@@ -8,9 +8,10 @@ interface Props {
   number: string
   totalAmount: number
   clientEmail: string | null
+  canWrite: boolean
 }
 
-export function ReceiptPdfActions({ receiptId, number, totalAmount, clientEmail }: Props) {
+export function ReceiptPdfActions({ receiptId, number, totalAmount, clientEmail, canWrite }: Props) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emailSent, setEmailSent] = useState(false)
@@ -139,16 +140,16 @@ export function ReceiptPdfActions({ receiptId, number, totalAmount, clientEmail 
           Descargar PDF
         </button>
 
-        <button
+        {canWrite && <button
           onClick={handleSendEmail}
           disabled={isPending || loadingAction === 'email'}
           className="px-3 py-1.5 bg-[var(--success)] text-white text-sm font-medium rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loadingAction === 'email' ? 'Enviando…' : emailSent ? '¡Enviado!' : 'Enviar por email'}
-        </button>
+        </button>}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {canWrite && <div className="flex flex-wrap gap-2">
         <button
           onClick={handleWhatsApp}
           disabled={isPending}
@@ -175,7 +176,7 @@ export function ReceiptPdfActions({ receiptId, number, totalAmount, clientEmail 
           {copied ? <CheckIcon /> : <LinkIcon />}
           {loadingAction === 'copy' ? '…' : copied ? 'Copiado' : 'Copiar'}
         </button>
-      </div>
+      </div>}
 
       {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
     </div>

@@ -2,6 +2,7 @@
 
 import { prisma } from '@nexo/prisma'
 import { createServerClient } from '@nexo/core-auth'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 import { unstable_noStore as noStore, revalidatePath } from 'next/cache'
 
 export interface ItemSearchResult {
@@ -168,13 +169,9 @@ export async function createItemQuick(data: {
   type?: string
 }): Promise<{ ok: true; item: ItemSearchResult } | { ok: false; error: string }> {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return { ok: false, error: 'No autenticado' }
-    const tenantId = user.app_metadata?.tenant_id as string | undefined
-    if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+    const auth = await requireOwnerOrAdminAction()
+    if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+    const { tenantId } = auth
 
     const created = await prisma.item.create({
       data: {
@@ -226,13 +223,9 @@ export async function createClientQuick(data: {
   email?: string
 }): Promise<{ ok: true; client: { id: string; name: string; nif: string; email: string | null } } | { ok: false; error: string }> {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return { ok: false, error: 'No autenticado' }
-    const tenantId = user.app_metadata?.tenant_id as string | undefined
-    if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+    const auth = await requireOwnerOrAdminAction()
+    if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+    const { tenantId } = auth
 
     const name = data.name.trim()
     const nif = (data.nif ?? '').trim().toUpperCase().replace(/[\s-]/g, '')
