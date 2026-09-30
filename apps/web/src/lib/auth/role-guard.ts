@@ -25,6 +25,17 @@ export async function requireOwnerOrAdminAction() {
   return ctx
 }
 
+export async function requireAccountingExportAction() {
+  const ctx = await requireAuth()
+  if (!ctx) return null
+  if (
+    ctx.role !== UserRole.OWNER &&
+    ctx.role !== UserRole.ADMIN &&
+    ctx.role !== UserRole.ACCOUNTANT
+  ) return null
+  return ctx
+}
+
 export function getRole(user: AuthUser | null): string | null {
   return user?.app_metadata?.role ?? null
 }
@@ -62,7 +73,8 @@ export function canWrite(user: AuthUser | null): boolean {
 }
 
 export function canExport(user: AuthUser | null): boolean {
-  return isOwnerOrAdmin(user)
+  const role = getRole(user)
+  return role === UserRole.OWNER || role === UserRole.ADMIN || role === UserRole.ACCOUNTANT
 }
 
 export function canManageTeam(user: AuthUser | null): boolean {

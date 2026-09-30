@@ -17,6 +17,7 @@ export default async function ProductosPage({ searchParams }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { q, page, tipo } = await searchParams
@@ -36,16 +37,11 @@ export default async function ProductosPage({ searchParams }: PageProps) {
             {result.total} {result.total === 1 ? 'producto' : 'productos'} en total
           </p>
         </div>
-        <Link
-          href="/productos/nuevo"
-          className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-        >
-          + Nuevo producto
-        </Link>
+        {canWrite && <Link href="/productos/nuevo" className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors">+ Nuevo producto</Link>}
       </header>
 
       {result.total === 0 && !q && !typeFilter ? (
-        <EmptyState />
+        canWrite ? <EmptyState /> : <p className="py-16 text-center text-[var(--text-dim)]">No hay productos todavía.</p>
       ) : (
         <ItemList
           items={result.items}
@@ -53,6 +49,7 @@ export default async function ProductosPage({ searchParams }: PageProps) {
           totalPages={result.totalPages}
           search={q ?? ''}
           type={tipo ?? ''}
+          canWrite={canWrite}
         />
       )}
     </div>

@@ -16,6 +16,7 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { q, page, estado, clientId } = await searchParams
@@ -40,12 +41,7 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
             {result.total} {result.total === 1 ? 'presupuesto' : 'presupuestos'} en total
           </p>
         </div>
-        <Link
-          href="/presupuestos/nuevo"
-          className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-        >
-          + Nuevo presupuesto
-        </Link>
+        {canWrite && <Link href="/presupuestos/nuevo" className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors">+ Nuevo presupuesto</Link>}
       </header>
 
       {result.total === 0 && !q && !estado ? (
@@ -57,12 +53,12 @@ export default async function PresupuestosPage({ searchParams }: PageProps) {
               Crea tu primer presupuesto y conviértelo en factura cuando sea aceptado
             </p>
           </div>
-          <Link
+          {canWrite && <Link
             href="/presupuestos/nuevo"
             className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors text-sm"
           >
             + Nuevo presupuesto
-          </Link>
+          </Link>}
         </div>
       ) : (
         <QuoteList

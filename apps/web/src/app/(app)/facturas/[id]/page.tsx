@@ -24,6 +24,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const invoice = await getInvoiceById(tenantId, id)
@@ -43,7 +44,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
-      <InvoiceDetailHeader invoice={invoice} />
+      <InvoiceDetailHeader invoice={invoice} canWrite={canWrite} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -63,8 +64,9 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 totalAmount={Number(invoice.totalAmount)}
                 clientEmail={invoice.client?.email ?? null}
                 isPaid={invoice.status === 'paid'}
+                canWrite={canWrite}
               />
-              <RectificativaButton
+              {canWrite && <RectificativaButton
                 invoiceId={invoice.id}
                 fullNumber={invoice.fullNumber}
                 originalType={invoice.type}
@@ -76,13 +78,13 @@ export default async function InvoiceDetailPage({ params }: Props) {
                   unitPrice: Number(l.unitPrice),
                   vatRate: Number(l.vatRate),
                 }))}
-              />
+              />}
             </section>
             <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
               <h2 className="text-xs font-medium text-[var(--text-dim)] uppercase tracking-wide mb-3">
                 Verifactu · AEAT
               </h2>
-              <InvoiceVerifactuActions
+              {canWrite && <InvoiceVerifactuActions
                 invoiceId={invoice.id}
                 status={invoice.status}
                 hasRecord={!!verifactuRecord}
@@ -90,7 +92,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
                 aeatResponse={verifactuRecord?.aeatResponse ?? null}
                 verifactuProvider={tenantSettings?.verifactuProvider ?? 'mock'}
                 verifactuNifRegistered={tenantSettings?.verifactuNifRegistered ?? false}
-              />
+              />}
             </section>
           </div>
         </div>

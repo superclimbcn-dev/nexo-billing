@@ -4,6 +4,7 @@ import { ReceiptStatusBadge } from './receipt-status-badge'
 import { ReceiptActions } from './receipt-actions'
 
 interface Props {
+  canWrite: boolean
   receipt: {
     id: string
     number: string
@@ -12,7 +13,7 @@ interface Props {
   }
 }
 
-export function ReceiptDetailHeader({ receipt }: Props) {
+export function ReceiptDetailHeader({ receipt, canWrite }: Props) {
   return (
     <header className="space-y-3">
       <Link
@@ -33,7 +34,7 @@ export function ReceiptDetailHeader({ receipt }: Props) {
             </span>
           </div>
         </div>
-        <ReceiptActions receiptId={receipt.id} status={receipt.status} />
+        {canWrite && <ReceiptActions receiptId={receipt.id} status={receipt.status} />}
       </div>
     </header>
   )

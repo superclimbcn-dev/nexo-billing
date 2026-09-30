@@ -5,20 +5,17 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@nexo/core-auth'
 import { registerEmisorIfEnabled } from '@nexo/verifactu'
 import { fiscalDataSchema, createSeriesSchema, updateSeriesSchema } from './settings-schema'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
 
 async function getCtx() {
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return null
   const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return null
-  return { user, tenantId, supabase }
+  return { user: auth.user, tenantId: auth.tenantId, supabase }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -27,7 +24,7 @@ async function getCtx() {
 
 export async function saveFiscalData(raw: unknown): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const parsed = fiscalDataSchema.safeParse(raw)
   if (!parsed.success) {
@@ -60,7 +57,7 @@ export async function uploadLogo(
   formData: FormData,
 ): Promise<ActionResult<{ logoUrl: string }>> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const file = formData.get('file') as File | null
   if (!file) return { ok: false, error: 'No se subió ningún archivo' }
@@ -103,7 +100,7 @@ export async function uploadLogo(
 
 export async function deleteLogo(): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const branding = await prisma.brandingConfig.findUnique({
     where: { tenantId: ctx.tenantId },
@@ -132,7 +129,7 @@ export async function deleteLogo(): Promise<ActionResult> {
 
 export async function createSeries(raw: unknown): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const parsed = createSeriesSchema.safeParse(raw)
   if (!parsed.success) {
@@ -169,7 +166,7 @@ export async function createSeries(raw: unknown): Promise<ActionResult> {
 
 export async function updateSeries(raw: unknown): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const parsed = updateSeriesSchema.safeParse(raw)
   if (!parsed.success) {
@@ -214,7 +211,7 @@ export async function updateSeries(raw: unknown): Promise<ActionResult> {
 
 export async function deactivateSeries(seriesId: string): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const series = await prisma.invoiceSeries.findFirst({
     where: { id: seriesId, tenantId: ctx.tenantId },
@@ -239,7 +236,7 @@ export async function deactivateSeries(seriesId: string): Promise<ActionResult> 
 
 export async function activateSeries(seriesId: string): Promise<ActionResult> {
   const ctx = await getCtx()
-  if (!ctx) return { ok: false, error: 'No autenticado' }
+  if (!ctx) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
 
   const series = await prisma.invoiceSeries.findFirst({
     where: { id: seriesId, tenantId: ctx.tenantId },

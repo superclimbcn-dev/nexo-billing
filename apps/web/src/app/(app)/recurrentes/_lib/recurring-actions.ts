@@ -1,25 +1,18 @@
 'use server'
 
 import { prisma, RecurringStatus } from '@nexo/prisma'
-import { createServerClient } from '@nexo/core-auth'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createContractSchema } from './recurring-schema'
 import { emitDueInvoices } from '@/lib/recurring/emit-due-invoices'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
 
-async function requireAuth() {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) redirect('/onboarding/cuenta')
-  return { tenantId }
+async function requireWriteAccess(): Promise<{ tenantId: string } | null> {
+  const auth = await requireOwnerOrAdminAction()
+  return auth ? { tenantId: auth.tenantId } : null
 }
 
 function roundCents(v: number): number {
@@ -27,7 +20,9 @@ function roundCents(v: number): number {
 }
 
 export async function createContract(raw: unknown): Promise<ActionResult<{ id: string }>> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const parsed = createContractSchema.safeParse(raw)
   if (!parsed.success) {
@@ -98,7 +93,9 @@ export async function updateContract(
   id: string,
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const existing = await prisma.recurringContract.findFirst({
     where: { id, tenantId },
@@ -180,7 +177,9 @@ export async function updateContract(
 }
 
 export async function pauseContract(id: string): Promise<ActionResult> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const contract = await prisma.recurringContract.findFirst({
     where: { id, tenantId },
@@ -202,7 +201,9 @@ export async function pauseContract(id: string): Promise<ActionResult> {
 }
 
 export async function resumeContract(id: string): Promise<ActionResult> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const contract = await prisma.recurringContract.findFirst({
     where: { id, tenantId },
@@ -224,7 +225,9 @@ export async function resumeContract(id: string): Promise<ActionResult> {
 }
 
 export async function cancelContract(id: string): Promise<ActionResult> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const contract = await prisma.recurringContract.findFirst({
     where: { id, tenantId },
@@ -246,7 +249,9 @@ export async function cancelContract(id: string): Promise<ActionResult> {
 }
 
 export async function emitNow(id: string): Promise<ActionResult<{ invoiceId: string }>> {
-  const { tenantId } = await requireAuth()
+  const auth = await requireWriteAccess()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const contract = await prisma.recurringContract.findFirst({
     where: { id, tenantId },

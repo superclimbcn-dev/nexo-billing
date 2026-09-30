@@ -9,9 +9,10 @@ interface Props {
   totalAmount: number
   clientEmail: string | null
   isPaid: boolean
+  canWrite: boolean
 }
 
-export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEmail, isPaid }: Props) {
+export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEmail, isPaid, canWrite }: Props) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emailSent, setEmailSent] = useState(false)
@@ -120,7 +121,7 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {canWrite && <div className="flex flex-wrap gap-2">
         <button
           onClick={handleWhatsApp}
           disabled={isPending}
@@ -147,7 +148,7 @@ export function InvoicePdfActions({ invoiceId, fullNumber, totalAmount, clientEm
           {copied ? <CheckIcon /> : <LinkIcon />}
           {loadingAction === 'copy' ? '…' : copied ? 'Copiado' : 'Copiar'}
         </button>
-      </div>
+      </div>}
 
       {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
     </div>

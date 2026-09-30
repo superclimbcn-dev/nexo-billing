@@ -15,9 +15,10 @@ interface ClientListProps {
   totalPages: number;
   search: string;
   isPaginated: boolean;
+  canWrite: boolean;
 }
 
-export function ClientList({ items, page, totalPages, search, isPaginated }: ClientListProps) {
+export function ClientList({ items, page, totalPages, search, isPaginated, canWrite }: ClientListProps) {
   return (
     <div className="space-y-4">
       <ClientSearch initialValue={search} />
@@ -86,9 +87,7 @@ export function ClientList({ items, page, totalPages, search, isPaginated }: Cli
                     <td className="px-4 py-3 text-right text-sm font-mono text-[var(--text)]">
                       {c.totalInvoiced > 0 ? formatCurrency(c.totalInvoiced) : '—'}
                     </td>
-                    <td className="px-4 py-3">
-                      <ClientRowActions clientId={c.id} clientName={c.name} />
-                    </td>
+                    <td className="px-4 py-3">{canWrite && <ClientRowActions clientId={c.id} clientName={c.name} />}</td>
                   </tr>
                 );
               })

@@ -19,6 +19,7 @@ interface ContractItem {
 interface Props {
   items: ContractItem[]
   status: string
+  canWrite: boolean
 }
 
 const STATUS_OPTS = [
@@ -29,7 +30,7 @@ const STATUS_OPTS = [
   { value: 'FINISHED', label: 'Finalizados' },
 ]
 
-export function ContractList({ items, status }: Props) {
+export function ContractList({ items, status, canWrite }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -110,7 +111,7 @@ export function ContractList({ items, status }: Props) {
                     <ContractStatusBadge status={c.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <ContractRowActions contractId={c.id} status={c.status} />
+                    {canWrite && <ContractRowActions contractId={c.id} status={c.status} />}
                   </td>
                 </tr>
               ))}
