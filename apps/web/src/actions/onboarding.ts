@@ -28,12 +28,24 @@ function getFriendlyOnboardingError(error: unknown): string {
   return 'No hemos podido completar el registro. Revisa los datos e inténtalo de nuevo.'
 }
 
-export async function setOnboardingState(partialState: Record<string, unknown>) {
+async function requireOnboardingEligibleUser() {
   const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const existingMember = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { id: true },
+  })
+  if (user.app_metadata?.tenant_id || existingMember) redirect('/dashboard')
+
+  return { supabase, user }
+}
+
+export async function setOnboardingState(partialState: Record<string, unknown>) {
+  const { supabase, user } = await requireOnboardingEligibleUser()
 
   const current = (user.user_metadata?.onboarding_state as Record<string, unknown>) ?? {}
   await supabase.auth.updateUser({
@@ -49,11 +61,7 @@ interface CompletionData {
 }
 
 export async function completeOnboarding(formData: FormData) {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireOnboardingEligibleUser()
 
   const state = (user.user_metadata?.onboarding_state as Record<string, unknown>) ?? {}
 

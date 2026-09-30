@@ -30,6 +30,7 @@ interface ExpenseItem {
 
 interface Props {
   items: ExpenseItem[]
+  canWrite: boolean
 }
 
 const categoryColors: Record<string, string> = {
@@ -53,7 +54,7 @@ interface Toast {
   type: 'success' | 'error'
 }
 
-export function ExpenseList({ items }: Props) {
+export function ExpenseList({ items, canWrite }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
 
@@ -133,7 +134,7 @@ export function ExpenseList({ items }: Props) {
                   {expense.status === 'paid' && expense.paidAt && (
                     <p className="text-xs text-[var(--text-dim)]">{formatDate(expense.paidAt)}{expense.paymentMethod ? ` · ${PAYMENT_METHOD_LABELS[expense.paymentMethod]}` : ''}</p>
                   )}
-                  {expense.status === 'pending' && <ExpensePaymentButton expenseId={expense.id} />}
+                  {canWrite && expense.status === 'pending' && <ExpensePaymentButton expenseId={expense.id} />}
                 </td>
                 <td className="px-4 py-3">
                   {expense.attachmentUrl ? (
@@ -146,11 +147,11 @@ export function ExpenseList({ items }: Props) {
                       📎 Ver
                     </a>
                   ) : (
-                    <ExpenseReceiptUpload expenseId={expense.id} />
+                    canWrite ? <ExpenseReceiptUpload expenseId={expense.id} /> : <span className="text-sm text-[var(--text-dim)]">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  {canWrite && <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => setEditingId(expense.id)}
                       className="text-sm text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
@@ -164,7 +165,7 @@ export function ExpenseList({ items }: Props) {
                     >
                       Ver
                     </button>
-                  </div>
+                  </div>}
                 </td>
               </tr>
             ))}
@@ -172,7 +173,7 @@ export function ExpenseList({ items }: Props) {
         </table>
       </div>
 
-      {editingExpense && (
+      {canWrite && editingExpense && (
         <ExpenseEditModal
           expense={editingExpense}
           onClose={() => setEditingId(null)}

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Papa from 'papaparse'
 import { z } from 'zod'
-import { createServerClient } from '@nexo/core-auth'
 import { prisma, Prisma, InvoiceStatus } from '@nexo/prisma'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export const runtime = 'nodejs'
 
@@ -36,14 +36,9 @@ function parseDateES(dateStr: string): Date {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return NextResponse.json({ error: 'No tenant' }, { status: 403 })
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const { tenantId } = auth
 
   try {
     const formData = await req.formData()

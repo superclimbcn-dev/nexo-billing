@@ -10,6 +10,7 @@ interface ItemListProps {
   totalPages: number
   search: string
   type: string
+  canWrite: boolean
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -27,7 +28,7 @@ const TYPE_CLASSES: Record<string, string> = {
 const DEFAULT_BADGE =
   'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--surface-raised)] text-[var(--text-dim)]'
 
-export function ItemList({ items, page, totalPages, search, type }: ItemListProps) {
+export function ItemList({ items, page, totalPages, search, type, canWrite }: ItemListProps) {
   return (
     <div className="space-y-4">
       <ItemSearch initialSearch={search} initialType={type} />
@@ -82,9 +83,7 @@ export function ItemList({ items, page, totalPages, search, type }: ItemListProp
                       {Math.round(Number(item.vatRate))}%
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <ItemRowActions itemId={item.id} itemName={item.name} />
-                  </td>
+                  <td className="px-4 py-3">{canWrite && <ItemRowActions itemId={item.id} itemName={item.name} />}</td>
                 </tr>
               ))
             )}

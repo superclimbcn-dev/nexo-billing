@@ -3,7 +3,6 @@ import { Resend } from 'resend'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement, type ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
-import { createServerClient } from '@nexo/core-auth'
 import { prisma } from '@nexo/prisma'
 import { InvoicePdfDocument } from '@/lib/pdf/invoice-pdf-document'
 import { calculateInvoiceTotals } from '@/app/(app)/facturas/_lib/invoice-totals'
@@ -12,6 +11,7 @@ import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { InvoiceEmailTemplate } from '@/lib/email/invoice-email-template'
 import { decryptSecret } from '@/lib/crypto/tenant-secrets'
 import QRCode from 'qrcode'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export const runtime = 'nodejs'
 
@@ -32,18 +32,9 @@ export async function POST(
   try {
     const { id } = await params
 
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const tenantId = user.app_metadata?.tenant_id as string | undefined
-    if (!tenantId) {
-      return NextResponse.json({ error: 'No tenant' }, { status: 403 })
-    }
+    const auth = await requireOwnerOrAdminAction()
+    if (!auth) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const { tenantId } = auth
 
     const [invoice, tenant, verifactuRecord] = await Promise.all([
       prisma.invoice.findFirst({

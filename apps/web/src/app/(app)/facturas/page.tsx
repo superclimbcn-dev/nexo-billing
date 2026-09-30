@@ -18,13 +18,14 @@ export default async function FacturasPage({ searchParams }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { q, page, estado, clientId } = await searchParams
   const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1
 
   try {
-    await syncOverdueInvoices(tenantId)
+    await syncOverdueInvoices()
   } catch (e) {
     console.error('[facturas] syncOverdueInvoices failed:', e)
   }
@@ -48,12 +49,14 @@ export default async function FacturasPage({ searchParams }: PageProps) {
             {result.total} {result.total === 1 ? 'factura' : 'facturas'} en total
           </p>
         </div>
-        <Link
-          href="/facturas/nueva"
-          className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-        >
-          + Nueva factura
-        </Link>
+        {canWrite && (
+          <Link
+            href="/facturas/nueva"
+            className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
+          >
+            + Nueva factura
+          </Link>
+        )}
       </header>
 
       {result.total === 0 && !q && !estado ? (

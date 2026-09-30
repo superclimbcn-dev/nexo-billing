@@ -2,20 +2,15 @@
 
 import { prisma } from '@nexo/prisma'
 import { revalidatePath } from 'next/cache'
-import { createServerClient } from '@nexo/core-auth'
 import { THEMES, type ThemeKey } from '@/lib/themes'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 type Result = { ok: true } | { ok: false; error: string }
 
 export async function updateTheme(theme: string): Promise<Result> {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'No autenticado' }
-
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) return { ok: false, error: 'Tenant no encontrado' }
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) return { ok: false, error: 'No tienes permiso para realizar esta acción' }
+  const { tenantId } = auth
 
   const validThemes = Object.keys(THEMES) as ThemeKey[]
   if (!validThemes.includes(theme as ThemeKey)) {

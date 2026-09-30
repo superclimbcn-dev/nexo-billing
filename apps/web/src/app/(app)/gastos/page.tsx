@@ -25,6 +25,7 @@ export default async function GastosPage({ searchParams }: Props) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   function isExpenseCategory(value: string): value is ExpenseCategory {
@@ -51,7 +52,7 @@ export default async function GastosPage({ searchParams }: Props) {
     <div className="flex flex-col gap-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[var(--text)]">Gastos</h1>
-        <ExpenseFormWrapper />
+        {canWrite && <ExpenseFormWrapper />}
       </div>
 
       <div className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg">
@@ -63,7 +64,7 @@ export default async function GastosPage({ searchParams }: Props) {
 
       <ExpenseFilters />
 
-      <ExpenseList items={expenses} />
+      <ExpenseList items={expenses} canWrite={canWrite} />
     </div>
   )
 }

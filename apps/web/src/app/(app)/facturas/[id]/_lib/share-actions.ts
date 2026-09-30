@@ -1,18 +1,13 @@
 'use server'
 
-import { createServerClient } from '@nexo/core-auth'
 import { prisma } from '@nexo/prisma'
 import { signInvoiceToken } from '@/lib/public-invoice-token'
+import { requireOwnerOrAdminAction } from '@/lib/auth/role-guard'
 
 export async function signInvoiceTokenAction(invoiceId: string): Promise<{ token: string }> {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  if (!tenantId) throw new Error('No tenant')
+  const auth = await requireOwnerOrAdminAction()
+  if (!auth) throw new Error('Forbidden')
+  const { tenantId } = auth
 
   const inv = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId },

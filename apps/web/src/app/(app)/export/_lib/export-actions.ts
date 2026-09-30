@@ -1,7 +1,6 @@
 'use server'
 
-import { prisma, UserRole } from '@nexo/prisma'
-import { createServerClient } from '@nexo/core-auth'
+import { prisma } from '@nexo/prisma'
 import JSZip from 'jszip'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement, type ReactElement } from 'react'
@@ -12,6 +11,7 @@ import type { PdfInvoiceData } from '@/lib/pdf/invoice-pdf-types'
 import { createClient } from '@supabase/supabase-js'
 import QRCode from 'qrcode'
 import { signInvoiceToken } from '@/lib/public-invoice-token'
+import { requireAccountingExportAction } from '@/lib/auth/role-guard'
 
 export interface ExportFilters {
   dateFrom?: string
@@ -22,24 +22,6 @@ export interface ExportFilters {
 type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string }
-
-async function requireOwnerOrAdmin() {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const tenantId = user.app_metadata?.tenant_id as string | undefined
-  const role = user.app_metadata?.role as string | undefined
-
-  if (!tenantId) return null
-  if (role !== UserRole.OWNER && role !== UserRole.ADMIN) {
-    return null
-  }
-
-  return { user, tenantId }
-}
 
 function formatCSV(rows: string[][]): string {
   return rows.map((row) =>
@@ -153,7 +135,7 @@ async function generateInvoicePdf(invoice: {
 export async function exportData(
   filters: ExportFilters,
 ): Promise<ActionResult<{ buffer: Uint8Array; filename: string }>> {
-  const ctx = await requireOwnerOrAdmin()
+  const ctx = await requireAccountingExportAction()
   if (!ctx) {
     return { ok: false, error: 'No tienes permiso para exportar' }
   }

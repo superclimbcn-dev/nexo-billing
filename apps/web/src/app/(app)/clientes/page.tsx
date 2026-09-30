@@ -17,6 +17,7 @@ export default async function ClientesPage({ searchParams }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { q, page } = await searchParams
@@ -35,16 +36,11 @@ export default async function ClientesPage({ searchParams }: PageProps) {
             {result.total} {result.total === 1 ? 'cliente' : 'clientes'} en total
           </p>
         </div>
-        <Link
-          href="/clientes/nuevo"
-          className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors"
-        >
-          + Nuevo cliente
-        </Link>
+        {canWrite && <Link href="/clientes/nuevo" className="px-4 py-2 bg-[var(--accent)] text-[var(--bg)] font-medium rounded-md hover:bg-[var(--accent-dim)] transition-colors">+ Nuevo cliente</Link>}
       </header>
 
       {result.total === 0 && !q ? (
-        <EmptyState />
+        canWrite ? <EmptyState /> : <p className="py-16 text-center text-[var(--text-dim)]">No hay clientes todavía.</p>
       ) : (
         <ClientList
           items={result.items}
@@ -52,6 +48,7 @@ export default async function ClientesPage({ searchParams }: PageProps) {
           totalPages={result.totalPages}
           search={q ?? ''}
           isPaginated={result.isPaginated}
+          canWrite={canWrite}
         />
       )}
     </div>

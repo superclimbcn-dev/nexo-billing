@@ -17,6 +17,7 @@ export default async function RecurrentesPage({ searchParams }: PageProps) {
 
   if (!user) redirect('/login')
   const tenantId = user.app_metadata?.tenant_id as string | undefined
+  const canWrite = ['OWNER', 'ADMIN'].includes(user.app_metadata?.role as string)
   if (!tenantId) redirect('/onboarding/cuenta')
 
   const { estado } = await searchParams
@@ -34,7 +35,7 @@ export default async function RecurrentesPage({ searchParams }: PageProps) {
             {contracts.length} {contracts.length === 1 ? 'contrato' : 'contratos'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        {canWrite && <div className="flex items-center gap-3">
           <EmitPendingButton />
           <Link
             href="/recurrentes/nuevo"
@@ -42,12 +43,13 @@ export default async function RecurrentesPage({ searchParams }: PageProps) {
           >
             + Nuevo contrato
           </Link>
-        </div>
+        </div>}
       </header>
 
       <ContractList
         items={contracts.map((c) => ({ ...c, total: Number(c.total) }))}
         status={estado ?? ''}
+        canWrite={canWrite}
       />
     </div>
   )

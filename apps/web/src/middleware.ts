@@ -36,6 +36,21 @@ function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
+function isWriteOnlyPage(pathname: string) {
+  return (
+    pathname.startsWith('/settings') ||
+    pathname === '/facturas/nueva' ||
+    pathname === '/clientes/nuevo' ||
+    /^\/clientes\/[^/]+\/editar$/.test(pathname) ||
+    pathname === '/productos/nuevo' ||
+    /^\/productos\/[^/]+\/editar$/.test(pathname) ||
+    pathname === '/presupuestos/nuevo' ||
+    pathname === '/recibos/nuevo' ||
+    pathname === '/recurrentes/nuevo' ||
+    /^\/recurrentes\/[^/]+\/editar$/.test(pathname)
+  )
+}
+
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
   const { pathname } = request.nextUrl
@@ -57,6 +72,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (onboardingComplete && pathname.startsWith('/onboarding')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  const role = user.app_metadata?.role as string | undefined
+  const canWrite = role === 'OWNER' || role === 'ADMIN'
+  if (!canWrite && isWriteOnlyPage(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
